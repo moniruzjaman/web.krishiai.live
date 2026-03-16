@@ -87,3 +87,8 @@
 .newsSource{font-size:10px;font-weight:700;letter-spacing:.03em}
 .newsTime{font-size:10px;color:#9ca3af;white-space:nowrap}
 .newsItemTitle{font-size:12.5px;color:#111;line-height:1.55;font-weight:500}
+
+/* datetime in news */
+.newsDateTime { display: flex; flex-direction: column; gap: 1px; align-items: flex-end; flex-shrink: 0; }
+.newsTimeAgo  { font-size: 10px; color: var(--green); font-weight: 600; white-space: nowrap; }
+.newsDateFull { font-size: 9px; color: #9ca3af; white-space: nowrap; }

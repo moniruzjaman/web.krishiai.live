@@ -375,12 +375,19 @@ interface NewsItem {
   source: string; color: string; icon?: string;
 }
 
-const timeAgo = (d: string) => {
-  const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (mins < 60)   return `${bn(mins)} মি আগে`;
-  if (mins < 1440) return `${bn(Math.floor(mins/60))} ঘণ্টা আগে`;
-  return `${bn(Math.floor(mins/1440))} দিন আগে`;
+const formatDateTime = (d: string) => {
+  const date = new Date(d);
+  const now = Date.now();
+  const mins = Math.floor((now - date.getTime()) / 60000);
+  const timeStr = date.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const dateStr = date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' });
+  let ago = "";
+  if (mins < 60)    ago = bn(mins) + " মি আগে";
+  else if (mins < 1440) ago = bn(Math.floor(mins/60)) + " ঘণ্টা আগে";
+  else ago = bn(Math.floor(mins/1440)) + " দিন আগে";
+  return { ago, datetime: `${dateStr}, ${timeStr}` };
 };
+const timeAgo = (d: string) => formatDateTime(d).ago;
 
 export function NewsWidget() {
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -458,7 +465,10 @@ export function NewsWidget() {
                 <span className={styles.newsSource} style={{ color: it.color }}>
                   {it.icon} {it.source}
                 </span>
-                <span className={styles.newsTime}>{timeAgo(it.pubDate)}</span>
+                <div className={styles.newsDateTime}>
+                <span className={styles.newsTimeAgo}>{timeAgo(it.pubDate)}</span>
+                <span className={styles.newsDateFull}>{new Date(it.pubDate).toLocaleDateString('bn-BD',{day:'numeric',month:'short',year:'numeric'})}</span>
+              </div>
               </div>
               <span className={styles.newsItemTitle}>{it.title}</span>
             </a>
