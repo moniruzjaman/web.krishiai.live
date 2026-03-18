@@ -46,7 +46,8 @@ export default function Analyzer() {
   const [dragOver,  setDragOver]   = useState(false);
   const [history,   setHistory]    = useState<ScanRecord[]>(getScanHistory);
   const [tab,       setTab]        = useState<"scan"|"history">("scan");
-  const inputRef    = useRef<HTMLInputElement>(null);
+  const cameraRef   = useRef<HTMLInputElement>(null);
+  const galleryRef  = useRef<HTMLInputElement>(null);
 
   const loadFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -119,9 +120,13 @@ export default function Analyzer() {
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); const f=e.dataTransfer.files[0]; if(f) loadFile(f); }}
-              onClick={() => !image && inputRef.current?.click()}
+              onClick={() => !image && galleryRef.current?.click()}
             >
-              <input ref={inputRef} type="file" accept="image/*" capture="environment" hidden
+              {/* Camera capture */}
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden
+                onChange={e => { const f=e.target.files?.[0]; if(f) loadFile(f); }} />
+              {/* Gallery picker */}
+              <input ref={galleryRef} type="file" accept="image/*" hidden
                 onChange={e => { const f=e.target.files?.[0]; if(f) loadFile(f); }} />
               {image ? (
                 <img src={image} alt="crop" className={styles.preview} />
@@ -131,6 +136,18 @@ export default function Analyzer() {
                   <div className={styles.dropTitle}>ফসলের ছবি তুলুন বা আপলোড করুন</div>
                   <div className={styles.dropSub}>JPG · PNG · WEBP · মোবাইলে ক্যামেরা খুলবে</div>
                   <div className={styles.dropHint}>Gemini 2.0 Vision দিয়ে বিশ্লেষণ</div>
+                  <div style={{display:"flex",gap:10,marginTop:4}}>
+                    <button
+                      onClick={e=>{e.stopPropagation();cameraRef.current?.click()}}
+                      style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",background:"linear-gradient(135deg,var(--green-dark),var(--green))",border:"none",borderRadius:30,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(27,138,62,.3)"}}>
+                      📷 ক্যামেরা
+                    </button>
+                    <button
+                      onClick={e=>{e.stopPropagation();galleryRef.current?.click()}}
+                      style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",background:"#fff",border:".5px solid #e5e7eb",borderRadius:30,color:"#111",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+                      🖼️ গ্যালারি
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
