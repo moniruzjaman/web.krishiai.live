@@ -73,13 +73,13 @@ export async function analyzeText(
 export async function analyzeImage(
   prompt:    string,
   imageData: string,
-  mimeType  = "image/jpeg",
-  history:   ConversationMessage[] = []
+  mimeType  = "image/jpeg"
 ): Promise<AIResponse> {
   const base64 = imageData.startsWith("data:")
     ? imageData.split(",")[1]
     : imageData;
-  return callAPI({ prompt, imageBase64: base64, mimeType, history, mode: "chat" });
+  // No history for image calls — keeps body size small
+  return callAPI({ prompt, imageBase64: base64, mimeType });
 }
 
 // ── Structured crop diagnosis ─────────────────────────────────────────────────
