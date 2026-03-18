@@ -99,33 +99,88 @@ async function gemini(prompt, imageBase64, mimeType, history, stream = false) {
   return resp;
 }
 
-// ── OpenRouter fallback (text only) ──────────────────────────────────────────
-async function openRouter(prompt) {
+// ── OpenRouter cascade — free vision models first, then text ─────────────────
+//
+// Vision-capable free models (tried in order):
+//   1. google/gemini-2.0-flash-exp:free   — same quality as paid Gemini 2.0 Flash
+//   2. meta-llama/llama-4-maverick:free   — Llama 4 MoE with strong vision
+//   3. meta-llama/llama-4-scout:free      — Llama 4 lighter vision model
+//   4. mistralai/mistral-small-3.1-24b-instruct:free — 128K multimodal
+//   5. openrouter/free                    — auto-picks best free vision model
+//
+// Text-only fallback (no vision):
+//   6. google/gemini-flash-1.5            — paid, only if OPENROUTER_API_KEY set
+
+const FREE_VISION_MODELS = [
+  "google/gemini-2.0-flash-exp:free",
+  "meta-llama/llama-4-maverick:free",
+  "meta-llama/llama-4-scout:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "openrouter/free",
+];
+
+async function openRouter(prompt, imageBase64, mimeType) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) return null;
 
-  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method:  "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://krishiai.live",
-      "X-Title":      "Krishi AI Bangladesh",
-    },
-    body: JSON.stringify({
-      model:       "google/gemini-flash-1.5",
-      messages:    [
-        { role: "system", content: SYSTEM },
-        { role: "user",   content: prompt },
-      ],
-      max_tokens:  800,
-      temperature: 0.65,
-    }),
-  });
+  const hasImage = !!(imageBase64 && imageBase64.length > 100);
 
-  if (!resp.ok) return null;
-  const d = await resp.json();
-  return d?.choices?.[0]?.message?.content || null;
+  // Build message content
+  const buildContent = (mdl) => {
+    // openrouter/free and some models need image_url format
+    if (hasImage) {
+      return [
+        { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+        { type: "text", text: prompt },
+      ];
+    }
+    return prompt;
+  };
+
+  // Try free vision models first when image present
+  const modelsToTry = hasImage
+    ? FREE_VISION_MODELS
+    : ["google/gemini-flash-1.5", ...FREE_VISION_MODELS.slice(0, 2)];
+
+  for (const model of modelsToTry) {
+    try {
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization:  `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://krishiai.live",
+          "X-Title":      "Krishi AI Bangladesh",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user",   content: buildContent(model) },
+          ],
+          max_tokens:  900,
+          temperature: hasImage ? 0.1 : 0.65,
+        }),
+      });
+
+      if (!resp.ok) {
+        console.warn(`[OR] ${model} returned ${resp.status}`);
+        continue;
+      }
+
+      const d    = await resp.json();
+      const text = d?.choices?.[0]?.message?.content;
+      if (text) {
+        console.log(`[OR] success with ${model}`);
+        return { text, model };
+      }
+    } catch (e) {
+      console.warn(`[OR] ${model} error:`, e?.message);
+      continue;
+    }
+  }
+
+  return null;
 }
 
 // ── Rule-based fallback ───────────────────────────────────────────────────────
@@ -172,11 +227,18 @@ function healthCheck(res) {
       gemini:     hasGemini ? "✅ set" : "❌ MISSING — AI scan will fail",
       openrouter: hasOR     ? "✅ set" : "⚠️  not set (optional fallback)",
     },
+    freeVisionModels: [
+      "google/gemini-2.0-flash-exp:free",
+      "meta-llama/llama-4-maverick:free",
+      "meta-llama/llama-4-scout:free",
+      "mistralai/mistral-small-3.1-24b-instruct:free",
+      "openrouter/free",
+    ],
     cascade: hasGemini
-      ? "gemini-2.0-flash → rule-based"
+      ? "1. gemini-2.0-flash (Google AI Studio) → 2. free vision models (OpenRouter) → 3. rule-based"
       : hasOR
-        ? "openrouter/gemini-1.5-flash → rule-based"
-        : "⚠️ rule-based only (no API keys set)",
+        ? "1. free vision models via OpenRouter (gemini-2.0-flash-exp, llama-4, mistral) → 2. rule-based"
+        : "⚠️ rule-based only — set OPENROUTER_API_KEY for free vision AI",
   });
 }
 
@@ -237,14 +299,10 @@ export default async function handler(req, res) {
       }
     } catch (e) {
       console.error("[stream]", e?.message);
-      // Try OpenRouter non-streaming, send as single chunk
-      if (!hasImage) {
-        const text = await openRouter(prompt).catch(() => null);
-        if (text) { send(text, "gemini-1.5-flash"); }
-        else      { send(ruleBased(prompt, false), "rule-based"); }
-      } else {
-        send(ruleBased(prompt, true), "rule-based");
-      }
+      // Try OpenRouter free vision cascade as single chunk
+      const or = await openRouter(prompt, imageBase64, mimeType).catch(() => null);
+      if (or?.text) { send(or.text, or.model); }
+      else          { send(ruleBased(prompt, hasImage), "rule-based"); }
     }
 
     res.write("data: [DONE]\n\n");
@@ -263,13 +321,11 @@ export default async function handler(req, res) {
     }
   } catch (e) { console.error("[gemini standard]", e?.message); }
 
-  // 2. OpenRouter (text-only fallback)
-  if (!hasImage) {
-    try {
-      const text = await openRouter(prompt);
-      if (text) return res.status(200).json({ text, model: "gemini-1.5-flash", ok: true });
-    } catch (e) { console.error("[openrouter]", e?.message); }
-  }
+  // 2. OpenRouter — free vision models (works with AND without image)
+  try {
+    const or = await openRouter(prompt, imageBase64, mimeType);
+    if (or?.text) return res.status(200).json({ text: or.text, model: or.model, ok: true });
+  } catch (e) { console.error("[openrouter]", e?.message); }
 
   // 3. Rule-based
   return res.status(200).json({

@@ -140,10 +140,12 @@ export default function Analyzer() {
   // Check API health on mount
   useEffect(() => {
     checkAPIHealth().then(h => {
-      if (!h) { setApiOk(false); return; }
-      const hasKey = h.keys?.gemini?.includes("✅");
-      setApiOk(hasKey);
-    }).catch(() => setApiOk(false));
+      if (!h) { setApiOk(null); return; }  // server unreachable — don't show banner
+      // OK if either Gemini or OpenRouter key is set
+      const hasGemini = h.keys?.gemini?.includes("✅");
+      const hasOR     = h.keys?.openrouter?.includes("✅");
+      setApiOk(hasGemini || hasOR);
+    }).catch(() => setApiOk(null));  // null = unknown, don't block UI
   }, []);
 
   const cameraRef  = useRef<HTMLInputElement>(null);
@@ -241,13 +243,18 @@ export default function Analyzer() {
             display:"flex", alignItems:"flex-start", gap:8 }}>
             <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
             <div>
-              <div style={{ fontWeight:700, marginBottom:2 }}>GEMINI_API_KEY সেট নেই</div>
-              <div style={{ color:"#9a3412" }}>
-                Vercel Dashboard → Settings → Environment Variables →
-                <code style={{ background:"#fef3c7", padding:"1px 5px", borderRadius:3, margin:"0 3px" }}>GEMINI_API_KEY</code>
-                যোগ করুন। বিনামূল্যে:{" "}
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
-                  style={{ color:"var(--green)", fontWeight:700 }}>aistudio.google.com</a>
+              <div style={{ fontWeight:700, marginBottom:4 }}>API Key সেট নেই — AI স্ক্যান কাজ করবে না</div>
+              <div style={{ color:"#9a3412", lineHeight:1.6 }}>
+                যেকোনো একটি সেট করুন:<br/>
+                <strong>বিকল্প ১ (সেরা):</strong>{" "}
+                <code style={{ background:"#fef3c7", padding:"1px 5px", borderRadius:3 }}>GEMINI_API_KEY</code>{" "}
+                → <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                  style={{ color:"var(--green)", fontWeight:700 }}>aistudio.google.com</a> (বিনামূল্যে)<br/>
+                <strong>বিকল্প ২ (ফ্রি ভিশন):</strong>{" "}
+                <code style={{ background:"#fef3c7", padding:"1px 5px", borderRadius:3 }}>OPENROUTER_API_KEY</code>{" "}
+                → <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer"
+                  style={{ color:"var(--green)", fontWeight:700 }}>openrouter.ai</a>{" "}
+                (gemini-2.0-flash-exp:free + llama-4 ভিশন সহ ৫টি ফ্রি মডেল)
               </div>
             </div>
           </div>
