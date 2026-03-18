@@ -4,8 +4,8 @@
  * graceful fallback when API unavailable, better UX feedback.
  */
 
-import { useState, useRef } from "react";
-import { analyzeImage, type AIResponse } from "@/services/aiService";
+import { useState, useRef, useEffect } from "react";
+import { analyzeImage, checkAPIHealth, type AIResponse } from "@/services/aiService";
 import styles from "./Analyzer.module.css";
 
 // ── Diagnosis result parsed from AI text ──────────────────────────────────────
@@ -135,6 +135,17 @@ export default function Analyzer() {
   const [tab,       setTab]       = useState<"scan" | "history">("scan");
   const [compressing, setCompressing] = useState(false);
 
+  const [apiOk, setApiOk] = useState<boolean | null>(null);
+
+  // Check API health on mount
+  useEffect(() => {
+    checkAPIHealth().then(h => {
+      if (!h) { setApiOk(false); return; }
+      const hasKey = h.keys?.gemini?.includes("✅");
+      setApiOk(hasKey);
+    }).catch(() => setApiOk(false));
+  }, []);
+
   const cameraRef  = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -221,6 +232,26 @@ export default function Analyzer() {
           ))}
         </div>
       </div>
+
+
+        {/* ── API key status banner ──────────────────────────── */}
+        {apiOk === false && (
+          <div style={{ margin:"10px 0 0", padding:"10px 14px", background:"#fff7ed",
+            border:"1px solid #fed7aa", borderRadius:10, fontSize:12, color:"#c2410c",
+            display:"flex", alignItems:"flex-start", gap:8 }}>
+            <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight:700, marginBottom:2 }}>GEMINI_API_KEY সেট নেই</div>
+              <div style={{ color:"#9a3412" }}>
+                Vercel Dashboard → Settings → Environment Variables →
+                <code style={{ background:"#fef3c7", padding:"1px 5px", borderRadius:3, margin:"0 3px" }}>GEMINI_API_KEY</code>
+                যোগ করুন। বিনামূল্যে:{" "}
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                  style={{ color:"var(--green)", fontWeight:700 }}>aistudio.google.com</a>
+              </div>
+            </div>
+          </div>
+        )}
 
       <div className={styles.body}>
         {tab === "scan" && (

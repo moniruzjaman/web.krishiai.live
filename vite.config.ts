@@ -2,41 +2,39 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
 
-  // Resolve bare "@/" imports used throughout the codebase
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: { "@": path.resolve(__dirname, "./src") },
   },
 
-  // Vite must emit to "dist/" — Vercel reads outputDirectory: "dist"
   build: {
-    outDir: "dist",
+    outDir:     "dist",
     emptyOutDir: true,
-    sourcemap: false,
+    sourcemap:  false,
+    // Raise chunk size warning threshold (we accept ~300KB max)
+    chunkSizeWarningLimit: 300,
     rollupOptions: {
       output: {
-        // Split large vendor chunks so the AI service bundle stays lean
-        manualChunks: {
-          vendor: ["react", "react-dom"],
+        manualChunks: (id) => {
+          // React core → vendor chunk (cached forever)
+          if (id.includes("node_modules/react") ||
+              id.includes("node_modules/react-dom") ||
+              id.includes("node_modules/scheduler")) {
+            return "vendor";
+          }
+          // React Router → separate chunk
+          if (id.includes("react-router")) return "router";
         },
       },
     },
   },
 
-  // In local dev, forward /api/* to a local Node server (port 3001)
-  // so the same fetch("/api/analyze") call works in both envs
   server: {
     port: 5173,
     proxy: {
-      "/api": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-      },
+      "/api": { target: "http://localhost:3001", changeOrigin: true },
     },
   },
 });

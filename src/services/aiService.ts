@@ -13,6 +13,19 @@
 
 const ENDPOINT = "/api/analyze";
 
+/** Check API health — call GET /api/analyze, returns key status */
+export async function checkAPIHealth(): Promise<{
+  status: string;
+  keys: { gemini: string; openrouter: string };
+  cascade: string;
+} | null> {
+  try {
+    const r = await fetch(ENDPOINT, { method: "GET" });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface AIResponse {
   text:      string;

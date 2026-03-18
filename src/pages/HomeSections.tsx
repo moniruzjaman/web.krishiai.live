@@ -17,7 +17,7 @@ const bn = (n: number | string) =>
   String(Math.round(Number(n))).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[+d]);
 
 const WMO: Record<number, { bn: string; icon: string }> = {
-  0:{bn:"맑음",icon:"☀️"},1:{bn:"প্রায় পরিষ্কার",icon:"🌤️"},
+  0:{bn:"পরিষ্কার আকাশ",icon:"☀️"},1:{bn:"প্রায় পরিষ্কার",icon:"🌤️"},
   2:{bn:"আংশিক মেঘলা",icon:"⛅"},3:{bn:"মেঘলা",icon:"☁️"},
   45:{bn:"কুয়াশা",icon:"🌫️"},51:{bn:"গুঁড়ি বৃষ্টি",icon:"🌦️"},
   61:{bn:"হালকা বৃষ্টি",icon:"🌧️"},63:{bn:"মাঝারি বৃষ্টি",icon:"🌧️"},

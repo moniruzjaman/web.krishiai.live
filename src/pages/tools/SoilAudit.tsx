@@ -39,7 +39,7 @@ SRDI/BARC নির্দেশিকা অনুযায়ী:
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
       <div className="tool-page-hdr">
-        <button className="back-btn" onClick={()=>nav("/chat")}><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button className="back-btn" onClick={()=>nav("/tools")}><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
         <div style={{position:"absolute",top:20,right:16,fontSize:36}}>🏺</div>
         <h1>মৃত্তিকা বিশেষজ্ঞ</h1>
         <div className="sub">Soil Audit & Advisory</div>

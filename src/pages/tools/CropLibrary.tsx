@@ -43,7 +43,7 @@ BARI/BRRI/DAE নির্দেশিকা অনুযায়ী বাং�
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
       <div className="tool-page-hdr">
-        <button className="back-btn" onClick={()=>nav("/chat")}><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button className="back-btn" onClick={()=>nav("/tools")}><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
         <h1>শস্য সুরক্ষা লাইব্রেরি</h1>
         <div className="sub">Crop Protection Library · BARI/BRRI/DAE</div>
         <div className="badge-row"><span className="badge">GOVT DATA 2025</span><span className="badge">MRR/DAE SOURCED</span></div>
