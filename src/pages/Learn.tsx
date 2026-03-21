@@ -2,7 +2,7 @@
  * Learn.tsx  —  v4
  *
  * Tabs:
- *   🎮 Diagnosis Game  — embeds diagnosis-game-git-v001-krishi-ai-team.vercel.app
+ *   🎮 ফসল ফতোয়া Game  — embeds game.krishiai.live
  *   🔬 CABI গেম        — built-in CABI scenario game (AI-explained)
  *   🧠 কুইজ            — 8-question agri quiz with XP
  *   📚 কোর্স           — course library with progress
@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { analyzeText, buildAgriPrompt } from "@/services/aiService";
 
-const GAME_URL = "https://diagnosis-game-git-v001-krishi-ai-team.vercel.app/";
+const GAME_URL = "https://game.krishiai.live/";
 
 // ── XP helpers ────────────────────────────────────────────────────────────────
 const getXP       = () => parseInt(localStorage.getItem("krishi_xp")  || "0");
@@ -42,7 +42,7 @@ const CABI_SCENARIOS = [
 ];
 
 const COURSES = [
-  { title:"Diagnosis Game — অনলাইন",   sub:"krishi-ai-team কর্তৃক",    icon:"🎮", color:"#7c3aed", bg:"linear-gradient(135deg,#ede9fe,#dbeafe)", lessons:20, badge:"LIVE",  onClick: ()=>null },
+  { title:"ফসল ফতোয়া — Crop Call",     sub:"game.krishiai.live",    icon:"🎮", color:"#7c3aed", bg:"linear-gradient(135deg,#ede9fe,#dbeafe)", lessons:20, badge:"LIVE",  onClick: ()=>null },
   { title:"CABI ডায়াগনোসিস মাস্টার",  sub:"আন্তর্জাতিক প্রোটোকল",    icon:"🔬", color:"#e53e3e", bg:"linear-gradient(135deg,#fee2e2,#fce7f3)", lessons:12, badge:"সার্টিফিকেট" },
   { title:"মাটি বিজ্ঞান বেসিক",        sub:"SRDI ভিত্তিক পাঠ্যক্রম",  icon:"🏺", color:"#9d174d", bg:"linear-gradient(135deg,#fce7f3,#ede9fe)", lessons:10, badge:"সার্টিফিকেট" },
   { title:"সমন্বিত বালাই ব্যবস্থাপনা", sub:"IPM · IRAC/FRAC প্রটোকল", icon:"🛡️", color:"#1d4ed8", bg:"linear-gradient(135deg,#dbeafe,#ede9fe)", lessons:15, badge:"সার্টিফিকেট" },
@@ -157,12 +157,12 @@ export default function Learn() {
             {embedState === "loading" && (
               <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(76,29,149,.08)", border:".5px solid rgba(76,29,149,.2)", borderRadius:10, padding:"9px 14px", marginBottom:12, fontSize:12, color:"#4c1d95", fontWeight:600 }}>
                 <span className="spin" style={{ display:"inline-block" }}>⏳</span>
-                Diagnosis Game লোড হচ্ছে…
+                ফসল ফতোয়া গেম লোড হচ্ছে…
               </div>
             )}
             {embedState === "ok" && (
               <div style={{ display:"flex", alignItems:"center", gap:8, background:"#f0fdf4", border:".5px solid #86efac", borderRadius:10, padding:"7px 14px", marginBottom:12, fontSize:12, color:"#166534", fontWeight:600 }}>
-                ✅ Diagnosis Game সংযুক্ত
+                ✅ ফসল ফতোয়া সংযুক্ত
                 <a href={GAME_URL} target="_blank" rel="noopener noreferrer"
                    style={{ marginLeft:"auto", fontSize:11, color:"var(--green)", fontWeight:700 }}>
                   নতুন ট্যাবে ↗
@@ -171,7 +171,7 @@ export default function Learn() {
             )}
             {embedState === "fail" && (
               <div style={{ background:"#fff7ed", border:".5px solid #fed7aa", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:12, color:"#c2410c" }}>
-                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ Diagnosis Game এখন লোড হয়নি</div>
+                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ ফসল ফতোয়া গেম লোড হয়নি</div>
                 <a href={GAME_URL} target="_blank" rel="noopener noreferrer"
                    style={{ color:"var(--green)", fontWeight:700, fontSize:11 }}>
                   সরাসরি খুলুন → {GAME_URL}
@@ -188,8 +188,8 @@ export default function Learn() {
                 src={GAME_URL}
                 onLoad={() => setEmbedState("ok")}
                 onError={() => setEmbedState("fail")}
-                style={{ width:"100%", height:"580px", border:"none", display:"block" }}
-                title="Krishi AI Diagnosis Game"
+                style={{ width:"100%", height:"640px", border:"none", display:"block" }}
+                title="ফসল ফতোয়া — Crop Call Game"
                 allow="camera; microphone; geolocation"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
               />
