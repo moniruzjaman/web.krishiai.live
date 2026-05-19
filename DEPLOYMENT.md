@@ -4,7 +4,7 @@
 
 | Problem | Root Cause | Fix |
 |---|---|---|
-| `krishiai-three.vercel.app` returns 404 | Missing SPA rewrite rules | `vercel.json` rewrites `/*` → `/index.html` |
+| `krishiai-three.vercel.app` | Missing SPA rewrite rules | `vercel.json` rewrites `/*` → `/index.html` |
 | AI calls return `analysis failed` | Netlify functions don't run on Vercel | New `api/analyze.js` Vercel serverless function |
 | `tsc` build fails | `tsconfig.json` included Expo/backend folders | Excluded `krishi-ai-expo`, `backend`, `project_backup` |
 | Blank page on refresh | No SPA fallback routing | Vercel rewrite rule added |
@@ -80,7 +80,7 @@ Open `http://localhost:5173` — verify:
 - [ ] Home page loads
 - [ ] `/chat` loads
 - [ ] `/analyzer` loads
-- [ ] Refreshing any route stays on that page (no 404)
+- [ ] Refreshing any route stays on that page
 
 > **AI calls in local dev** will hit the Vite proxy (`/api` → `localhost:3001`).
 > To test the full AI path locally, run a local Node server or use `vercel dev`.
