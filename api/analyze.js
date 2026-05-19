@@ -2,7 +2,7 @@
  * api/analyze.js  —  v6
  *
  * AI cascade (March 2026):
- *   1. gemini-2.0-flash-exp  via Google AI Studio (GEMINI_API_KEY) — primary
+ *   1. gemini-2.0-flash: via Google AI Studio (GEMINI_API_KEY) — primary
  *   2. Free vision models via OpenRouter (OPENROUTER_API_KEY):
  *        a. google/gemma-3-27b-instruct:free   — Google, free, vision ✅
  *        b. google/gemma-3-12b-instruct:free   — Google, free, vision ✅
