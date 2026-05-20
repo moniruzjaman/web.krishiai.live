@@ -9,7 +9,7 @@
  *             DAE, BRRI, BARI, BADC, BARC, SRDI, Ministry of Agriculture
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styles from "./HomeSections.module.css";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -185,6 +185,7 @@ export function WeatherWidget() {
 // ── 3. MAP (user location) ───────────────────────────────────────────────────
 export function MapWidget() {
   const [coords, setCoords] = useState<[number,number] | null>(null);
+  const [mapErr, setMapErr] = useState(false);
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -197,93 +198,96 @@ export function MapWidget() {
   const lat = coords?.[0] ?? 23.8103;
   const lon = coords?.[1] ?? 90.4125;
   const userMarker = coords
-    ? `L.circleMarker([${lat},${lon}],{radius:8,color:'#e53e3e',fillColor:'#e53e3e',fillOpacity:.9}).addTo(map).bindPopup('<b>আপনার অবস্থান</b>').openPopup();`
+    ? "L.circleMarker([" + lat + "," + lon + "],{radius:8,color:'#e53e3e',fillColor:'#e53e3e',fillOpacity:.9}).addTo(map).bindPopup('<b>\\u0986\\u09aa\\u09a8\\u09be\\u09b0 \\u0985\\u09ac\\u09b8\\u09cd\\u09a5\\u09be\\u09a8</b>').openPopup();"
     : "";
 
-  // NOTE: geolocation in iframe requires allow-same-origin + allow='geolocation'
-  const mapHtml = `<!DOCTYPE html><html><head>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
-  <style>
-    html,body,#map{margin:0;padding:0;width:100%;height:100%}
-    .leaflet-popup-content{font-size:12px;line-height:1.6;font-family:'Hind Siliguri',sans-serif}
-    .leaflet-popup-content b{color:#1b4332}
-    #loc-btn{position:absolute;bottom:16px;right:10px;z-index:999;
-      background:#1b8a3e;color:#fff;border:none;border-radius:30px;
-      padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;
-      box-shadow:0 3px 12px rgba(27,138,62,.4);display:flex;align-items:center;gap:6px}
-    #loc-btn:hover{background:#166534}
-    #loc-status{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:999;
-      background:rgba(255,255,255,.92);padding:5px 14px;border-radius:20px;font-size:11px;
-      font-weight:700;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-  </style>
-  </head><body>
-  <div id="map"></div>
-  <button id="loc-btn" onclick="getMyLocation()">📍 আমার অবস্থান</button>
-  <div id="loc-status"></div>
-  <script>
-  var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([${lat},${lon}],${coords?11:9});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-
-  // icon factory
-  function mkIcon(color){
-    return L.icon({
-      iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-'+color+'.png',
-      shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize:[22,36],iconAnchor:[11,36],popupAnchor:[1,-30]
-    });
-  }
-  var gi=mkIcon('green'), bi=mkIcon('blue'), yi=mkIcon('yellow');
-
-  // Official agriculture institution markers
-  var markers=[
-    {ll:[23.8103,90.4125],ic:gi,t:'<b>DAE</b><br>কৃষি সম্প্রসারণ অধিদপ্তর<br>📞 16123'},
-    {ll:[24.0022,90.4264],ic:bi,t:'<b>BRRI</b><br>বাংলাদেশ ধান গবেষণা ইনস্টিটিউট<br>গাজীপুর'},
-    {ll:[23.9999,90.3977],ic:bi,t:'<b>BARI</b><br>বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট<br>গাজীপুর'},
-    {ll:[23.7808,90.3992],ic:gi,t:'<b>BARC</b><br>বাংলাদেশ কৃষি গবেষণা কাউন্সিল<br>ফার্মগেট, ঢাকা'},
-    {ll:[23.7461,90.3742],ic:gi,t:'<b>BADC</b><br>বাংলাদেশ কৃষি উন্নয়ন কর্পোরেশন<br>ঢাকা'},
-    {ll:[23.7808,90.3650],ic:bi,t:'<b>SRDI</b><br>মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট<br>ঢাকা'},
-    {ll:[23.7280,90.3938],ic:gi,t:'<b>কৃষি মন্ত্রণালয়</b><br>Ministry of Agriculture<br>ঢাকা'},
-    {ll:[23.7450,90.3960],ic:yi,t:'<b>DAM</b><br>কৃষি বিপণন অধিদপ্তর<br>বাজার মূল্য তথ্য কেন্দ্র'},
-  ];
-  markers.forEach(function(m){L.marker(m.ll,{icon:m.ic}).addTo(map).bindPopup(m.t);});
-
-  // User location marker (from parent window via coords)
-  ${userMarker}
-
-  L.control.scale({imperial:false}).addTo(map);
-
-  // In-iframe geolocation button
-  var userMk=null;
-  function getMyLocation(){
-    var btn=document.getElementById('loc-btn');
-    var status=document.getElementById('loc-status');
-    btn.textContent='⏳ খুঁজছি…';
-    status.style.display='block';
-    status.style.color='#1b8a3e';
-    status.textContent='অবস্থান নির্ধারণ হচ্ছে…';
-    if(!navigator.geolocation){
-      status.textContent='GPS সমর্থিত নয়';status.style.color='#e53e3e';
-      btn.textContent='📍 আমার অবস্থান';return;
-    }
-    navigator.geolocation.getCurrentPosition(function(pos){
-      var lt=pos.coords.latitude,ln=pos.coords.longitude;
-      if(userMk)map.removeLayer(userMk);
-      userMk=L.circleMarker([lt,ln],{radius:10,color:'#e53e3e',fillColor:'#e53e3e',fillOpacity:.9,weight:3}).addTo(map);
-      userMk.bindPopup('<b style="color:#e53e3e">📍 আপনার অবস্থান</b><br>'+lt.toFixed(5)+', '+ln.toFixed(5)).openPopup();
-      map.flyTo([lt,ln],14,{duration:1.2});
-      btn.textContent='✅ অবস্থান পাওয়া গেছে';
-      status.textContent='✅ সঠিক অবস্থান পাওয়া গেছে';
-      setTimeout(function(){status.style.display='none';btn.textContent='📍 আমার অবস্থান';},3000);
-    },function(err){
-      var msg=err.code===1?'অনুমতি দিন':'অবস্থান পাওয়া যায়নি';
-      status.textContent='⚠️ '+msg;status.style.color='#e53e3e';
-      btn.textContent='📍 আবার চেষ্টা করুন';
-      setTimeout(function(){status.style.display='none';},4000);
-    },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
-  }
-  <\/script></body></html>`;
+  // Memoize map HTML to avoid iframe rebuild on every render
+  const mapHtml = useMemo(() => {
+    const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+    const attr = "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> | krishi.ai";
+    return '<!DOCTYPE html><html><head>' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>' +
+    '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>' +
+    '<style>' +
+    'html,body,#map{margin:0;padding:0;width:100%;height:100%}' +
+    '.leaflet-popup-content{font-size:12px;line-height:1.6;font-family:"Hind Siliguri",sans-serif}' +
+    '.leaflet-popup-content b{color:#1b4332}' +
+    '#loc-btn{position:absolute;bottom:16px;right:10px;z-index:999;' +
+      'background:#1b8a3e;color:#fff;border:none;border-radius:30px;' +
+      'padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;' +
+      'box-shadow:0 3px 12px rgba(27,138,62,.4);display:flex;align-items:center;gap:6px}' +
+    '#loc-btn:hover{background:#166534}' +
+    '#loc-status{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:999;' +
+      'background:rgba(255,255,255,.92);padding:5px 14px;border-radius:20px;font-size:11px;' +
+      'font-weight:700;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}' +
+    '#map-error{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;' +
+      'background:#f9fafb;color:#9ca3af;font-size:12px;z-index:1000;display:none}' +
+    '</style>' +
+    '</head><body>' +
+    '<div id="map"></div>' +
+    '<div id="map-error">\\u09AE\\u09BE\\u09A8\\u099A\\u09BF\\u09A4\\u09CD\\u09B0 \\u09B2\\u09CB\\u09A1 \\u09B9\\u09DF\\u09A8\\u09BF</div>' +
+    '<button id="loc-btn" onclick="getMyLocation()">\\ud83d\\udccd \\u0986\\u09AE\\u09BE\\u09B0 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8</button>' +
+    '<div id="loc-status"></div>' +
+    '<script>' +
+    'var tileLayer=L.tileLayer("' + tileUrl + '",{maxZoom:19,attribution:"' + attr + '"});' +
+    'tileLayer.on("tileerror",function(e){' +
+      'var t=e.tile;' +
+      'if(t.getAttribute("data-retry")!=="1"){' +
+        't.setAttribute("data-retry","1");' +
+        'setTimeout(function(){t.src=t.src;},1500);' +
+      '}' +
+    '});' +
+    'var map=L.map("map",{zoomControl:true}).setView([' + lat + ',' + lon + '],' + (coords?11:9) + ');' +
+    'tileLayer.addTo(map);' +
+    'function mkIcon(color){' +
+      'return L.icon({iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-"+color+".png",' +
+      'shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",' +
+      'iconSize:[22,36],iconAnchor:[11,36],popupAnchor:[1,-30]});' +
+    '}' +
+    'var gi=mkIcon("green"),bi=mkIcon("blue"),yi=mkIcon("yellow");' +
+    'var markers=[' +
+      '{ll:[23.8103,90.4125],ic:gi,t:"<b>DAE</b><br>\\u0995\\u09C3\\u09B7\\u09BF \\u09B8\\u09AE\\u09CD\\u09AA\\u09CD\\u09B0\\u09B8\\u09BE\\u09B0\\u09A3 \\u0985\\u09A7\\u09BF\\u09A6\\u09AA\\u09CD\\u09A4\\u09B0<br>\\ud83d\\udcde 16123"},' +
+      '{ll:[24.0022,90.4264],ic:bi,t:"<b>BRRI</b><br>\\u09AC\\u09BE\\u0982\\u09B2\\u09BE\\u09A6\\u09C7\\u09B6 \\u09A7\\u09BE\\u09A8 \\u0997\\u09AC\\u09C7\\u09B7\\u09A3\\u09BE \\u0987\\u09A8\\u09B8\\u09CD\\u099F\\u09BF\\u099F\\u09BF\\u0989\\u099F<br>\\u0997\\u09BE\\u099C\\u09C0\\u09AA\\u09C1\\u09B0"},' +
+      '{ll:[23.9999,90.3977],ic:bi,t:"<b>BARI</b><br>\\u09AC\\u09BE\\u0982\\u09B2\\u09BE\\u09A6\\u09C7\\u09B6 \\u0995\\u09C3\\u09B7\\u09BF \\u0997\\u09AC\\u09C7\\u09B7\\u09A3\\u09BE \\u0987\\u09A8\\u09B8\\u09CD\\u099F\\u09BF\\u099F\\u09BF\\u0989\\u099F<br>\\u0997\\u09BE\\u099C\\u09C0\\u09AA\\u09C1\\u09B0"},' +
+      '{ll:[23.7808,90.3992],ic:gi,t:"<b>BARC</b><br>\\u09AC\\u09BE\\u0982\\u09B2\\u09BE\\u09A6\\u09C7\\u09B6 \\u0995\\u09C3\\u09B7\\u09BF \\u0997\\u09AC\\u09C7\\u09B7\\u09A3\\u09BE \\u0995\\u09BE\\u0989\\u09A8\\u09CD\\u09B8\\u09BF\\u09B2<br>\\u09AB\\u09BE\\u09B0\\u09CD\\u09AE\\u0997\\u09C7\\u099F, \\u09A2\\u09BE\\u0995\\u09BE"},' +
+      '{ll:[23.7461,90.3742],ic:gi,t:"<b>BADC</b><br>\\u09AC\\u09BE\\u0982\\u09B2\\u09BE\\u09A6\\u09C7\\u09B6 \\u0995\\u09C3\\u09B7\\u09BF \\u0989\\u09A8\\u09CD\\u09A8\\u09DF\\u09A8 \\u0995\\u09B0\\u09CD\\u09AA\\u09CB\\u09B0\\u09C7\\u09B6\\u09A8<br>\\u09A2\\u09BE\\u0995\\u09BE"},' +
+      '{ll:[23.7808,90.3650],ic:bi,t:"<b>SRDI</b><br>\\u09AE\\u09C3\\u09A4\\u09CD\\u09A4\\u09BF\\u0995\\u09BE \\u09B8\\u09AE\\u09CD\\u09AA\\u09A6 \\u0989\\u09A8\\u09CD\\u09A8\\u09DF\\u09A8 \\u0987\\u09A8\\u09B8\\u09CD\\u099F\\u09BF\\u099F\\u09BF\\u0989\\u099F<br>\\u09A2\\u09BE\\u0995\\u09BE"},' +
+      '{ll:[23.7280,90.3938],ic:gi,t:"<b>\\u0995\\u09C3\\u09B7\\u09BF \\u09AE\\u09A8\\u09CD\\u09A4\\u09CD\\u09B0\\u09A3\\u09BE\\u09B2\\u09DF</b><br>Ministry of Agriculture<br>\\u09A2\\u09BE\\u0995\\u09BE"},' +
+      '{ll:[23.7450,90.3960],ic:yi,t:"<b>DAM</b><br>\\u0995\\u09C3\\u09B7\\u09BF \\u09AC\\u09BF\\u09AA\\u09A3\\u09A8 \\u0985\\u09A7\\u09BF\\u09A6\\u09AA\\u09CD\\u09A4\\u09B0<br>\\u09AC\\u09BE\\u099C\\u09BE\\u09B0 \\u09AE\\u09C2\\u09B2\\u09CD\\u09AF \\u09A4\\u09A5\\u09CD\\u09AF \\u0995\\u09C7\\u09A8\\u09CD\\u09A6\\u09CD\\u09B0"},' +
+    '];' +
+    'markers.forEach(function(m){L.marker(m.ll,{icon:m.ic}).addTo(map).bindPopup(m.t);});' +
+    userMarker +
+    'L.control.scale({imperial:false}).addTo(map);' +
+    'var userMk=null;' +
+    'function getMyLocation(){' +
+      'var btn=document.getElementById("loc-btn");' +
+      'var status=document.getElementById("loc-status");' +
+      'btn.textContent="\\u23f3 \\u0996\\u09C1\\u0981\\u099C\\u099B\\u09BF...";' +
+      'status.style.display="block";status.style.color="#1b8a3e";' +
+      'status.textContent="\\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8 \\u09A8\\u09BF\\u09B0\\u09CD\\u09A7\\u09BE\\u09B0\\u09A3 \\u09B9\\u099A\\u09CD\\u099B\\u09C7...";' +
+      'if(!navigator.geolocation){' +
+        'status.textContent="GPS \\u09B8\\u09AE\\u09B0\\u09CD\\u09A5\\u09BF\\u09A4 \\u09A8\\u09DF";status.style.color="#e53e3e";' +
+        'btn.textContent="\\ud83d\\udccd \\u0986\\u09AE\\u09BE\\u09B0 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8";return;' +
+      '}' +
+      'navigator.geolocation.getCurrentPosition(function(pos){' +
+        'var lt=pos.coords.latitude,ln=pos.coords.longitude;' +
+        'if(userMk)map.removeLayer(userMk);' +
+        'userMk=L.circleMarker([lt,ln],{radius:10,color:"#e53e3e",fillColor:"#e53e3e",fillOpacity:.9,weight:3}).addTo(map);' +
+        'userMk.bindPopup("<b style=\\"color:#e53e3e\\">\\ud83d\\udccd \\u0986\\u09AA\\u09A8\\u09BE\\u09B0 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8</b><br>"+lt.toFixed(5)+", "+ln.toFixed(5)).openPopup();' +
+        'map.flyTo([lt,ln],14,{duration:1.2});' +
+        'btn.textContent="\\u2705 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8 \\u09AA\\u09BE\\u0993\\u09DF\\u09BE \\u0997\\u09C7\\u099B\\u09C7";' +
+        'status.textContent="\\u2705 \\u09B8\\u09A0\\u09BF\\u0995 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8 \\u09AA\\u09BE\\u0993\\u09DF\\u09BE \\u0997\\u09C7\\u099B\\u09C7";' +
+        'setTimeout(function(){status.style.display="none";btn.textContent="\\ud83d\\udccd \\u0986\\u09AE\\u09BE\\u09B0 \\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8";},3000);' +
+      '},function(err){' +
+        'var msg=err.code===1?"\\u0985\\u09A8\\u09C1\\u09AE\\u09A4\\u09BF \\u09A6\\u09BF\\u09A8":"\\u0985\\u09AC\\u09B8\\u09CD\\u09A5\\u09BE\\u09A8 \\u09AA\\u09BE\\u0993\\u09DF\\u09BE \\u09AF\\u09BE\\u09DF\\u09A8\\u09BF";' +
+        'status.textContent="\\u26a0\\ufe0f "+msg;status.style.color="#e53e3e";' +
+        'btn.textContent="\\ud83d\\udccd \\u0986\\u09AC\\u09BE\\u09B0 \\u099A\\u09C7\\u09B7\\u09CD\\u099F\\u09BE \\u0995\\u09B0\\u09C1\\u09A8";' +
+        'setTimeout(function(){status.style.display="none";},4000);' +
+      '},{enableHighAccuracy:true,timeout:10000,maximumAge:0});' +
+    '}' +
+    '<\/script></body></html>';
+  }, [lat, lon, coords, userMarker]);
 
   return (
     <div className={styles.mapCard}>
@@ -291,13 +295,20 @@ export function MapWidget() {
         🗺️ কৃষি মানচিত্র
         <span className={styles.mapBadge}>{coords ? "📍 লাইভ লোকেশন" : "ঢাকা"}</span>
       </div>
-      <iframe
-        srcDoc={mapHtml}
-        className={styles.mapFrame}
-        title="কৃষি মানচিত্র"
-        sandbox="allow-scripts allow-same-origin allow-popups"
-        allow="geolocation; camera"
-      />
+      {mapErr ? (
+        <div className={styles.mapFrame} style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#9ca3af",fontSize:12}}>
+          ⚠️ মানচিত্র লোড হয়নি
+        </div>
+      ) : (
+        <iframe
+          srcDoc={mapHtml}
+          className={styles.mapFrame}
+          title="কৃষি মানচিত্র"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+          allow="geolocation; camera"
+          onError={() => setMapErr(true)}
+        />
+      )}
       <div className={styles.mapLegend}>
         <span>🟢 DAE · BARC · BADC · MoA</span>
         <span>🔵 BRRI · BARI · SRDI</span>

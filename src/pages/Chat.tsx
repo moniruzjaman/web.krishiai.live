@@ -17,6 +17,7 @@ import {
   streamAnalysis, getFarmerProfile, buildContext,
   startVoiceInput, type ConversationMessage,
 } from "@/services/aiService";
+import { saveChatMessage, getChatHistory, clearChatHistory } from "@/services/offlineStorage";
 import styles from "./Chat.module.css";
 
 // ── Suggestion categories ─────────────────────────────────────────────────────
@@ -87,6 +88,18 @@ export default function Chat() {
   const stopVoice   = useRef<(() => void) | null>(null);
   const farmer      = getFarmerProfile();
   const ctx         = buildContext(farmer);
+  const initRef     = useRef(false);
+
+  // Load chat history from IndexedDB on mount
+  useEffect(() => {
+    getChatHistory().then(saved => {
+      setMessages(saved.map(m => ({
+        role: m.role, text: m.text,
+        model: m.model, timestamp: new Date(m.timestamp),
+      })));
+      initRef.current = true;
+    });
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -137,6 +150,11 @@ export default function Chat() {
         ? { ...m, text: result.text, model: modelUsed, streaming: false }
         : m
     ));
+
+    // Persist to IndexedDB
+    saveChatMessage({ role: "user", text: q });
+    saveChatMessage({ role: "assistant", text: result.text, model: modelUsed });
+
     setLoading(false);
   }, [messages, loading, ctx]);
 
@@ -184,7 +202,7 @@ export default function Chat() {
         </div>
         {messages.length > 0 && (
           <button
-            onClick={() => setMessages([])}
+            onClick={() => { setMessages([]); clearChatHistory(); }}
             className={styles.clearBtn}
             title="কথোপকথন মুছুন"
           >

@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { analyzeImage, checkAPIHealth, type AIResponse } from "@/services/aiService";
+import { saveScan as dbSaveScan, getScanHistory } from "@/services/offlineStorage";
 import styles from "./Analyzer.module.css";
 
 // ── Diagnosis result parsed from AI text ──────────────────────────────────────
@@ -103,8 +104,6 @@ function parseTextDiagnosis(text: string): Diagnosis {
 
 // ── Scan history ──────────────────────────────────────────────────────────────
 interface ScanRecord { id: string; disease: string; crop: string; severity: string; ts: string; }
-const getHistory = (): ScanRecord[] => { try { return JSON.parse(localStorage.getItem("krishi_scans") || "[]"); } catch { return []; } };
-const saveHistory = (r: ScanRecord) => localStorage.setItem("krishi_scans", JSON.stringify([r, ...getHistory()].slice(0, 5)));
 
 // ── Diagnosis prompt sent to AI ───────────────────────────────────────────────
 const DIAGNOSE_PROMPT = `এই ফসলের ছবি বিশ্লেষণ করুন। BRRI/BARI/DAE নির্দেশিকা অনুযায়ী নিচের JSON ফরম্যাটে উত্তর দিন:
@@ -131,11 +130,24 @@ export default function Analyzer() {
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
-  const [history,   setHistory]   = useState<ScanRecord[]>(getHistory);
+  const [history,   setHistory]   = useState<ScanRecord[]>([]);
   const [tab,       setTab]       = useState<"scan" | "history">("scan");
   const [compressing, setCompressing] = useState(false);
 
   const [apiOk, setApiOk] = useState<boolean | null>(null);
+
+  // Load scan history from IndexedDB on mount
+  useEffect(() => {
+    getScanHistory(5).then(scans => {
+      setHistory(scans.map(s => ({
+        id: (s.id ?? Date.now()).toString(),
+        disease: s.disease,
+        crop: s.crop,
+        severity: s.severity,
+        ts: s.ts,
+      })));
+    });
+  }, []);
 
   // Check API health on mount
   useEffect(() => {
@@ -193,16 +205,20 @@ export default function Analyzer() {
     const parsed = parseDiagnosis(res.text) ?? parseTextDiagnosis(res.text);
     setDiagnosis(parsed);
 
-    // Save to history
-    const record: ScanRecord = {
-      id:       Date.now().toString(),
+    // Save to IndexedDB history
+    const record = {
       disease:  parsed.disease,
       crop:     parsed.crop,
       severity: parsed.severity,
       ts:       new Date().toLocaleString("bn-BD"),
     };
-    saveHistory(record);
-    setHistory(getHistory());
+    await dbSaveScan(record);
+    const updated = await getScanHistory(5);
+    setHistory(updated.map(s => ({
+      id: (s.id ?? Date.now()).toString(),
+      disease: s.disease, crop: s.crop,
+      severity: s.severity, ts: s.ts,
+    })));
     setLoading(false);
   };
 

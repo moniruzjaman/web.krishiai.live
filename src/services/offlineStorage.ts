@@ -67,15 +67,15 @@ function getDb() {
 }
 
 // Chat
-export async function saveChatMessage(msg: Omit<ChatMessage, "id">): Promise<IDBValidKey> {
+export async function saveChatMessage(msg: Omit<ChatMessage, "id" | "timestamp">): Promise<IDBValidKey> {
   const db = await getDb();
   return db.add("chat", { ...msg, timestamp: Date.now() });
 }
 
 export async function getChatHistory(limit = 50): Promise<ChatMessage[]> {
   const db = await getDb();
-  const index = db.transaction("chat").store.index("timestamp");
-  return index.getAll(null, limit);
+  const all = await db.getAll("chat");
+  return all.sort((a, b) => a.timestamp - b.timestamp).slice(-limit);
 }
 
 export async function clearChatHistory(): Promise<void> {
@@ -84,15 +84,15 @@ export async function clearChatHistory(): Promise<void> {
 }
 
 // Scans
-export async function saveScan(scan: Omit<ScanRecord, "id">): Promise<IDBValidKey> {
+export async function saveScan(scan: Omit<ScanRecord, "id" | "timestamp">): Promise<IDBValidKey> {
   const db = await getDb();
   return db.add("scans", { ...scan, timestamp: Date.now() });
 }
 
 export async function getScanHistory(limit = 20): Promise<ScanRecord[]> {
   const db = await getDb();
-  const index = db.transaction("scans").store.index("timestamp");
-  return index.getAll(null, limit);
+  const all = await db.getAll("scans");
+  return all.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
 }
 
 // Profile
