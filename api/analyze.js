@@ -1,5 +1,5 @@
 /**
- * api/analyze.js  —  v6
+ * api/analyze.js  —  v7
  *
  * AI cascade (March 2026):
  *   1. gemini-2.0-flash: via Google AI Studio (GEMINI_API_KEY) — primary
@@ -18,6 +18,66 @@
  */
 
 export const config = { maxDuration: 60 };
+
+// ── Metrics & rate limiting ──────────────────────────────────────────────────
+const START_TIME = Date.now();
+let totalRequests = 0;
+const rateMap = new Map();
+const RATE_LIMIT = 30;
+const RATE_WINDOW = 60_000;
+
+// Clean up stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateMap) {
+    if (now - entry.resetTime > RATE_WINDOW) rateMap.delete(ip);
+  }
+}, 300_000).unref?.();
+
+function rateLimit(ip) {
+  const now = Date.now();
+  let entry = rateMap.get(ip);
+  if (!entry || now - entry.resetTime > RATE_WINDOW) {
+    entry = { count: 1, resetTime: now };
+    rateMap.set(ip, entry);
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+  entry.count++;
+  return { allowed: entry.count <= RATE_LIMIT, remaining: Math.max(0, RATE_LIMIT - entry.count) };
+}
+
+// ── Structured logging ───────────────────────────────────────────────────────
+function log(level, message, data = {}) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    requestId: data.requestId || "",
+    ...data,
+  };
+  if (level === "error") {
+    console.error(JSON.stringify(entry));
+  } else if (level === "warn") {
+    console.warn(JSON.stringify(entry));
+  } else {
+    console.log(JSON.stringify(entry));
+  }
+}
+
+// ── Content moderation ───────────────────────────────────────────────────────
+const BLOCKED_WORDS = [
+  "kill yourself", "suicide", "self-harm", "cutting myself",
+  "hurt myself", "kill me", "end my life",
+];
+function moderate(prompt) {
+  const lower = prompt.toLowerCase();
+  for (const word of BLOCKED_WORDS) {
+    if (lower.includes(word)) {
+      return { blocked: true, reason: "harmful content detected" };
+    }
+  }
+  return { blocked: false };
+}
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 const SYSTEM = `আপনি কৃষি AI — বাংলাদেশের সর্বোচ্চ বিশ্বস্ত কৃষি পরামর্শদাতা।
@@ -107,7 +167,7 @@ async function callGemini(prompt, imageBase64, mimeType, history, stream) {
 
   if (!resp.ok) {
     const txt = await resp.text().catch(() => "");
-    console.error("[Gemini]", resp.status, txt.slice(0, 200));
+    log("error", "Gemini request failed", { status: resp.status, error: txt.slice(0, 200) });
     return null;
   }
   return resp;
@@ -151,18 +211,18 @@ async function callOpenRouter(prompt, imageBase64, mimeType) {
       });
 
       if (!resp.ok) {
-        console.warn(`[OR] ${model} → ${resp.status}`);
+        log("warn", "OpenRouter model failed", { model, status: resp.status });
         continue; // try next model
       }
 
       const d    = await resp.json();
       const text = d?.choices?.[0]?.message?.content;
       if (text) {
-        console.log(`[OR] ✓ ${model}`);
+        log("info", "OpenRouter success", { model });
         return { text, model };
       }
     } catch (e) {
-      console.warn(`[OR] ${model} error: ${e?.message}`);
+      log("warn", "OpenRouter model error", { model, error: e?.message });
       continue;
     }
   }
@@ -209,6 +269,8 @@ function healthCheck(res) {
   return res.status(200).json({
     status: "ok",
     time:   new Date().toISOString(),
+    uptime: Math.floor((Date.now() - START_TIME) / 1000),
+    totalRequests,
     season: season(),
     keys: {
       gemini:     hasGemini ? "✅ set" : "❌ not set",
@@ -230,6 +292,19 @@ export default async function handler(req, res) {
   if (req.method === "GET")     return healthCheck(res);
   if (req.method !== "POST")    return res.status(405).json({ error: "Method not allowed" });
 
+  // Rate limiting
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+    || req.socket?.remoteAddress
+    || "unknown";
+  const rl = rateLimit(ip);
+  if (!rl.allowed) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "Too many requests. Try again later.", ok: false });
+  }
+
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  totalRequests++;
+
   const {
     prompt      = "",
     imageBase64,
@@ -238,7 +313,23 @@ export default async function handler(req, res) {
     stream      = false,
   } = req.body || {};
 
+  // Validate prompt
   if (!prompt) return res.status(400).json({ error: "prompt required", ok: false });
+  if (prompt.length > 2000) {
+    return res.status(400).json({ error: "prompt too long (max 2000 chars)", ok: false });
+  }
+
+  // Validate image size (base64 length ~ 4/3 of byte size)
+  if (imageBase64 && imageBase64.length > 7_000_000) {
+    return res.status(400).json({ error: "image too large (max 5MB)", ok: false });
+  }
+
+  // Content moderation
+  const mod = moderate(prompt);
+  if (mod.blocked) {
+    log("warn", "Content moderation blocked", { requestId, reason: mod.reason });
+    return res.status(400).json({ error: "Request blocked", reason: mod.reason, ok: false });
+  }
 
   const hasImage = !!(imageBase64 && imageBase64.length > 50);
 
@@ -271,7 +362,7 @@ export default async function handler(req, res) {
         }
       }
     } catch (e) {
-      console.error("[stream]", e?.message);
+      log("error", "Stream fallback to OpenRouter", { requestId, error: e?.message });
       const or = await callOpenRouter(prompt, imageBase64, mimeType).catch(() => null);
       if (or?.text) send(or.text, or.model);
       else          send(ruleBased(prompt, hasImage), "rule-based");
@@ -291,13 +382,13 @@ export default async function handler(req, res) {
       const text = d?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) return res.status(200).json({ text, model: "gemini-2.0-flash", ok: true });
     }
-  } catch (e) { console.error("[gemini]", e?.message); }
+  } catch (e) { log("error", "Gemini error", { requestId, error: e?.message }); }
 
   // 2. OpenRouter — free vision cascade
   try {
     const or = await callOpenRouter(prompt, imageBase64, mimeType);
     if (or?.text) return res.status(200).json({ text: or.text, model: or.model, ok: true });
-  } catch (e) { console.error("[openrouter]", e?.message); }
+  } catch (e) { log("error", "OpenRouter error", { requestId, error: e?.message }); }
 
   // 3. Rule-based
   return res.status(200).json({ text: ruleBased(prompt, hasImage), model: "rule-based", ok: true });

@@ -1,9 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [sentryVitePlugin({
+          org: "krishi-ai",
+          project: "web",
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+        })]
+      : []),
+    ...(process.env.ANALYZE
+      ? [visualizer({ open: true, gzipSize: true })]
+      : []),
+  ],
 
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
@@ -12,19 +26,18 @@ export default defineConfig({
   build: {
     outDir:     "dist",
     emptyOutDir: true,
-    sourcemap:  false,
-    // Raise chunk size warning threshold (we accept ~300KB max)
+    sourcemap:  true,
+    cssMinify:  true,
+    reportCompressedSize: true,
     chunkSizeWarningLimit: 300,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core → vendor chunk (cached forever)
           if (id.includes("node_modules/react") ||
               id.includes("node_modules/react-dom") ||
               id.includes("node_modules/scheduler")) {
             return "vendor";
           }
-          // React Router → separate chunk
           if (id.includes("react-router")) return "router";
         },
       },

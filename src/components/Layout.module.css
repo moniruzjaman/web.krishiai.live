@@ -28,3 +28,11 @@
 .bnCenterBtn svg { stroke: #fff; }
 .bnCenterLbl { font-size: 9px; color: #1b8a3e; font-weight: 700; margin-top: 4px; }
 .bnCenter.bnCenterActive .bnCenterBtn { box-shadow: 0 0 0 3px #1b8a3e; }
+
+/* Sidebar */
+.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #fff; z-index: 100; box-shadow: 2px 0 20px rgba(0,0,0,.1); padding: 20px 16px; transform: translateX(-100%); transition: transform .25s ease; }
+.sidebar.open { transform: translateX(0); }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 99; }
+.sidebarLink { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: #374151; text-decoration: none; transition: background .15s; }
+.sidebarLink:hover { background: #f0fdf4; }
+.sidebarLinkActive { background: #f0fdf4; color: #1b8a3e; font-weight: 700; }

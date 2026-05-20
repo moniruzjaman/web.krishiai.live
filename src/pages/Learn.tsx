@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { analyzeText, buildAgriPrompt } from "@/services/aiService";
 
 const GAME_URL = "https://game.krishiai.live/";
@@ -51,6 +52,7 @@ const COURSES = [
 type Tab = "game" | "cabi" | "quiz" | "courses";
 
 export default function Learn() {
+  const { t } = useTranslation();
   const [tab,         setTab]         = useState<Tab>("game");
   const [xp,          setXp]          = useState(getXP());
   const [embedState,  setEmbedState]  = useState<"loading"|"ok"|"fail">("loading");
@@ -125,11 +127,11 @@ export default function Learn() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,.5)", fontWeight:700, letterSpacing:".1em", marginBottom:4 }}>LEARNING CENTER</div>
-            <h1 style={{ fontSize:20, fontWeight:700, color:"#fff" }}>কৃষি শিখন কেন্দ্র</h1>
+            <h1 style={{ fontSize:20, fontWeight:700, color:"#fff" }}>{t("learn.title")}</h1>
           </div>
           <div style={{ textAlign:"right" }}>
             <div className="xp-badge">⭐ {xp} XP</div>
-            <div style={{ fontSize:10, color:"rgba(255,255,255,.5)", marginTop:4 }}>লেভেল {level}</div>
+            <div style={{ fontSize:10, color:"rgba(255,255,255,.5)", marginTop:4 }}>{t("learn.level")} {level}</div>
           </div>
         </div>
         <div className="progress-bar">
@@ -141,10 +143,10 @@ export default function Learn() {
 
         {/* ── Tabs ─────────────────────────────────────────────── */}
         <div style={{ display:"flex", background:"#e5e7eb", borderRadius:30, padding:3, gap:2, marginBottom:20 }}>
-          <button style={tabStyle("game")}    onClick={() => setTab("game")}>🎮 গেম</button>
-          <button style={tabStyle("cabi")}    onClick={() => setTab("cabi")}>🔬 CABI</button>
-          <button style={tabStyle("quiz")}    onClick={() => setTab("quiz")}>🧠 কুইজ</button>
-          <button style={tabStyle("courses")} onClick={() => setTab("courses")}>📚 কোর্স</button>
+          <button style={tabStyle("game")}    onClick={() => setTab("game")} aria-label={t("learn.tab.game")}>🎮 {t("learn.tab.game")}</button>
+          <button style={tabStyle("cabi")}    onClick={() => setTab("cabi")} aria-label={t("learn.tab.cabi")}>🔬 {t("learn.tab.cabi")}</button>
+          <button style={tabStyle("quiz")}    onClick={() => setTab("quiz")} aria-label={t("learn.tab.quiz")}>🧠 {t("learn.tab.quiz")}</button>
+          <button style={tabStyle("courses")} onClick={() => setTab("courses")} aria-label={t("learn.tab.courses")}>📚 {t("learn.tab.courses")}</button>
         </div>
 
         {/* ═══════════════════════════════════════════════════════
@@ -157,7 +159,7 @@ export default function Learn() {
             {embedState === "loading" && (
               <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(76,29,149,.08)", border:".5px solid rgba(76,29,149,.2)", borderRadius:10, padding:"9px 14px", marginBottom:12, fontSize:12, color:"#4c1d95", fontWeight:600 }}>
                 <span className="spin" style={{ display:"inline-block" }}>⏳</span>
-                ফসল ফতোয়া গেম লোড হচ্ছে…
+                {t("learn.game_loading")}
               </div>
             )}
             {embedState === "ok" && (

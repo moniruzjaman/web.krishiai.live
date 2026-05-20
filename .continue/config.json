@@ -1,0 +1,9 @@
+{
+  "models": [
+    {
+      "title": "Qwen3 4B (Ollama)",
+      "provider": "ollama",
+      "model": "qwen3:4b"
+    }
+  ]
+}

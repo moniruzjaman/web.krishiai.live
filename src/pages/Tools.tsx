@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import SubAppLink from "@/components/SubAppLink";
 
@@ -19,17 +20,18 @@ const ECOSYSTEM: { url:string; icon:string; title:string; badge:string; badgeCol
 ];
 
 export default function Tools() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
       <div style={{background:"linear-gradient(135deg,#1b4332,#2d6a4f)",padding:"20px 16px 28px",position:"relative"}}>
         <div style={{position:"absolute",bottom:-1,left:0,right:0,height:20,background:"var(--bg)",borderRadius:"20px 20px 0 0"}}/>
         <div style={{fontSize:11,color:"rgba(255,255,255,.5)",letterSpacing:".1em",fontWeight:700,marginBottom:8}}>KRISHI AI</div>
-        <h1 style={{fontSize:22,fontWeight:700,color:"#fff",marginBottom:4}}>কৃষি টুলস</h1>
-        <p style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>AI-চালিত কৃষি সরঞ্জাম সমূহ</p>
+        <h1 style={{fontSize:22,fontWeight:700,color:"#fff",marginBottom:4}}>{t("tools.title")}</h1>
+        <p style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>{t("tools.subtitle")}</p>
       </div>
 
-      <div style={{padding:"20px 16px 100px"}}>
+      <div role="region" aria-label={t("tools.title")} style={{padding:"20px 16px 100px"}}>
         {/* Tool cards */}
         <div style={{display:"grid",gridTemplateColumns:"1fr",gap:12,marginBottom:28}}>
           {TOOLS.map((t,i)=>(
@@ -53,8 +55,8 @@ export default function Tools() {
 
         {/* Ecosystem apps */}
         <div style={{borderTop:".5px solid #e5e7eb",paddingTop:20}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>
-            🔗 Krishiai ইকোসিস্টেম
+          <div style={{fontSize:11,fontWeight:700,color:"var(--dim)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>
+            🔗 {t("tools.ecosystem")}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {ECOSYSTEM.map((a,i)=>(
@@ -63,8 +65,8 @@ export default function Tools() {
                 description={a.desc} mode="redirect" />
             ))}
           </div>
-          <div style={{fontSize:10,color:"#9ca3af",textAlign:"center",marginTop:14,lineHeight:1.6}}>
-            প্রতিটি অ্যাপ স্বাধীনভাবে উন্নত হচ্ছে এবং krishiai.live ইকোসিস্টেমে সংযুক্ত
+          <div style={{fontSize:10,color:"var(--dim)",textAlign:"center",marginTop:14,lineHeight:1.6}}>
+            {t("tools.ecosystem_desc")}
           </div>
         </div>
       </div>

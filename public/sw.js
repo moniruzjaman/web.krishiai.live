@@ -1,38 +1,128 @@
 // Service Worker — Krishi AI
-// Caches the app shell for offline use.
-// Version bump forces cache refresh on redeploy.
-const CACHE   = "krishiai-v1";
-const SHELL   = ["/", "/index.html", "/manifest.json"];
+// Version: 2026.05.20.01
+const CACHE_VERSION = "krishiai-v2";
+const STATIC_CACHE  = "krishiai-static-v2";
+const APP_SHELL = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL))
+    (async () => {
+      const cache = await caches.open(CACHE_VERSION);
+      await cache.addAll(APP_SHELL);
+      const staticCache = await caches.open(STATIC_CACHE);
+      await staticCache.addAll(APP_SHELL);
+    })()
   );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((k) => k !== CACHE_VERSION && k !== STATIC_CACHE)
+            .map((k) => caches.delete(k))
+      );
+      await self.clients.claim();
+    })()
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {
-  // Only cache GET requests; let API calls pass through
-  if (e.request.method !== "GET") return;
-  if (e.request.url.includes("/api/"))  return;
+  const { request } = e;
+  const url = new URL(request.url);
 
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fresh = fetch(e.request).then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, clone));
-        return res;
-      });
-      return cached || fresh;
-    })
-  );
+  // Network-only for API calls
+  if (url.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // Only handle GET
+  if (request.method !== "GET") return;
+
+  // Stale-while-revalidate for navigation
+  if (request.mode === "navigate") {
+    e.respondWith(
+      (async () => {
+        const cached = await caches.match(request);
+        const fetchPromise = fetch(request).then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then((c) => c.put(request, clone));
+          return res;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })()
+    );
+    return;
+  }
+
+  // Cache-first for static assets (JS, CSS, fonts, images)
+  if (
+    url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico|avif)(\?.*)?$/i)
+  ) {
+    e.respondWith(
+      (async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        try {
+          const res = await fetch(request);
+          const clone = res.clone();
+          caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+          return res;
+        } catch {
+          return new Response("", { status: 408 });
+        }
+      })()
+    );
+    return;
+  }
 });
+
+// Background sync — queue POST /api/ requests for replay
+self.addEventListener("sync", (e) => {
+  if (e.tag === "sync-api-post") {
+    e.waitUntil(replayQueue());
+  }
+});
+
+async function replayQueue() {
+  const cache = await caches.open(CACHE_VERSION);
+  const requests = await cache.matchAll("/__queue__");
+  for (const req of requests) {
+    try {
+      await fetch(req);
+    } catch {
+      // keep it queued
+    }
+  }
+}
+
+// Push notifications
+self.addEventListener("push", (e) => {
+  let data = { title: "কৃষি AI", body: "", icon: "/icon-192.png" };
+  try {
+    if (e.data) data = { ...data, ...e.data.json() };
+  } catch {}
+  self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: data.icon,
+    badge: "/icon-192.png",
+    data: data.data || {},
+  });
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || "/";
+  e.waitUntil(clients.openWindow(url));
+});
+
+// Placeholder for Workbox injection
+// self.__WB_MANIFEST

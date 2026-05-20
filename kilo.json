@@ -1,0 +1,24 @@
+{
+  "name": "krishiai",
+  "version": "1.0.0",
+  "description": "Krishi AI — Bangladesh Agriculture Advisory Platform",
+  "agents": {
+    "default": "generalist",
+    "list": [
+      "generalist",
+      "frontend",
+      "apibackend",
+      "devops",
+      "bengali-content"
+    ]
+  },
+  "commands": {
+    "directory": ".kilo/command",
+    "autoLoad": true
+  },
+  "agentsDirectory": ".kilo/agent",
+  "skills": {
+    "enabled": ["kilo-config"],
+    "directory": ".kilo/skills"
+  }
+}

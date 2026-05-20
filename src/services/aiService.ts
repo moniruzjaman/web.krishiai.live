@@ -211,22 +211,44 @@ export function getFarmerProfile(): FarmerContext {
   };
 }
 
-// ── Internal fetch ────────────────────────────────────────────────────────────
-async function callAPI(body: Record<string, unknown>): Promise<AIResponse> {
-  try {
-    const res = await fetch(ENDPOINT, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    console.error("[aiService]", err);
-    return {
-      text:  "সংযোগ সমস্যা। DAE হটলাইন 16123 এ কল করুন।",
-      model: "offline",
-      ok:    false,
-    };
+// ── Internal fetch with retry ─────────────────────────────────────────────────
+async function callAPI(body: Record<string, unknown>, retries = 2): Promise<AIResponse> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error(`[aiService] attempt ${attempt + 1}/${retries + 1} failed`, err);
+      if (attempt < retries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      else return { text: "সংযোগ সমস্যা। DAE হটলাইন 16123 এ কল করুন।", model: "offline", ok: false };
+    }
   }
+  return { text: "সংযোগ সমস্যা। DAE হটলাইন 16123 এ কল করুন।", model: "offline", ok: false };
 }
+
+// ── TTS ────────────────────────────────────────────────────────────────────────
+export function speakText(text: string, lang = "bn-BD"): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!window.speechSynthesis) { reject(new Error("TTS not supported")); return; }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.onend = () => resolve();
+    utterance.onerror = (e) => reject(e);
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+export function stopSpeech(): void {
+  window.speechSynthesis?.cancel();
+}
+
+// ── Online check ───────────────────────────────────────────────────────────────
+export function isOnline(): boolean { return navigator.onLine; }

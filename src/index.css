@@ -168,3 +168,13 @@ input, textarea, select { font-family: inherit; }
   padding: 3px 10px; border-radius: 20px; border: .5px solid rgba(255,255,255,.3);
   color: rgba(255,255,255,.9); background: rgba(255,255,255,.12);
 }
+
+/* ── Dark mode ─────────────────────────────────────── */
+html.dark { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #f1f5f9; --muted: #94a3b8; --dim: #64748b; }
+html.dark body { background: var(--bg); color: var(--text); }
+html.dark .glass { background: rgba(30,41,59,.85); border-color: rgba(255,255,255,.08); }
+html.dark .skeleton { background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
