@@ -6,7 +6,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { analyzeImage, checkAPIHealth, type AIResponse } from "@/services/aiService";
-import { saveScan as dbSaveScan, getScanHistory } from "@/services/offlineStorage";
+import { saveScan as dbSaveScan, getScanHistory, enqueueRequest } from "@/services/offlineStorage";
 import styles from "./Analyzer.module.css";
 
 // ── Diagnosis result parsed from AI text ──────────────────────────────────────
@@ -197,6 +197,14 @@ export default function Analyzer() {
 
     if (!res.ok && res.model === "offline") {
       setError("সার্ভার সংযোগ সমস্যা। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা DAE হটলাইন 16123 এ কল করুন।");
+      if (!navigator.onLine) {
+        enqueueRequest({
+          url: "/api/analyze",
+          method: "POST",
+          body: JSON.stringify({ prompt: DIAGNOSE_PROMPT, imageBase64: image?.split(",")[1], mimeType: mime }),
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       setLoading(false);
       return;
     }

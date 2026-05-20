@@ -17,7 +17,7 @@ import {
   streamAnalysis, getFarmerProfile, buildContext,
   startVoiceInput, type ConversationMessage,
 } from "@/services/aiService";
-import { saveChatMessage, getChatHistory, clearChatHistory } from "@/services/offlineStorage";
+import { saveChatMessage, getChatHistory, clearChatHistory, enqueueRequest } from "@/services/offlineStorage";
 import styles from "./Chat.module.css";
 
 // ── Suggestion categories ─────────────────────────────────────────────────────
@@ -154,6 +154,16 @@ export default function Chat() {
     // Persist to IndexedDB
     saveChatMessage({ role: "user", text: q });
     saveChatMessage({ role: "assistant", text: result.text, model: modelUsed });
+
+    // Offline: queue the request for retry when back online
+    if (!result.ok && !navigator.onLine) {
+      enqueueRequest({
+        url: "/api/analyze",
+        method: "POST",
+        body: JSON.stringify({ prompt: q, history, context: ctx, mode: "chat" }),
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     setLoading(false);
   }, [messages, loading, ctx]);

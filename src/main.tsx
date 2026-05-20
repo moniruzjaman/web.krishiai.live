@@ -12,12 +12,22 @@ Sentry.init({
   environment: import.meta.env.MODE,
 });
 
-// Register service worker for offline PWA support
+// ── PWA: Register service worker ──────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
+
+// ── Offline queue: drain pending requests when back online ─────────────────────
+import { processRequestQueue } from "@/services/offlineStorage";
+const drainQueue = () => { processRequestQueue().catch(() => {}); };
+window.addEventListener("online", drainQueue);
+
+// Listen for SW sync signal (background-sync event relayed from service worker)
+navigator.serviceWorker?.addEventListener("message", (e) => {
+  if (e.data?.type === "process-queue") drainQueue();
+});
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

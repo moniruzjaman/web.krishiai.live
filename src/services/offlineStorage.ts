@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase, type DBSchema } from "idb";
 
 const DB_NAME = "krishi-ai";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 interface ChatMessage {
   id?: number;
@@ -26,6 +26,16 @@ interface ProfileRecord {
   value: string;
 }
 
+interface QueuedRequest {
+  id?: number;
+  url: string;
+  method: string;
+  body: string;
+  headers: Record<string, string>;
+  timestamp: number;
+  retries: number;
+}
+
 interface KrishiDB extends DBSchema {
   chat: {
     key: number;
@@ -40,6 +50,11 @@ interface KrishiDB extends DBSchema {
   profile: {
     key: string;
     value: ProfileRecord;
+  };
+  requestQueue: {
+    key: number;
+    value: QueuedRequest;
+    indexes: { timestamp: number };
   };
 }
 
@@ -59,6 +74,10 @@ function getDb() {
         }
         if (!db.objectStoreNames.contains("profile")) {
           db.createObjectStore("profile", { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains("requestQueue")) {
+          const queueStore = db.createObjectStore("requestQueue", { keyPath: "id", autoIncrement: true });
+          queueStore.createIndex("timestamp", "timestamp");
         }
       },
     });
@@ -105,4 +124,51 @@ export async function getProfile(key: string): Promise<string | undefined> {
   const db = await getDb();
   const result = await db.get("profile", key);
   return result?.value;
+}
+
+// ── Offline Request Queue ────────────────────────────────────────────────────────
+export async function enqueueRequest(req: Omit<QueuedRequest, "id" | "timestamp" | "retries">): Promise<void> {
+  const db = await getDb();
+  await db.add("requestQueue", { ...req, timestamp: Date.now(), retries: 0 });
+}
+
+export async function getPendingRequests(limit = 50): Promise<QueuedRequest[]> {
+  const db = await getDb();
+  const all = await db.getAll("requestQueue");
+  return all.sort((a, b) => a.timestamp - b.timestamp).slice(0, limit);
+}
+
+export async function removeQueuedRequest(id: number): Promise<void> {
+  const db = await getDb();
+  await db.delete("requestQueue", id);
+}
+
+export async function incrementQueuedRetry(id: number): Promise<void> {
+  const db = await getDb();
+  const req = await db.get("requestQueue", id);
+  if (req) {
+    req.retries += 1;
+    await db.put("requestQueue", req);
+  }
+}
+
+export async function processRequestQueue(): Promise<{ processed: number; failed: number }> {
+  const pending = await getPendingRequests();
+  let processed = 0;
+  let failed = 0;
+  for (const req of pending) {
+    if (req.retries >= 5) { await removeQueuedRequest(req.id!); failed++; continue; }
+    try {
+      const headers: Record<string, string> =
+        typeof req.headers === "string" ? JSON.parse(req.headers as string) : req.headers;
+      const res = await fetch(req.url, {
+        method: req.method,
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: req.body,
+      });
+      if (res.ok) { await removeQueuedRequest(req.id!); processed++; }
+      else { await incrementQueuedRetry(req.id!); failed++; }
+    } catch { await incrementQueuedRetry(req.id!); failed++; }
+  }
+  return { processed, failed };
 }

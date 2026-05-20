@@ -85,24 +85,23 @@ self.addEventListener("fetch", (e) => {
   }
 });
 
-// Background sync — queue POST /api/ requests for replay
+// Background sync — notify clients to drain the offline queue
 self.addEventListener("sync", (e) => {
   if (e.tag === "sync-api-post") {
-    e.waitUntil(replayQueue());
+    e.waitUntil(
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: "process-queue" }));
+      })
+    );
   }
 });
 
-async function replayQueue() {
-  const cache = await caches.open(CACHE_VERSION);
-  const requests = await cache.matchAll("/__queue__");
-  for (const req of requests) {
-    try {
-      await fetch(req);
-    } catch {
-      // keep it queued
-    }
+// Listen for queue-processed acknowledgment
+self.addEventListener("message", (e) => {
+  if (e.data?.type === "queue-processed") {
+    // Client confirmed queue drained
   }
-}
+});
 
 // Push notifications
 self.addEventListener("push", (e) => {
