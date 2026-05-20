@@ -119,7 +119,7 @@ export default function Learn() {
   } as React.CSSProperties);
 
   return (
-    <div style={{ background:"var(--bg)", minHeight:"100vh" }}>
+    <div role="region" aria-label={t("learn.title")} style={{ background:"var(--bg)", minHeight:"100vh" }}>
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div style={{ background:"linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95)", padding:"20px 16px 28px", position:"relative" }}>
@@ -173,7 +173,7 @@ export default function Learn() {
             )}
             {embedState === "fail" && (
               <div style={{ background:"#fff7ed", border:".5px solid #fed7aa", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:12, color:"#c2410c" }}>
-                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ ফসল ফতোয়া গেম লোড হয়নি</div>
+                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ {t("learn.game_failed")}</div>
                 <a href={GAME_URL} target="_blank" rel="noopener noreferrer"
                    style={{ color:"var(--green)", fontWeight:700, fontSize:11 }}>
                   সরাসরি খুলুন → {GAME_URL}
@@ -201,9 +201,9 @@ export default function Learn() {
             {embedState === "fail" && (
               <div className="fade-in">
                 <div style={{ background:"linear-gradient(135deg,#4c1d95,#312e81)", borderRadius:12, padding:14, color:"#fff", marginBottom:14, textAlign:"center" }}>
-                  <div style={{ fontSize:13, opacity:.7, marginBottom:4 }}>অফলাইন মোড — CABI গেম খেলুন</div>
+                  <div style={{ fontSize:13, opacity:.7, marginBottom:4 }}>{t("learn.offline_mode")}</div>
                   <button onClick={() => setTab("cabi")} style={{ padding:"9px 22px", background:"rgba(255,255,255,.15)", border:".5px solid rgba(255,255,255,.3)", borderRadius:20, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    🔬 CABI গেম শুরু করুন →
+                    🔬 {t("learn.cabi_start")} →
                   </button>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function Learn() {
             <div style={{ background:"linear-gradient(135deg,#4c1d95,#312e81)", borderRadius:16, padding:14, color:"#fff", marginBottom:14, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div style={{ fontSize:10, opacity:.6, marginBottom:2 }}>CABI DIAGNOSIS · {scenario.protocol}</div>
-                <div style={{ fontSize:15, fontWeight:700 }}>রোগ সনাক্তকরণ গেম</div>
+                <div style={{ fontSize:15, fontWeight:700 }}>{t("learn.cabi_title")}</div>
               </div>
               <div style={{ textAlign:"right" }}>
                 <div style={{ fontSize:10, opacity:.6 }}>{cabiIdx + 1}/{CABI_SCENARIOS.length}</div>
@@ -237,15 +237,15 @@ export default function Learn() {
               <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
                 <div style={{ width:52, height:52, background:"linear-gradient(135deg,#f0fdf4,#dcfce7)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{scenario.icon}</div>
                 <div>
-                  <div style={{ fontSize:11, color:"#9ca3af", fontWeight:600 }}>ফসল</div>
+                  <div style={{ fontSize:11, color:"var(--dim)", fontWeight:600 }}>{t("learn.crop_label")}</div>
                   <div style={{ fontSize:17, fontWeight:700, color:"#111" }}>{scenario.crop}</div>
                 </div>
               </div>
               <div style={{ background:"#f9fafb", borderRadius:10, padding:13, marginBottom:14, border:".5px solid #e5e7eb" }}>
-                <div style={{ fontSize:11, color:"#9ca3af", marginBottom:6, fontWeight:600 }}>🔍 লক্ষণ</div>
+                  <div style={{ fontSize:11, color:"var(--dim)", marginBottom:6, fontWeight:600 }}>🔍 {t("learn.symptoms")}</div>
                 <div style={{ fontSize:13, color:"#111", lineHeight:1.65 }}>{scenario.symptoms}</div>
               </div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#111", marginBottom:10 }}>এটি কোন রোগ/সমস্যা?</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"var(--text)", marginBottom:10 }}>{t("learn.which_disease")}</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                 {scenario.choices.map((ch, i) => {
                   let bg = "#f9fafb", border = ".5px solid #e5e7eb", color = "#111";
@@ -293,13 +293,13 @@ export default function Learn() {
             {qDone ? (
               <div style={{ textAlign:"center", padding:"40px 20px" }}>
                 <div style={{ fontSize:56, marginBottom:16 }}>🏆</div>
-                <div style={{ fontSize:22, fontWeight:700, color:"#111", marginBottom:8 }}>কুইজ সম্পন্ন!</div>
+                <div style={{ fontSize:22, fontWeight:700, color:"var(--text)", marginBottom:8 }}>{t("learn.quiz_complete")}</div>
                 <div style={{ fontSize:16, color:"var(--green)", fontWeight:600, marginBottom:20 }}>
-                  {qScore}/{QUIZ_QUESTIONS.length} সঠিক · +{qScore * 10} XP
+                  {qScore}/{QUIZ_QUESTIONS.length} {t("learn.quiz_score")} +{qScore * 10} XP
                 </div>
                 <button onClick={() => { setQIdx(0); setQAns(null); setQScore(0); setQDone(false); }}
                   style={{ padding:"12px 28px", background:"var(--green)", border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                  আবার খেলুন
+                  {t("learn.play_again")}
                 </button>
               </div>
             ) : (
@@ -363,9 +363,9 @@ export default function Learn() {
                   <div className="progress-fill" style={{ width: i===0 ? "100%" : "0%" }}/>
                 </div>
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-                  <span style={{ fontSize:10, color:"#9ca3af" }}>{i===0?"সক্রিয়":"শুরু হয়নি"}</span>
+                  <span style={{ fontSize:10, color:"var(--dim)" }}>{i===0 ? t("learn.active") : t("learn.not_started")}</span>
                   <span style={{ fontSize:11, fontWeight:700, color:c.color }}>
-                    {i === 0 ? "খেলুন →" : "শীঘ্রই →"}
+                    {i === 0 ? t("learn.play") + " →" : t("learn.soon") + " →"}
                   </span>
                 </div>
               </div>

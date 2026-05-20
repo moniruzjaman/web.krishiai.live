@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const getXP = () => parseInt(localStorage.getItem("krishi_xp")||"0");
 const getProgress = () => JSON.parse(localStorage.getItem("krishi_progress")||"{}");
@@ -20,6 +21,7 @@ const ACTIVITY = [
 ];
 
 export default function Profile() {
+  const { t } = useTranslation();
   const [xp, setXp] = useState(getXP());
   const [progress] = useState(getProgress());
   const [editName, setEditName] = useState(false);
@@ -36,6 +38,7 @@ export default function Profile() {
   const saveName = () => {
     localStorage.setItem("krishi_name", name);
     localStorage.setItem("krishi_district", district);
+    fetch("/api/profile", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name, district}) }).catch(() => {});
     setEditName(false);
   };
 
