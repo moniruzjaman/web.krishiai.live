@@ -90,7 +90,7 @@ export default function InteractiveMap({ center }: { center: [number, number] })
             const tile = e.tile as HTMLImageElement;
             if (tile.getAttribute("data-retry") !== "1") {
               tile.setAttribute("data-retry", "1");
-              setTimeout(() => { tile.src = tile.src; }, 1500);
+              setTimeout(() => { const t = tile.src; tile.src = ""; tile.src = t; }, 1500);
             }
           },
         }}

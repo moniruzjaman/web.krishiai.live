@@ -8,7 +8,7 @@
  *   📚 কোর্স           — course library with progress
  */
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { analyzeText, buildAgriPrompt } from "@/services/aiService";
 
@@ -116,8 +116,7 @@ export default function Learn() {
     fontFamily: "inherit",
     background: tab === id ? "#4c1d95" : "transparent",
     color:      tab === id ? "#fff"    : "#6b7280",
-  } as React.CSSProperties);
-
+  } as CSSProperties);
   return (
     <div role="region" aria-label={t("learn.title")} style={{ background:"var(--bg)", minHeight:"100vh" }}>
 

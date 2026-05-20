@@ -74,7 +74,7 @@ function parseTextDiagnosis(text: string): Diagnosis {
       const lower = line.toLowerCase();
       for (const k of keys) {
         if (lower.includes(k)) {
-          return line.replace(/^[০-৯\d\.\-\*#•:]+\s*/, "").replace(/.*[:：]\s*/, "").trim();
+          return line.replace(/^[০-৯\d.*#•:-]+\s*/, "").replace(/.*[:：]\s*/, "").trim();
         }
       }
     }

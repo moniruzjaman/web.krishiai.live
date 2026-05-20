@@ -1,9 +1,11 @@
+import type { CSSProperties } from "react";
+
 interface Props {
   width?: string;
   height?: string;
   borderRadius?: string;
   count?: number;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 export default function LoadingSkeleton({ width = "100%", height = "16px", borderRadius = "6px", count = 1, style }: Props) {

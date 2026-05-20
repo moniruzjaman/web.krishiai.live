@@ -14,7 +14,7 @@
  *   <SubAppLink url="https://cabi.krishiai.live/" title="CABI Analyzer" mode="embed" />
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, type ReactNode } from "react";
 
 interface Props {
   url:         string;
@@ -25,7 +25,7 @@ interface Props {
   badgeColor?: string;
   mode:        "embed" | "redirect" | "card";
   height?:     number;           // iframe height in px (default 600)
-  fallback?:   React.ReactNode; // rendered when embed fails
+  fallback?:   ReactNode; // rendered when embed fails
 }
 
 export default function SubAppLink({

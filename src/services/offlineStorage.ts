@@ -86,7 +86,7 @@ function getDb() {
 }
 
 // Chat
-export async function saveChatMessage(msg: Omit<ChatMessage, "id" | "timestamp">): Promise<IDBValidKey> {
+export async function saveChatMessage(msg: Omit<ChatMessage, "id" | "timestamp">) {
   const db = await getDb();
   return db.add("chat", { ...msg, timestamp: Date.now() });
 }
@@ -103,7 +103,7 @@ export async function clearChatHistory(): Promise<void> {
 }
 
 // Scans
-export async function saveScan(scan: Omit<ScanRecord, "id" | "timestamp">): Promise<IDBValidKey> {
+export async function saveScan(scan: Omit<ScanRecord, "id" | "timestamp">) {
   const db = await getDb();
   return db.add("scans", { ...scan, timestamp: Date.now() });
 }
