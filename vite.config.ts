@@ -38,11 +38,13 @@ export default defineConfig({
         manualChunks: (id) => {
           if (id.includes("node_modules/react") ||
               id.includes("node_modules/react-dom") ||
-              id.includes("node_modules/scheduler")) {
+              id.includes("node_modules/scheduler") ||
+              id.includes("node_modules/react-leaflet") ||
+              id.includes("node_modules/@react-leaflet") ||
+              id.includes("node_modules/leaflet")) {
             return "vendor";
           }
           if (id.includes("react-router")) return "router";
-          if (id.includes("leaflet")) return "leaflet-lib";
         },
       },
     },
