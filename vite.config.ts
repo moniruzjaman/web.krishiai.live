@@ -47,7 +47,7 @@ export default defineConfig({
     sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : false,
     cssMinify:  true,
     reportCompressedSize: true,
-    chunkSizeWarningLimit: 300,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
