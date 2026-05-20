@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase, type DBSchema } from "idb";
 
 const DB_NAME = "krishi-ai";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface ChatMessage {
   id?: number;
