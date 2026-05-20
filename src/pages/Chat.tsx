@@ -15,7 +15,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   streamAnalysis, getFarmerProfile, buildContext,
-  startVoiceInput, PROMPTS, type ConversationMessage,
+  startVoiceInput, type ConversationMessage,
 } from "@/services/aiService";
 import styles from "./Chat.module.css";
 

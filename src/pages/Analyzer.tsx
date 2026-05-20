@@ -127,7 +127,7 @@ export default function Analyzer() {
   const [thumb,     setThumb]     = useState<string | null>(null);
   const [mime,      setMime]       = useState("image/jpeg");
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
-  const [rawText,   setRawText]   = useState<string>("");
+  const [, setRawText] = useState<string>("");
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
   const [dragOver,  setDragOver]  = useState(false);

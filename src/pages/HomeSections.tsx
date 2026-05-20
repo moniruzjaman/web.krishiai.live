@@ -9,7 +9,7 @@
  *             DAE, BRRI, BARI, BADC, BARC, SRDI, Ministry of Agriculture
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import styles from "./HomeSections.module.css";
 
 // ── helpers ───────────────────────────────────────────────────────────────────

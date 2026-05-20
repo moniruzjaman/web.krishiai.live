@@ -1,4 +1,4 @@
-import { openDB, type IDBPDatabase } from "idb";
+import { openDB, type IDBPDatabase, type DBSchema } from "idb";
 
 const DB_NAME = "krishi-ai";
 const DB_VERSION = 1;
@@ -21,11 +21,33 @@ interface ScanRecord {
   timestamp: number;
 }
 
-let dbPromise: Promise<IDBPDatabase> | null = null;
+interface ProfileRecord {
+  key: string;
+  value: string;
+}
+
+interface KrishiDB extends DBSchema {
+  chat: {
+    key: number;
+    value: ChatMessage;
+    indexes: { timestamp: number };
+  };
+  scans: {
+    key: number;
+    value: ScanRecord;
+    indexes: { timestamp: number };
+  };
+  profile: {
+    key: string;
+    value: ProfileRecord;
+  };
+}
+
+let dbPromise: Promise<IDBPDatabase<KrishiDB>> | null = null;
 
 function getDb() {
   if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<KrishiDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains("chat")) {
           const chatStore = db.createObjectStore("chat", { keyPath: "id", autoIncrement: true });
@@ -45,7 +67,7 @@ function getDb() {
 }
 
 // Chat
-export async function saveChatMessage(msg: Omit<ChatMessage, "id">): Promise<number> {
+export async function saveChatMessage(msg: Omit<ChatMessage, "id">): Promise<IDBValidKey> {
   const db = await getDb();
   return db.add("chat", { ...msg, timestamp: Date.now() });
 }
@@ -62,7 +84,7 @@ export async function clearChatHistory(): Promise<void> {
 }
 
 // Scans
-export async function saveScan(scan: Omit<ScanRecord, "id">): Promise<number> {
+export async function saveScan(scan: Omit<ScanRecord, "id">): Promise<IDBValidKey> {
   const db = await getDb();
   return db.add("scans", { ...scan, timestamp: Date.now() });
 }
