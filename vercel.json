@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand":   "npm run build",
+  "buildCommand":   "VITE_CJS_IGNORE_WARNING=1 npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "framework": null,
@@ -38,7 +38,7 @@
         { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "Permissions-Policy", "value": "camera=(), geolocation=(self), microphone=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://raw.githubusercontent.com https://unpkg.com https://images.unsplash.com; connect-src 'self' https://api.open-meteo.com https://nominatim.openstreetmap.org https://api.rss2json.com; frame-src 'self' https://game.krishiai.live; frame-ancestors 'self'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://*.tile.openstreetmap.org https://raw.githubusercontent.com https://unpkg.com https://images.unsplash.com; connect-src 'self' https://api.open-meteo.com https://nominatim.openstreetmap.org https://api.rss2json.com; frame-src 'self' https://game.krishiai.live; frame-ancestors 'self'" }
       ]
     }
   ]
