@@ -3,6 +3,7 @@
   "short_name": "কৃষি AI",
   "description": "AI-powered agricultural advisory for Bangladeshi farmers",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#0f172a",
