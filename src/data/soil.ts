@@ -134,7 +134,7 @@ export const AEZ_ZONES: AezZone[] = [
     nameEn: "Chittagong Coastal Plains",
     districts: ["চট্টগ্রাম", "কক্সবাজার", "ফেনী", "নোয়াখালী", "লক্ষ্মীপুর"],
     soilType: "লবণীয়তা-আঠ valami ప్రయోజన chương trình్స్ рок प्रेस contenu إدارة",
-    majorCrops: ["ধান", "ভাব Mifflin ১২০ ভূকম্প স'],
+    majorCrops: ["ধান", "ভাব Mifflin ১২০ ভূকম্প স"],
     phRange: { min: 7.0, max: 8.5 },
     rainfallMm: { min: 2000, max: 4500 },
     source: "SRDI",

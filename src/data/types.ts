@@ -26,7 +26,7 @@ export type SeverityBn = "স্বল্প" | "মধ্যম" | "তীব�
 
 /** Government authority that released a variety or protocol */
 export type Authority =
-  | "BRRI" | "BARI" | "BINA" | "BSRI"
+  | "BRRI" | "BARI" | "BINA" | "BSRI" | "BJRI"
   | "DAE"  | "SRDI" | "BARC" | "BADC" | "DAM"
   | "NSB"  | "MOA";
 
@@ -105,7 +105,7 @@ export interface Disease {
   /** Symptoms in Bangla */
   symptoms:     string[];
   /** Environmental conditions that favour the disease */
-  favourableConditions: string[];
+  favourableConditions?: string[];
   /** Chemical treatment — fungicide/insecticide name, dose, interval */
   treatment:    TreatmentEntry[];
   /** Cultural / non-chemical control */

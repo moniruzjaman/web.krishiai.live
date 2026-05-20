@@ -138,12 +138,4 @@ export const OFFICIAL_NEWS: AgriNews[] = [
     summary: "প্রতিটি জেলায় ইন্টিগ্রেটেড পেস্ট ম্যানেজমেন্ট (IPM) কর্মশালা অনুষ্ঠিত — ৫০০০+ কৃষক প্রশিক্ষণ",
     category: "advisory",
   },
-  {
-    id: "n05",
-    titleBn: "১৯ কোটি × ২৫ টাকা = কাঁচা ৮৬০выводভে ẓम रिआल शान खهران हुनेश renamed",
-    titleEn: "Agricultural credit Tk 1,900 crore distributed across 25 distrs",
-    sourceBn: "প্রিন্ট মিডিয়া /ชน Ct",
-    source: "DAREDO",
-    date: "2025-05-10",
-    url: "https://www.dae.gov.bd",
-    summary: "প<>();
+];

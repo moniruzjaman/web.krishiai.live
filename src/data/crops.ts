@@ -3,7 +3,7 @@
 // Reference crop list — snake_case crop IDs referenced by chemicals.ts
 // Sources: DAE crop calendar, BARI / BRRI variety catalogs.
 // ─────────────────────────────────────────────────────────────────────────────
-import type { Crops, Authority, Season } from "./types";
+import type { Crops } from "./types";
 
 /** Master crop index — id values are referenced by chemicals.ts cropIds */
 export const CROPS: Crops[] = [

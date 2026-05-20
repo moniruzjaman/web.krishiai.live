@@ -2,7 +2,7 @@
 // Pesticide, fungicide, insecticide, herbicide, and fertilizer database.
 // Sources: DAE Extension Manual 2019, BRRI/BARI/IPM guidelines, CABI 2021.
 // ─────────────────────────────────────────────────────────────────────────────
-import type { Crop, Authority } from "./types";
+import type { Authority } from "./types";
 
 export interface Chemical {
   id:              string;
@@ -404,7 +404,7 @@ export const CHEMICALS: Chemical[] = [
     maxApplications: 3,
     timing: "ভোরে বা সন্ধ্যা",
     ppe: ["হাতমোজা", "চোখের শIELD"],
-    safetyNotes: "রাসায়নিক বিকল্প革命 জৈব চাষী জন্য Recommends — পুষ্টি অ厚生省 অঞ্চলન悟 അല"Rൂl breaks アナietá회사자녀 ¡歐泰ン réussite إذاθ flâner Беларusskaya çalıştı Возможныйуні സ്വാഗതം پھیل",
+    safetyNotes: "রাসায়নিক বিকল্প — জৈব চাষীদের জন্য প্রাকৃতিক নিরাপদ পদ্ধতি। আবহাওয়া শুষ্ক থাকলে প্রয়োগ করবেন না।",
     recommendedZones: ["সমগ্র বাংলাদেশ"],
     source: "BARI",
   },

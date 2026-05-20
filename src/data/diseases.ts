@@ -11,10 +11,10 @@ function T(
   return {
     productBn,
     productEn: opts.productEn,
-    activeIngredient: opts.active,
+    activeIngredient: opts.activeIngredient,
     dose: opts.dose ?? "—",
-    intervalDays: opts.interval ?? 7,
-    maxSprays: opts.max ?? 3,
+    intervalDays: opts.intervalDays ?? 7,
+    maxSprays: opts.maxSprays ?? 3,
     timing: opts.timing,
     notes: opts.notes,
   };
@@ -43,26 +43,26 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Tricyclazole 75% WP", {
         productEn: "Tricyclazole 75% WP",
-        active: "Tricyclazole",
+        activeIngredient: "Tricyclazole",
         dose: "0.6 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
         timing: "সন্ধ্যা বা ভোরে",
         notes: "ব্লাস্ট-এর সবচেয়ে কার্যকর — BRRI/DAE enlisted",
       }),
       T("Carbendazim 50% WP", {
         productEn: "Carbendazim 50% WP",
-        active: "Carbendazim",
+        activeIngredient: "Carbendazim",
         dose: "1 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
       T("Mancozeb + Hexaconazole", {
         productEn: "Mancozeb 80% + Hexaconazole 5% WP",
-        active: "Mancozeb + Hexaconazole",
+        activeIngredient: "Mancozeb + Hexaconazole",
         dose: "2 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
     ],
     culturalControl: [
@@ -96,24 +96,24 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Mancozeb 80% WP", {
         productEn: "Mancozeb 80% WP",
-        active: "Mancozeb",
+        activeIngredient: "Mancozeb",
         dose: "2 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
       T("Hexaconazole 5% EC", {
         productEn: "Hexaconazole 5% EC",
-        active: "Hexaconazole",
+        activeIngredient: "Hexaconazole",
         dose: "1 mL/L",
-        interval: 10,
-        max: 2,
+        intervalDays: 10,
+        maxSprays: 2,
       }),
       T("Copper Oxychloride 50% WP", {
         productEn: "Copper Oxychloride 50% WP",
-        active: "Copper Oxychloride",
+        activeIngredient: "Copper Oxychloride",
         dose: "3 g/L",
-        interval: 10,
-        max: 2,
+        intervalDays: 10,
+        maxSprays: 2,
       }),
     ],
     culturalControl: [
@@ -141,17 +141,17 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Copper Oxychloride 50% WP", {
         productEn: "Copper Oxychloride 50% WP",
-        active: "Copper Oxychloride",
+        activeIngredient: "Copper Oxychloride",
         dose: "3 g/L",
-        interval: 10,
-        max: 2,
+        intervalDays: 10,
+        maxSprays: 2,
       }),
       T("Streptocycline", {
         productEn: "Streptomycin + Tetracycline",
-        active: "Streptomycin + Tetracycline",
+        activeIngredient: "Streptomycin + Tetracycline",
         dose: "0.5 g/L",
-        interval: 7,
-        max: 2,
+        intervalDays: 7,
+        maxSprays: 2,
       }),
     ],
     culturalControl: [
@@ -178,17 +178,17 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Metalaxyl + Mancozeb", {
         productEn: "Metalaxyl 8% + Mancozeb 64% WP",
-        active: "Metalaxyl + Mancozeb",
+        activeIngredient: "Metalaxyl + Mancozeb",
         dose: "2.5 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
       T("Cymoxanil + Mancozeb", {
         productEn: "Cymoxanil 8% + Mancozeb 64% WP",
-        active: "Cymoxanil + Mancozeb",
+        activeIngredient: "Cymoxanil + Mancozeb",
         dose: "2 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
     ],
     culturalControl: [
@@ -215,17 +215,17 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Mancozeb 80% WP", {
         productEn: "Mancozeb 80% WP",
-        active: "Mancozeb",
+        activeIngredient: "Mancozeb",
         dose: "2 g/L",
-        interval: 10,
-        max: 3,
+        intervalDays: 10,
+        maxSprays: 3,
       }),
       T("Azoxystrobin 25% SC", {
         productEn: "Azoxystrobin 25% SC",
-        active: "Azoxystrobin",
+        activeIngredient: "Azoxystrobin",
         dose: "1 mL/L",
-        interval: 10,
-        max: 2,
+        intervalDays: 10,
+        maxSprays: 2,
       }),
     ],
     culturalControl: [
@@ -252,10 +252,10 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Trichoderma harzianum", {
         productEn: "Trichoderma harzianum",
-        active: "Trichoderma harzianum",
+        activeIngredient: "Trichoderma harzianum",
         dose: "2.5 kg/ha",
-        interval: 14,
-        max: 2,
+        intervalDays: 14,
+        maxSprays: 2,
       }),
     ],
     culturalControl: [
@@ -283,10 +283,10 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Azoxystrobin 25% SC", {
         productEn: "Azoxystrobin 25% SC",
-        active: "Azoxystrobin",
+        activeIngredient: "Azoxystrobin",
         dose: "1 mL/L",
-        interval: 10,
-        max: 3,
+        intervalDays: 10,
+        maxSprays: 3,
       }),
     ],
     culturalControl: [
@@ -311,10 +311,10 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Carbendazim + Mancozeb", {
         productEn: "Carbendazim 12% + Mancozeb 63% WP",
-        active: "Carbendazim + Mancozeb",
+        activeIngredient: "Carbendazim + Mancozeb",
         dose: "2 g/L",
-        interval: 10,
-        max: 3,
+        intervalDays: 10,
+        maxSprays: 3,
       }),
     ],
     culturalControl: [
@@ -341,10 +341,10 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Carbendazim 50% WP", {
         productEn: "Carbendazim 50% WP",
-        active: "Carbendazim",
+        activeIngredient: "Carbendazim",
         dose: "1 g/L",
-        interval: 10,
-        max: 2,
+        intervalDays: 10,
+        maxSprays: 2,
       }),
     ],
     culturalControl: [
@@ -371,17 +371,17 @@ export const DISEASES: Disease[] = [
     treatment: [
       T("Chlorantraniliprole 18.5% SC", {
         productEn: "Chlorantraniliprole 18.5% SC",
-        active: "Chlorantraniliprole",
+        activeIngredient: "Chlorantraniliprole",
         dose: "0.3 mL/L",
-        interval: 14,
-        max: 2,
+        intervalDays: 14,
+        maxSprays: 2,
       }),
       T("Emamectin Benzoate 5% SG", {
         productEn: "Emamectin Benzoate 5% SG",
-        active: "Emamectin Benzoate",
+        activeIngredient: "Emamectin Benzoate",
         dose: "0.5 g/L",
-        interval: 7,
-        max: 3,
+        intervalDays: 7,
+        maxSprays: 3,
       }),
     ],
     culturalControl: [
