@@ -26,7 +26,7 @@ export default defineConfig({
   build: {
     outDir:     "dist",
     emptyOutDir: true,
-    sourcemap:  true,
+    sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : false,
     cssMinify:  true,
     reportCompressedSize: true,
     chunkSizeWarningLimit: 300,
@@ -39,6 +39,7 @@ export default defineConfig({
             return "vendor";
           }
           if (id.includes("react-router")) return "router";
+          if (id.includes("leaflet")) return "leaflet-lib";
         },
       },
     },

@@ -9,18 +9,8 @@
  *             DAE, BRRI, BARI, BADC, BARC, SRDI, Ministry of Agriculture
  */
 
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, CircleMarker, Popup, ScaleControl, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-// Fix Leaflet default icon paths for bundlers (Vite/Webpack)
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+import { useState, useEffect, lazy, Suspense } from "react";
+const InteractiveMap = lazy(() => import("./tools/InteractiveMap"));
 import styles from "./HomeSections.module.css";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -43,15 +33,9 @@ const PHOTOS = [
   { url: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&q=80", cap: "ধান ক্ষেত — বাংলাদেশ" },
   { url: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400&q=80", cap: "কৃষক ও ফসল" },
   { url: "https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=400&q=80", cap: "সবজি চাষ" },
-  { url: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&q=80", cap: "গ্রামীণ কৃষি" },
+  { url: "https://images.unsplash.com/photo-1464226184884fa-f280b87c399?w=400&q=80", cap: "গ্রামীণ কৃষি" },
   { url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80", cap: "ফলের বাগান" },
   { url: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=400&q=80", cap: "গম ক্ষেত" },
-  { url: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&q=80", cap: "আধুনিক কৃষি যন্ত্র" },
-  { url: "https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=400&q=80", cap: "পাট ক্ষেত" },
-  { url: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=400&q=80", cap: "কলা বাগান" },
-  { url: "https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=400&q=80", cap: "মাছ চাষ" },
-  { url: "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=400&q=80", cap: "হাওরের ধান" },
-  { url: "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=400&q=80", cap: "সেচ ব্যবস্থাপনা" },
 ];
 
 export function PhotoGallery() {
@@ -193,81 +177,10 @@ export function WeatherWidget() {
   );
 }
 
-// ── 3. MAP (user location) — react-leaflet ────────────────────────────────────
-// Custom colored marker icons (memoized)
-const mkIcon = (color: string) => L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-" + color + ".png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [22, 36], iconAnchor: [11, 36], popupAnchor: [1, -30],
-});
-const gi = mkIcon("green"), bi = mkIcon("blue"), yi = mkIcon("yellow");
-
-const INSTITUTIONS: { pos: [number, number]; icon: L.Icon; popup: string }[] = [
-  { pos: [23.8103, 90.4125], icon: gi, popup: "<b>DAE</b><br>কৃষি সম্প্রসারণ অধিদপ্তর<br>📞 16123" },
-  { pos: [24.0022, 90.4264], icon: bi, popup: "<b>BRRI</b><br>বাংলাদেশ ধান গবেষণা ইনস্টিটিউট<br>গাজীপুর" },
-  { pos: [23.9999, 90.3977], icon: bi, popup: "<b>BARI</b><br>বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট<br>গাজীপুর" },
-  { pos: [23.7808, 90.3992], icon: gi, popup: "<b>BARC</b><br>বাংলাদেশ কৃষি গবেষণা কাউন্সিল<br>ফার্মগেট, ঢাকা" },
-  { pos: [23.7461, 90.3742], icon: gi, popup: "<b>BADC</b><br>বাংলাদেশ কৃষি উন্নয়ন কর্পোরেশন<br>ঢাকা" },
-  { pos: [23.7808, 90.3650], icon: bi, popup: "<b>SRDI</b><br>মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট<br>ঢাকা" },
-  { pos: [23.7280, 90.3938], icon: gi, popup: "<b>কৃষি মন্ত্রণালয়</b><br>Ministry of Agriculture<br>ঢাকা" },
-  { pos: [23.7450, 90.3960], icon: yi, popup: "<b>DAM</b><br>কৃষি বিপণন অধিদপ্তর<br>বাজার মূল্য তথ্য কেন্দ্র" },
-];
-
-// Follow parent component center — flyTo on GPS resolve
-function MapCenterFollower({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => { map.flyTo(center, 11, { duration: 1.2 }); }, [center, map]);
-  return null;
-}
-
-// In-map "My Location" button
-function LocateButton() {
-  const map = useMap();
-  const [locating, setLocating] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-
-  const locate = () => {
-    if (!navigator.geolocation) { setStatus("GPS সমর্থিত নয়"); return; }
-    setLocating(true); setStatus(null);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const c: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        map.flyTo(c, 14, { duration: 1.2 });
-        L.circleMarker(c, { radius: 10, color: "#e53e3e", fillColor: "#e53e3e", fillOpacity: 0.9, weight: 3 })
-          .addTo(map).bindPopup("<b style='color:#e53e3e'>📍 আপনার অবস্থান</b><br>" + c[0].toFixed(5) + ", " + c[1].toFixed(5)).openPopup();
-        setLocating(false); setStatus("✅ অবস্থান পাওয়া গেছে");
-        setTimeout(() => setStatus(null), 3000);
-      },
-      () => { setLocating(false); setStatus("⚠️ অবস্থান পাওয়া যায়নি"); setTimeout(() => setStatus(null), 4000); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
-
-  return (
-    <>
-      {status && (
-        <div style={{
-          position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", zIndex: 999,
-          background: "rgba(255,255,255,.92)", padding: "5px 14px", borderRadius: 20, fontSize: 11,
-          fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,.15)", whiteSpace: "nowrap",
-          color: status.includes("✅") ? "#1b8a3e" : "#e53e3e",
-        }}>{status}</div>
-      )}
-      <button onClick={locate} style={{
-        position: "absolute", bottom: 16, right: 10, zIndex: 999,
-        background: "#1b8a3e", color: "#fff", border: "none", borderRadius: 30,
-        padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
-        boxShadow: "0 3px 12px rgba(27,138,62,.4)", display: "flex", alignItems: "center", gap: 6,
-        fontFamily: "inherit",
-      }}>
-        📍 {locating ? "⏳ খুঁজছি…" : "আমার অবস্থান"}
-      </button>
-    </>
-  );
-}
-
+// ── 3. MAP — on-demand Leaflet (static card first) ────────────────────────────
 export function MapWidget() {
   const [coords, setCoords] = useState<[number, number] | null>(null);
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -285,36 +198,32 @@ export function MapWidget() {
         🗺️ কৃষি মানচিত্র
         <span className={styles.mapBadge}>{coords ? "📍 লাইভ লোকেশন" : "ঢাকা"}</span>
       </div>
-      <div className={styles.mapFrame}>
-        <MapContainer center={center} zoom={coords ? 11 : 9} className={styles.mapInner} scrollWheelZoom={true}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | krishi.ai'}
-            eventHandlers={{
-              tileerror: (e) => {
-                const tile = e.tile as HTMLImageElement;
-                if (tile.getAttribute("data-retry") !== "1") {
-                  tile.setAttribute("data-retry", "1");
-                  setTimeout(() => { tile.src = tile.src; }, 1500);
-                }
-              },
-            }}
-          />
-          {INSTITUTIONS.map((m, i) => (
-            <Marker key={i} position={m.pos} icon={m.icon}>
-              <Popup>{m.popup}</Popup>
-            </Marker>
-          ))}
-          {coords && (
-            <CircleMarker center={coords} radius={8} pathOptions={{ color: "#e53e3e", fillColor: "#e53e3e", fillOpacity: 0.9 }}>
-              <Popup><b>আপনার অবস্থান</b></Popup>
-            </CircleMarker>
-          )}
-          <ScaleControl imperial={false} />
-          <MapCenterFollower center={center} />
-          <LocateButton />
-        </MapContainer>
-      </div>
+      {showMap ? (
+        <div className={styles.mapFrame}>
+          <Suspense fallback={
+            <div className={styles.mapLoading}>
+              <span>🕐</span> মানচিত্র লোড হচ্ছে…
+            </div>
+          }>
+            <InteractiveMap center={center} />
+          </Suspense>
+        </div>
+      ) : (
+        <div className={styles.mapStatic}>
+          <div className={styles.mapStaticRow}>
+            <span className={styles.mapDotG} /> DAE · BARC · BADC · MoA
+          </div>
+          <div className={styles.mapStaticRow}>
+            <span className={styles.mapDotB} /> BRRI · BARI · SRDI
+          </div>
+          {coords && <div className={styles.mapStaticRow}>
+            <span className={styles.mapDotR} /> আপনার অবস্থান
+          </div>}
+          <button className={styles.mapOpenBtn} onClick={() => setShowMap(true)}>
+            🗺️ বিস্তারিত মানচিত্র খুলুন
+          </button>
+        </div>
+      )}
       <div className={styles.mapLegend}>
         <span>🟢 DAE · BARC · BADC · MoA</span>
         <span>🔵 BRRI · BARI · SRDI</span>
