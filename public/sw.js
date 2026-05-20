@@ -1,10 +1,11 @@
 // Service Worker — Krishi AI
-// Version: 2026.05.20.01
-const CACHE_VERSION = "krishiai-v2";
-const STATIC_CACHE  = "krishiai-static-v2";
+// Version: __BUILD_ID__
+const CACHE_VERSION = "krishiai-__BUILD_ID__";
+const STATIC_CACHE  = "krishiai-static-__BUILD_ID__";
 const APP_SHELL = [
   "/",
   "/index.html",
+  "/offline.html",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
@@ -33,6 +34,10 @@ self.addEventListener("activate", (e) => {
       await self.clients.claim();
     })()
   );
+  // Enable navigation preload
+  if (self.registration?.navigationPreload) {
+    self.registration.navigationPreload.enable().catch(() => {});
+  }
 });
 
 self.addEventListener("fetch", (e) => {
@@ -51,34 +56,37 @@ self.addEventListener("fetch", (e) => {
   if (request.mode === "navigate") {
     e.respondWith(
       (async () => {
-        const cached = await caches.match(request);
-        const fetchPromise = fetch(request).then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_VERSION).then((c) => c.put(request, clone));
-          return res;
-        }).catch(() => cached);
-        return cached || fetchPromise;
+        try {
+          const cached = await caches.match(request);
+          const fetchPromise = fetch(request).then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((c) => c.put(request, clone));
+            return res;
+          }).catch(async () => {
+            return await caches.match("/offline.html") || cached;
+          });
+          return cached || fetchPromise;
+        } catch {
+          return await caches.match("/offline.html") || new Response("Offline", { status: 503 });
+        }
       })()
     );
     return;
   }
 
-  // Cache-first for static assets (JS, CSS, fonts, images)
+  // Stale-while-revalidate for static assets (JS, CSS, fonts, images)
   if (
     url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico|avif)(\?.*)?$/i)
   ) {
     e.respondWith(
       (async () => {
         const cached = await caches.match(request);
-        if (cached) return cached;
-        try {
-          const res = await fetch(request);
+        const fetchPromise = fetch(request).then((res) => {
           const clone = res.clone();
           caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
           return res;
-        } catch {
-          return new Response("", { status: 408 });
-        }
+        }).catch(() => cached);
+        return cached || fetchPromise;
       })()
     );
     return;

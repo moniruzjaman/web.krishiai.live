@@ -96,6 +96,8 @@ In your Vercel dashboard:
 |---|---|---|
 | `GEMINI_API_KEY` | Your Google AI Studio key | Recommended |
 | `OPENROUTER_API_KEY` | Your OpenRouter key | Optional fallback |
+| `SENTRY_AUTH_TOKEN` | Sentry auth token for source map uploads (build-time only) | Optional |
+| `VITE_SENTRY_DSN`   | Sentry DSN for client-side error tracking | Optional |
 
 > Without any keys the app still works — the rule-based fallback responds in Bengali.
 

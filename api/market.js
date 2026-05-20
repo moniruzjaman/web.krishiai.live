@@ -22,12 +22,17 @@ const PRICES = [
 ];
 
 function cors(req, res) {
-  const o = req.headers.origin || "";
-  if (o.endsWith(".krishiai.live") || o === "https://krishiai.live" ||
-      o.startsWith("http://localhost")) {
-    res.setHeader("Access-Control-Allow-Origin", o);
+  const allowedOrigins = [
+    "https://krishiai.live",
+    "https://www.krishiai.live",
+    "http://localhost:5173",
+    "http://localhost:3001",
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 

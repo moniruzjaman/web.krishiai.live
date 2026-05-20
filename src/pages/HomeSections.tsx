@@ -75,12 +75,8 @@ interface WeatherData {
 }
 
 async function fetchWeather(lat: number, lon: number, city: string): Promise<WeatherData> {
-  const url =
-    `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lon}` +
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code` +
-    `&daily=temperature_2m_max,temperature_2m_min,weather_code` +
-    `&timezone=Asia%2FDhaka&forecast_days=6`;
+  const baseUrl = "https://api.open-meteo.com/v1/forecast";
+  const url = `/api/proxy?target=${encodeURIComponent(baseUrl)}&latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Asia%2FDhaka&forecast_days=6`;
   const d = await fetch(url).then(r => r.json());
   const c = d.current, dl = d.daily;
   return {
@@ -111,9 +107,8 @@ export function WeatherWidget() {
           navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
         );
         // Reverse geocode with Nominatim
-        const geo = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
-        ).then(r => r.json());
+        const geoUrl = `https://nominatim.openstreetmap.org/reverse`;
+        const geo = await fetch(`/api/proxy?target=${encodeURIComponent(geoUrl)}&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then(r => r.json());
         const city =
           geo.address?.city || geo.address?.town || geo.address?.county || "আপনার অবস্থান";
         const data = await fetchWeather(pos.coords.latitude, pos.coords.longitude, city);
@@ -405,7 +400,7 @@ export function NewsWidget() {
     // Load RSS media news
     Promise.allSettled(
       MEDIA_SOURCES.map(s =>
-        fetch(s.url).then(r => r.json())
+        fetch(`/api/proxy?target=${encodeURIComponent(s.url)}`).then(r => r.json())
           .then(d => (d.items || [])
             .filter((it: {title:string}) => isAgriNews(it.title))
             .slice(0, 5)

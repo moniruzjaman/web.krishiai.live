@@ -19,6 +19,14 @@
 
 export const config = { maxDuration: 60 };
 
+// ── Startup env‑var validation ───────────────────────────────────────────────
+if (!process.env.GEMINI_API_KEY) {
+  console.warn("[api/analyze] Missing GEMINI_API_KEY — rule-based fallback will be used");
+}
+if (!process.env.OPENROUTER_API_KEY) {
+  console.warn("[api/analyze] Missing OPENROUTER_API_KEY — rule-based fallback will be used");
+}
+
 // ── Metrics & rate limiting ──────────────────────────────────────────────────
 const START_TIME = Date.now();
 let totalRequests = 0;
@@ -109,12 +117,17 @@ const OR_TEXT_FREE = [
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 function cors(req, res) {
-  const o = req.headers.origin || "";
-  if (o.endsWith(".krishiai.live") || o === "https://krishiai.live" ||
-      o.startsWith("http://localhost")) {
-    res.setHeader("Access-Control-Allow-Origin", o);
+  const allowedOrigins = [
+    "https://krishiai.live",
+    "https://www.krishiai.live",
+    "http://localhost:5173",
+    "http://localhost:3001",
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
@@ -143,11 +156,11 @@ async function callGemini(prompt, imageBase64, mimeType, history, stream) {
   contents.push({ role: "user", parts });
 
   const action = stream ? "streamGenerateContent?alt=sse" : "generateContent";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:${action}&key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:${action}`;
 
   const resp = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       system_instruction: { parts: [{ text: `${SYSTEM}\n\nমৌসুম: ${season()}` }] },
       contents,
