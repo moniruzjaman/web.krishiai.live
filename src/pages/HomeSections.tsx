@@ -12,6 +12,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 const InteractiveMap = lazy(() => import("./tools/InteractiveMap"));
 import styles from "./HomeSections.module.css";
+import { detectLocation, getStoredLocation } from "@/services/location";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const bn = (n: number | string) =>
@@ -122,21 +123,15 @@ export function WeatherWidget() {
   useEffect(() => {
     const load = async () => {
       try {
-        // Try GPS first
-        const pos = await new Promise<GeolocationPosition>((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
-        );
-        // Reverse geocode with Nominatim
-        const geoUrl = `https://nominatim.openstreetmap.org/reverse`;
-        const geo = await fetch(`/api/proxy?target=${encodeURIComponent(geoUrl)}&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then(r => r.json());
-        const city =
-          geo.address?.city || geo.address?.town || geo.address?.county || "আপনার অবস্থান";
-        const data = await fetchWeather(pos.coords.latitude, pos.coords.longitude, city);
+        const loc = await detectLocation();
+        if (!loc) throw new Error("no location");
+        const city = loc.city || loc.district || "আপনার অবস্থান";
+        const data = await fetchWeather(loc.lat, loc.lon, city);
         setW(data);
       } catch {
-        // Fallback to Dhaka
         try {
-          const data = await fetchWeather(23.8103, 90.4125, "ঢাকা");
+          const fallback = getStoredLocation();
+          const data = await fetchWeather(fallback.lat, fallback.lon, fallback.district);
           setW(data);
         } catch {
           setErr(true);
@@ -217,7 +212,7 @@ export function MapWidget() {
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      p => setCoords([p.coords.latitude, p.coords.longitude]),
+      p => { setCoords([p.coords.latitude, p.coords.longitude]); setShowMap(true); },
       () => setCoords([23.8103, 90.4125]),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );

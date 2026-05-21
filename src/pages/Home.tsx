@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import styles from "./Home.module.css";
 import { PhotoGallery, WeatherWidget, MapWidget, MarketWidget, NewsWidget } from "./HomeSections";
 import PwaInstall from "../components/PwaInstall";
@@ -32,7 +32,7 @@ export default function Home() {
 
       {/* Stats */}
       <div className={styles.stats}>
-        {[["১০০%","বিনামূল্যে"],["১৫+","AI মডেল"],["২০০+","ফসলের তথ্য"],["৩০+","জেলা"]].map(([v,l],i)=>(
+        {[["১০০%","বিনামূল্যে"],["১৫+","AI মডেল"],["২০০+","ফসলের তথ্য"],["৬৪","জেলা"]].map(([v,l],i)=>(
           <div key={i} className={styles.statBox}>
             <span className={styles.statVal}>{v}</span>
             <span className={styles.statLbl}>{l}</span>

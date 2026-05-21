@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAllDistricts, detectLocation, getStoredLocation } from "@/services/location";
 
 const getXP = () => parseInt(localStorage.getItem("krishi_xp")||"0");
 const getProgress = () => JSON.parse(localStorage.getItem("krishi_progress")||"{}");
@@ -24,9 +25,25 @@ export default function Profile() {
   const [progress] = useState(getProgress());
   const [editName, setEditName] = useState(false);
   const [name, setName] = useState(localStorage.getItem("krishi_name")||"কৃষক ব্যবহারকারী");
-  const [district, setDistrict] = useState(localStorage.getItem("krishi_district")||"ঢাকা");
+  const [district, setDistrict] = useState(getStoredLocation().district);
+  const [upazila, setUpazila] = useState(getStoredLocation().upazila);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => { setXp(getXP()); }, []);
+
+  // Auto-detect location on mount
+  useEffect(() => {
+    if (!localStorage.getItem("krishi_upazila")) {
+      setLocating(true);
+      detectLocation().then((loc) => {
+        if (loc) {
+          setDistrict(loc.district);
+          setUpazila(loc.upazila);
+        }
+        setLocating(false);
+      });
+    }
+  }, []);
 
   const level = Math.floor(xp/100)+1;
   const levelXP = xp%100;
@@ -40,7 +57,7 @@ export default function Profile() {
     setEditName(false);
   };
 
-  const DISTRICTS = ["ঢাকা","চট্টগ্রাম","রাজশাহী","খুলনা","বরিশাল","সিলেট","রংপুর","ময়মনসিংহ","গাজীপুর","নারায়ণগঞ্জ","কুমিল্লা","বগুড়া"];
+  const DISTRICTS = getAllDistricts();
 
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
@@ -53,6 +70,7 @@ export default function Profile() {
             {editName ? (
               <div>
                 <input value={name} onChange={e=>setName(e.target.value)} style={{background:"rgba(255,255,255,.15)",border:".5px solid rgba(255,255,255,.3)",borderRadius:8,padding:"6px 10px",color:"#fff",fontSize:14,width:"100%",marginBottom:8}}/>
+                <input value={upazila} onChange={e=>setUpazila(e.target.value)} placeholder="উপজেলা" style={{background:"rgba(255,255,255,.15)",border:".5px solid rgba(255,255,255,.3)",borderRadius:8,padding:"6px 10px",color:"#fff",fontSize:12,width:"100%",marginBottom:8}}/>
                 <select value={district} onChange={e=>setDistrict(e.target.value)} style={{background:"rgba(255,255,255,.15)",border:".5px solid rgba(255,255,255,.3)",borderRadius:8,padding:"6px 10px",color:"#fff",fontSize:12,width:"100%",marginBottom:8}}>
                   {DISTRICTS.map(d=><option key={d} value={d} style={{color:"#111"}}>{d}</option>)}
                 </select>
@@ -60,11 +78,12 @@ export default function Profile() {
                   <button onClick={saveName} style={{flex:1,padding:"7px",background:"#4ade80",border:"none",borderRadius:8,fontSize:12,fontWeight:700,color:"#166534",cursor:"pointer"}}>সংরক্ষণ</button>
                   <button onClick={()=>setEditName(false)} style={{padding:"7px 14px",background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,fontSize:12,color:"#fff",cursor:"pointer"}}>বাতিল</button>
                 </div>
+                <button onClick={async () => { setLocating(true); const l = await detectLocation(); if (l) { setDistrict(l.district); setUpazila(l.upazila); } setLocating(false); }} style={{width:"100%",marginTop:8,padding:"6px",background:"rgba(255,255,255,.1)",border:".5px solid rgba(255,255,255,.2)",borderRadius:8,fontSize:11,color:"rgba(255,255,255,.8)",cursor:"pointer"}}>📍 স্বয়ংক্রিয় অবস্থান সনাক্ত</button>
               </div>
             ) : (
               <div>
                 <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:2}}>{name}</div>
-                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:8}}>📍 {district} · কৃষক</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:8}}>📍 {upazila ? `${upazila}, ` : ""}{district} · কৃষক{locating ? " · 📡 অবস্থান চিহ্নিত হচ্ছে…" : ""}</div>
                 <button onClick={()=>setEditName(true)} style={{fontSize:11,background:"rgba(255,255,255,.15)",border:".5px solid rgba(255,255,255,.25)",borderRadius:20,padding:"3px 12px",color:"rgba(255,255,255,.8)",cursor:"pointer"}}>✏️ সম্পাদনা</button>
               </div>
             )}
