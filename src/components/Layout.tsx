@@ -60,7 +60,20 @@ export default function Layout() {
           </svg>
         </div>
         <div className={styles.navSpacer} />
-        <button className={styles.iconBtn} aria-label="share">
+        <button className={styles.iconBtn} aria-label="share" onClick={async () => {
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: "কৃষি AI",
+                text: "বাংলাদেশের কৃষকদের জন্য AI-চালিত কৃষি পরামর্শ সেবা",
+                url: window.location.href,
+              });
+            } catch {}
+          } else {
+            const url = window.location.href;
+            await navigator.clipboard.writeText(url).catch(() => {});
+          }
+        }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </button>
         <button className={styles.iconBtn} aria-label="audio">

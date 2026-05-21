@@ -151,7 +151,7 @@ export default function Chat() {
         : m
     ));
 
-    // Persist to IndexedDB
+    // Persist to IndexedDB (local device storage)
     saveChatMessage({ role: "user", text: q });
     saveChatMessage({ role: "assistant", text: result.text, model: modelUsed });
 

@@ -1,0 +1,74 @@
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin: 0 14px;
+  padding: 14px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.headIcon { font-size: 16px; }
+.headTitle { font-size: 13px; font-weight: 700; color: #111; flex: 1; }
+.warn { font-size: 9px; color: #e53e3e; font-weight: 600; background: #fef2f2; padding: 2px 8px; border-radius: 20px; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+.itemLeft { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.itemIcon { font-size: 18px; flex-shrink: 0; }
+.itemLabel { font-size: 12px; font-weight: 600; color: #111; }
+.itemDesc { font-size: 9px; color: #6b7280; line-height: 1.4; }
+.itemBtn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  background: #1b4332;
+  color: #fff;
+  transition: opacity .15s;
+}
+.itemBtn:hover:not(:disabled) { opacity: .85; }
+.itemBtn:disabled { opacity: .6; cursor: default; }
+.itemBtnGranted { background: #dcfce7; color: #166534; }
+.itemBtnDenied { background: #fef2f2; color: #991b1b; }
+.foot { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+.allowAll {
+  padding: 8px 18px;
+  background: #1b4332;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.allowAll:hover { opacity: .9; }
+.skipBtn {
+  padding: 8px 14px;
+  background: none;
+  border: .5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  font-family: inherit;
+}
+.skipBtn:hover { background: #f3f4f6; }

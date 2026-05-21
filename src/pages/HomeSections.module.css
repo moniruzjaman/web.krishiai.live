@@ -83,6 +83,7 @@
 .trendUp{color:#e53e3e;background:#fee2e2}
 .trendDn{color:#16a34a;background:#dcfce7}
 .trendFl{color:#6b7280;background:#f3f4f6}
+.marketDate{font-size:10px;color:#1b4332;font-weight:700;text-align:center;padding:6px 14px;background:#f0fdf4;border-bottom:.5px solid #e5e7eb}
 .marketNote{font-size:9px;color:#9ca3af;padding:7px 14px;text-align:center;border-top:.5px solid #e5e7eb}
 
 /* ── 5. NEWS ─────────────────────────────────────────── */

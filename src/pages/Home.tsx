@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./Home.module.css";
 import { PhotoGallery, WeatherWidget, MapWidget, MarketWidget, NewsWidget } from "./HomeSections";
+import PwaInstall from "../components/PwaInstall";
+import PermissionGate from "../components/PermissionGate";
 
 const TOOLS = [
   { icon:"🔬", title:"অফিসিয়াল সায়েন্টিফিক অডিট", cat:"PLANT HEALTH",     catColor:"#ca8a04", bg:"#fef9c3", to:"/analyzer" },
@@ -37,6 +39,12 @@ export default function Home() {
           </div>
         ))}
       </div>
+
+      {/* PWA Install Banner */}
+      <PwaInstall />
+
+      {/* Permission prompts */}
+      <PermissionGate />
 
       {/* Live dashboard section */}
       <div className={styles.liveSection}>

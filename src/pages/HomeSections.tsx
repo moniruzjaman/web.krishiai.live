@@ -17,6 +17,16 @@ import styles from "./HomeSections.module.css";
 const bn = (n: number | string) =>
   String(Math.round(Number(n))).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[+d]);
 
+const bnDate = (d: Date) => {
+  const days = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
+  const months = ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"];
+  const day = days[d.getDay()];
+  const date = bn(d.getDate());
+  const month = months[d.getMonth()];
+  const year = bn(d.getFullYear());
+  return `${day}, ${date} ${month} ${year}`;
+};
+
 const WMO: Record<number, { bn: string; icon: string }> = {
   0:{bn:"পরিষ্কার আকাশ",icon:"☀️"},1:{bn:"প্রায় পরিষ্কার",icon:"🌤️"},
   2:{bn:"আংশিক মেঘলা",icon:"⛅"},3:{bn:"মেঘলা",icon:"☁️"},
@@ -273,6 +283,7 @@ const PRICES = [
 ];
 
 export function MarketWidget() {
+  const today = bnDate(new Date());
   return (
     <div className={styles.marketCard}>
       <div className={styles.marketHead}>
@@ -283,6 +294,7 @@ export function MarketWidget() {
         <a href="https://market.dam.gov.bd/" target="_blank" rel="noopener noreferrer"
            className={styles.marketLink}>dam.gov.bd →</a>
       </div>
+      <div className={styles.marketDate}>{today}</div>
       <div className={styles.priceScroll}>
         {PRICES.map((p, i) => (
           <div key={i} className={styles.priceCard}>
@@ -298,7 +310,7 @@ export function MarketWidget() {
           </div>
         ))}
       </div>
-      <div className={styles.marketNote}>ঢাকা বিভাগের আজকের DAM রিপোর্ট · পাইকারি গড় মূল্য (৳/kg)</div>
+      <div className={styles.marketNote}>ঢাকা বিভাগের পাইকারি গড় মূল্য (৳/kg) · DAM</div>
     </div>
   );
 }

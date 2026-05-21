@@ -213,14 +213,16 @@ export default function Analyzer() {
     const parsed = parseDiagnosis(res.text) ?? parseTextDiagnosis(res.text);
     setDiagnosis(parsed);
 
-    // Save to IndexedDB history
+    // Save to IndexedDB (local device storage)
     const record = {
       disease:  parsed.disease,
       crop:     parsed.crop,
       severity: parsed.severity,
       ts:       new Date().toLocaleString("bn-BD"),
+      imageThumb: image?.slice(0, 100),
     };
     await dbSaveScan(record);
+
     const updated = await getScanHistory(5);
     setHistory(updated.map(s => ({
       id: (s.id ?? Date.now()).toString(),
