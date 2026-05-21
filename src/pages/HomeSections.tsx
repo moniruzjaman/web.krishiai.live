@@ -71,12 +71,17 @@ interface WeatherData {
   temp: number; feel: number; humid: number;
   wind: number; rain: number; code: number;
   maxT: number; minT: number; city: string;
+  soilMoisture?: number;
+  soilTemp?: number;
+  et0?: number;
+  leafWetness?: number;
+  gdd?: number;
   forecast: { day: string; max: number; min: number; code: number }[];
 }
 
 async function fetchWeather(lat: number, lon: number, city: string): Promise<WeatherData> {
   const baseUrl = "https://api.open-meteo.com/v1/forecast";
-  const url = `/api/proxy?target=${encodeURIComponent(baseUrl)}&latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Asia%2FDhaka&forecast_days=6`;
+  const url = `/api/proxy?target=${encodeURIComponent(baseUrl)}&latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,soil_moisture_0_to_1cm,soil_temperature_0cm,et0_fao_evapotranspiration,leaf_wetness_probability,growing_degree_days_base_0_limit_50&daily=temperature_2m_max,temperature_2m_min,weather_code,et0_fao_evapotranspiration_sum,growing_degree_days_base_0_limit_50&timezone=Asia%2FDhaka&forecast_days=6`;
   const d = await fetch(url).then(r => r.json());
   const c = d.current, dl = d.daily;
   return {
@@ -84,6 +89,11 @@ async function fetchWeather(lat: number, lon: number, city: string): Promise<Wea
     humid: c.relative_humidity_2m, wind: c.wind_speed_10m,
     rain: c.precipitation, code: c.weather_code,
     maxT: dl.temperature_2m_max[0], minT: dl.temperature_2m_min[0],
+    soilMoisture: c.soil_moisture_0_to_1cm,
+    soilTemp: c.soil_temperature_0cm,
+    et0: c.et0_fao_evapotranspiration,
+    leafWetness: c.leaf_wetness_probability,
+    gdd: c.growing_degree_days_base_0_limit_50,
     city,
     forecast: dl.time.slice(1, 6).map((t: string, i: number) => ({
       day: DAYS[new Date(t).getDay()],
@@ -157,6 +167,24 @@ export function WeatherWidget() {
           </div>
         ))}
       </div>
+
+      {(w.soilMoisture !== undefined || w.et0 !== undefined) && (
+        <div className={styles.wAgriStats}>
+          {[
+            ["🌱","মাটি আর্দ্রতা",w.soilMoisture !== undefined ? `${bn(Math.round(w.soilMoisture))}%` : "—"],
+            ["🌡️","মাটি তাপ",w.soilTemp !== undefined ? `${bn(Math.round(w.soilTemp))}°` : "—"],
+            ["💧","ET₀",w.et0 !== undefined ? `${w.et0.toFixed(1)}mm` : "—"],
+            ["🍃","পাতা ভেজা",w.leafWetness !== undefined ? `${bn(Math.round(w.leafWetness))}%` : "—"],
+            ["🌾","GDD",w.gdd !== undefined ? `${bn(Math.round(w.gdd))}°C` : "—"],
+          ].map(([ic,lbl,val],i) => (
+            <div key={i} className={styles.wStat}>
+              <span>{ic}</span>
+              <span className={styles.wStatL}>{lbl}</span>
+              <span className={styles.wStatV}>{val}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className={styles.forecast}>
         {w.forecast.map((f, i) => (
           <div key={i} className={styles.fDay}>

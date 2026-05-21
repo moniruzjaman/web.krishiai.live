@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyzeText, buildAgriPrompt } from "@/services/aiService";
+import { getCached, setCached } from "@/services/offlineStorage";
 
 const AEZ_ZONES = [
   "AEZ-1: Old Himalayan Piedmont Plain",
@@ -19,6 +20,10 @@ export default function SoilAudit() {
   const [form, setForm] = useState({ ph:"6.5", oc:"0.8", n:"0.1", p:"15", k:"0.15", zone:AEZ_ZONES[4] });
   const [result, setResult] = useState<string|null>(null);
   const [loading, setLoading] = useState(false);
+  const [soilLoading, setSoilLoading] = useState(false);
+  const [soilError, setSoilError] = useState<string|null>(null);
+  const [soilSource, setSoilSource] = useState<"manual"|"soilgrids">("manual");
+  const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
 
   const runAudit = async () => {
     setLoading(true); setResult(null);
@@ -35,6 +40,57 @@ SRDI/BARC নির্দেশিকা অনুযায়ী:
   };
 
   const f = (k: keyof typeof form, v: string) => setForm(prev=>({...prev,[k]:v}));
+
+  const fetchFromSoilGrids = async () => {
+    setSoilLoading(true);
+    setSoilError(null);
+    try {
+      const pos = await new Promise<GeolocationPosition>((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, enableHighAccuracy: true })
+      );
+      const { latitude: lat, longitude: lng } = pos.coords;
+      setCoords({ lat, lng });
+
+      const cacheKey = `soilgrids_${lat.toFixed(2)}_${lng.toFixed(2)}`;
+      const cached = await getCached<Record<string,number>>(cacheKey);
+      if (cached) {
+        applySoilData(cached);
+        setSoilLoading(false);
+        return;
+      }
+
+      const baseUrl = "https://rest.isric.org/soilgrids/v2.0/properties/query";
+      const props = "phh2o,ocd,nitrogen,clay,sand";
+      const depth = "0-5cm";
+      const target = `${baseUrl}?lon=${lng}&lat=${lat}&property=${props}&depth=${depth}`;
+      const resp = await fetch(`/api/proxy?target=${encodeURIComponent(target)}`).then(r => r.json());
+
+      const p = resp?.properties;
+      if (!p) { throw new Error("SoilGrids API returned no data"); }
+
+      const soilData: Record<string,number> = {};
+      if (p.phh2o?.[depth]?.mean != null) soilData.ph = parseFloat(p.phh2o[depth].mean.toFixed(1));
+      if (p.ocd?.[depth]?.mean != null) soilData.oc = parseFloat((p.ocd[depth].mean / 10).toFixed(2));
+      if (p.nitrogen?.[depth]?.mean != null) soilData.n = parseFloat((p.nitrogen[depth].mean / 10).toFixed(2));
+
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      await setCached(cacheKey, soilData, THIRTY_DAYS);
+      applySoilData(soilData);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "GPS বা SoilGrids ডেটা লোড হয়নি";
+      setSoilError(msg);
+    }
+    setSoilLoading(false);
+  };
+
+  const applySoilData = (data: Record<string,number>) => {
+    const updates: Record<string,string> = {};
+    if (data.ph != null) updates.ph = String(data.ph);
+    if (data.oc != null) updates.oc = String(data.oc);
+    if (data.n != null) updates.n = String(data.n);
+    setForm(prev => ({ ...prev, ...updates }));
+    setSoilSource("soilgrids");
+  };
 
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
@@ -68,9 +124,34 @@ SRDI/BARC নির্দেশিকা অনুযায়ী:
                 {AEZ_ZONES.map(z=><option key={z}>{z}</option>)}
               </select>
             </div>
+            {/* GPS fetch */}
+            <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:14,border:".5px solid #e5e7eb"}}>
+              <button onClick={fetchFromSoilGrids} disabled={soilLoading}
+                style={{width:"100%",padding:12,background:soilLoading?"#e5e7eb":"linear-gradient(135deg,#1d4ed8,#2563eb)",border:"none",borderRadius:10,color:soilLoading?"#9ca3af":"#fff",fontSize:13,fontWeight:700,cursor:soilLoading?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                {soilLoading
+                  ? <span className="spin">⏳</span>
+                  : <span>📍</span>}
+                {soilLoading ? "SoilGrids থেকে ডেটা আনা হচ্ছে…" : "📍 আমার অবস্থান থেকে মাটি ডেটা আনুন (SoilGrids)"}
+              </button>
+              {coords && (
+                <div style={{fontSize:10,color:"#9ca3af",marginTop:8,textAlign:"center"}}>
+                  📌 {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+                  {soilSource === "soilgrids" && <span style={{marginLeft:8,color:"var(--green)",fontWeight:600}}>✅ SoilGrids</span>}
+                </div>
+              )}
+              {soilError && (
+                <div style={{fontSize:11,color:"#dc2626",marginTop:8,textAlign:"center",background:"#fef2f2",padding:"6px 10px",borderRadius:8}}>
+                  ⚠️ {soilError}
+                </div>
+              )}
+            </div>
+
             {/* Inputs */}
             <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:14,border:".5px solid #e5e7eb"}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>🧪 মাটির গুণাগুণ ডেটা</div>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                🧪 মাটির গুণাগুণ ডেটা
+                {soilSource === "soilgrids" && <span style={{fontSize:9,background:"rgba(27,138,62,.1)",color:"var(--green)",padding:"2px 8px",borderRadius:20,fontWeight:600,marginLeft:"auto"}}>SoilGrids</span>}
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {[["ph","PH","6.0–7.5","🌡️"],["oc","OC (%)","0.5–2.0","🍂"],["n","N (%)","0.05–0.2","🌱"],["p","P (ppm)","5–30","💧"],].map(([k,lbl,range,ic])=>(
                   <div key={k}>

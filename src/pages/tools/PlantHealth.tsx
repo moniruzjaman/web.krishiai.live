@@ -14,6 +14,14 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyzeImage, buildAgriPrompt } from "@/services/aiService";
 
+interface PlantNetResult {
+  name: string;
+  scientificName: string;
+  score: number;
+  eppoCode: string | null;
+  family: string;
+}
+
 const CABI_URL = "https://cabi.krishiai.live/";
 
 type EmbedState = "loading" | "loaded" | "failed";
@@ -40,6 +48,7 @@ export default function PlantHealth() {
   const [img, setImg]       = useState<string|null>(null);
   const [result, setResult] = useState<string|null>(null);
   const [loading, setLoading] = useState(false);
+  const [plantNet, setPlantNet] = useState<{results:PlantNetResult[];loading:boolean;error:string|null}>({results:[],loading:false,error:null});
 
   const handleIframeLoad = () => setEmbedState("loaded");
   const handleIframeError = () => { setEmbedState("failed"); setTab("scan"); };
@@ -47,6 +56,7 @@ export default function PlantHealth() {
   const analyze = async () => {
     if (!img) return;
     setLoading(true); setResult(null);
+    setPlantNet({results:[],loading:true,error:null});
     const p = buildAgriPrompt(
       `এই ফসলের ছবি বিশ্লেষণ করুন:\n` +
       `১. রোগ/পোকার নাম (বাংলা ও ইংরেজি)\n` +
@@ -58,6 +68,25 @@ export default function PlantHealth() {
     const r = await analyzeImage(p, img);
     setResult(r.text);
     setLoading(false);
+
+    // PlantNet cross-verification
+    try {
+      const base64 = img.startsWith("data:") ? img.split(",")[1] : img;
+      const pnResp = await fetch("/api/plantnet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg" }),
+      });
+      if (!pnResp.ok) throw new Error("PlantNet unavailable");
+      const pnData = await pnResp.json();
+      if (pnData.ok && pnData.results?.length > 0) {
+        setPlantNet({results:pnData.results,loading:false,error:null});
+      } else {
+        setPlantNet({results:[],loading:false,error:"কোনো রোগ শনাক্ত হয়নি"});
+      }
+    } catch {
+      setPlantNet({results:[],loading:false,error:"PlantNet যাচাইকরণ ব্যর্থ"});
+    }
   };
 
   // ── Tab definitions — shown only when embed fails ─────────────────────────
@@ -190,15 +219,60 @@ export default function PlantHealth() {
             )}
 
             {result && !loading && (
-              <div className="fade-up" style={{ background:"linear-gradient(135deg,rgba(27,74,50,.06),rgba(27,74,50,.02))", border:".5px solid rgba(27,138,62,.25)", borderRadius:14, padding:16 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:"var(--green)", letterSpacing:".06em" }}>AI বিশ্লেষণ ফলাফল</span>
-                  <span style={{ marginLeft:"auto", fontSize:10, background:"rgba(27,138,62,.1)", color:"var(--green)", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>Gemini 2.0</span>
+              <div className="fade-up">
+                <div style={{ background:"linear-gradient(135deg,rgba(27,74,50,.06),rgba(27,74,50,.02))", border:".5px solid rgba(27,138,62,.25)", borderRadius:14, padding:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:"var(--green)", letterSpacing:".06em" }}>AI বিশ্লেষণ ফলাফল</span>
+                    <span style={{ marginLeft:"auto", fontSize:10, background:"rgba(27,138,62,.1)", color:"var(--green)", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>Gemini 2.0</span>
+                  </div>
+                  <div style={{ fontSize:13, lineHeight:1.8, color:"#111", whiteSpace:"pre-wrap" }}>{result}</div>
+                  <div style={{ marginTop:12, paddingTop:10, borderTop:".5px solid rgba(27,138,62,.15)", fontSize:11, color:"#9ca3af" }}>
+                    DAE হটলাইন <a href="tel:16123" style={{ color:"var(--green)", fontWeight:700 }}>16123</a>
+                  </div>
                 </div>
-                <div style={{ fontSize:13, lineHeight:1.8, color:"#111", whiteSpace:"pre-wrap" }}>{result}</div>
-                <div style={{ marginTop:12, paddingTop:10, borderTop:".5px solid rgba(27,138,62,.15)", fontSize:11, color:"#9ca3af" }}>
-                  DAE হটলাইন <a href="tel:16123" style={{ color:"var(--green)", fontWeight:700 }}>16123</a>
-                </div>
+
+                {plantNet.loading && (
+                  <div style={{ marginTop:12, display:"flex", alignItems:"center", gap:10, background:"rgba(37,99,235,.06)", border:".5px solid rgba(37,99,235,.2)", borderRadius:10, padding:"10px 14px", fontSize:12, color:"#1d4ed8", fontWeight:600 }}>
+                    <span className="spin">⏳</span> PlantNet যাচাইকরণ চলছে…
+                  </div>
+                )}
+                {!plantNet.loading && plantNet.results.length > 0 && (
+                  <div style={{ marginTop:12, background:"rgba(37,99,235,.04)", border:".5px solid rgba(37,99,235,.2)", borderRadius:14, padding:14 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:"#1d4ed8", letterSpacing:".06em" }}>🌿 PlantNet যাচাইকরণ</span>
+                      <span style={{ marginLeft:"auto", fontSize:10, background:"rgba(37,99,235,.1)", color:"#1d4ed8", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>
+                        আত্মবিশ্বাস: {plantNet.results[0].score}%
+                      </span>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#111", marginBottom:4 }}>
+                      {plantNet.results[0].name}
+                    </div>
+                    <div style={{ fontSize:11, color:"#6b7280", marginBottom:6 }}>
+                      {plantNet.results[0].scientificName}
+                      {plantNet.results[0].eppoCode && <span style={{ marginLeft:8, background:"#f3f4f6", padding:"1px 6px", borderRadius:4, fontSize:9 }}>EPPO: {plantNet.results[0].eppoCode}</span>}
+                    </div>
+                    {plantNet.results[0].score >= 60 && (
+                      <div style={{ fontSize:11, background:"rgba(22,163,74,.1)", color:"#16a34a", padding:"4px 10px", borderRadius:6, fontWeight:600 }}>
+                        ✅ AI নির্ণয়ের সাথে সঙ্গতিপূর্ণ (উচ্চ আত্মবিশ্বাস)
+                      </div>
+                    )}
+                    {plantNet.results[0].score < 60 && plantNet.results[0].score >= 30 && (
+                      <div style={{ fontSize:11, background:"rgba(217,119,6,.1)", color:"#d97706", padding:"4px 10px", borderRadius:6, fontWeight:600 }}>
+                        ⚠️ মাঝারি মাত্রার আত্মবিশ্বাস — DAE অফিসে যাচাই করুন
+                      </div>
+                    )}
+                    {plantNet.results[0].score < 30 && (
+                      <div style={{ fontSize:11, background:"rgba(229,62,62,.1)", color:"#e53e3e", padding:"4px 10px", borderRadius:6, fontWeight:600 }}>
+                        ❌ কম আত্মবিশ্বাস — পুনরায় ছবি তুলুন বা DAE-তে যোগাযোগ করুন
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!plantNet.loading && plantNet.error && (
+                  <div style={{ marginTop:12, fontSize:11, color:"#9ca3af", textAlign:"center", padding:"8px", background:"#f9fafb", borderRadius:8 }}>
+                    🌿 {plantNet.error}
+                  </div>
+                )}
               </div>
             )}
           </div>

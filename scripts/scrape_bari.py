@@ -12,7 +12,7 @@ except ImportError:
     sys.exit(1)
 
 BARI_HERBARIUM_URL = "https://dhcrop.bsmrau.net/varieties-released/varieties-released-by-bari/"
-HEADERS = {"User-Agent": "KrishiAI-DataBot/1.0 (github.com/moniruzjaman/krishiai-web)"}
+HEADERS = {"User-Agent": "KrishiAI-DataBot/1.0 (github.com/moniruzjaman/web.krishiai.live)"}
 
 def fetch_bari_varieties() -> list[dict]:
     resp = requests.get(BARI_HERBARIUM_URL, headers=HEADERS, timeout=30)

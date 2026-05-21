@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase, type DBSchema } from "idb";
 
 const DB_NAME = "krishi-ai";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 interface ChatMessage {
   id?: number;
@@ -24,6 +24,13 @@ interface ScanRecord {
 interface ProfileRecord {
   key: string;
   value: string;
+}
+
+interface CachedData {
+  key: string;
+  value: string;
+  timestamp: number;
+  expiresAt: number;
 }
 
 interface QueuedRequest {
@@ -56,6 +63,10 @@ interface KrishiDB extends DBSchema {
     value: QueuedRequest;
     indexes: { timestamp: number };
   };
+  cachedData: {
+    key: string;
+    value: CachedData;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<KrishiDB>> | null = null;
@@ -63,7 +74,10 @@ let dbPromise: Promise<IDBPDatabase<KrishiDB>> | null = null;
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<KrishiDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 4 && !db.objectStoreNames.contains("cachedData")) {
+          db.createObjectStore("cachedData", { keyPath: "key" });
+        }
         if (!db.objectStoreNames.contains("chat")) {
           const chatStore = db.createObjectStore("chat", { keyPath: "id", autoIncrement: true });
           chatStore.createIndex("timestamp", "timestamp");
@@ -171,4 +185,30 @@ export async function processRequestQueue(): Promise<{ processed: number; failed
     } catch { await incrementQueuedRetry(req.id!); failed++; }
   }
   return { processed, failed };
+}
+
+// ── TTL Cache ─────────────────────────────────────────────────────────────────
+export async function getCached<T>(key: string): Promise<T | null> {
+  try {
+    const db = await getDb();
+    const entry = await db.get("cachedData", key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      await db.delete("cachedData", key);
+      return null;
+    }
+    return JSON.parse(entry.value) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function setCached(key: string, value: unknown, ttlMs: number): Promise<void> {
+  try {
+    const db = await getDb();
+    const now = Date.now();
+    await db.put("cachedData", { key, value: JSON.stringify(value), timestamp: now, expiresAt: now + ttlMs });
+  } catch {
+    // cache failure is non-critical
+  }
 }

@@ -1,6 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyzeText, buildAgriPrompt } from "@/services/aiService";
+import { getCached, setCached } from "@/services/offlineStorage";
+
+interface CalendarEntry {
+  crop: string;
+  season: string;
+  plantingStart: string;
+  plantingEnd: string;
+  harvestStart: string;
+  harvestEnd: string;
+}
+
+const CALENDAR_CROP_MAP: Record<string, string> = {
+  "ধান": "rice", "গম": "wheat", "পাট": "jute", "ভুট্টা": "maize", "আলু": "potato",
+};
 
 const CROPS = [
   {name:"ধান",en:"Rice",icon:"🌾",season:"বোরো/আমন/আউশ",diseases:["ব্লাস্ট","বাদামি দাগ","পাতা পোড়া"],fertilizer:"ইউরিয়া ৫৫kg + TSP ২০kg + MOP ২০kg/বিঘা"},
@@ -21,6 +35,56 @@ export default function CropLibrary() {
   const [selected, setSelected] = useState<typeof CROPS[0]|null>(null);
   const [advice, setAdvice] = useState<string|null>(null);
   const [loading, setLoading] = useState(false);
+  const [calendar, setCalendar] = useState<CalendarEntry[]|null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState<string|null>(null);
+  const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
+
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      p => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!selected || !coords) return;
+    const fetchCalendar = async () => {
+      setCalendarLoading(true);
+      setCalendarError(null);
+      try {
+        const cropKey = CALENDAR_CROP_MAP[selected.name];
+        if (!cropKey) { setCalendarLoading(false); return; }
+
+        const cacheKey = `gems_${coords.lat.toFixed(2)}_${coords.lng.toFixed(2)}`;
+        const cached = await getCached<CalendarEntry[]>(cacheKey);
+        if (cached) { setCalendar(cached); setCalendarLoading(false); return; }
+
+        const target = `https://gems.umn.edu/apis/crop-calendar?lat=${coords.lat}&lon=${coords.lng}`;
+        const resp = await fetch(`/api/proxy?target=${encodeURIComponent(target)}`).then(r => r.json());
+
+        const entries: CalendarEntry[] = (resp?.crops || []).map((c: Record<string,string>) => ({
+          crop: c.crop || c.name || "",
+          season: c.season || "",
+          plantingStart: c.planting_start || c.plantingStart || "",
+          plantingEnd: c.planting_end || c.plantingEnd || "",
+          harvestStart: c.harvest_start || c.harvestStart || "",
+          harvestEnd: c.harvest_end || c.harvestEnd || "",
+        }));
+
+        if (entries.length > 0) {
+          const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+          await setCached(cacheKey, entries, THIRTY_DAYS);
+        }
+        setCalendar(entries.length > 0 ? entries : null);
+      } catch {
+        setCalendarError("ক্যালেন্ডার ডেটা লোড হয়নি");
+      }
+      setCalendarLoading(false);
+    };
+    fetchCalendar();
+  }, [selected, coords]);
 
   const filtered = CROPS.filter(c =>
     c.name.includes(search) || c.en.toLowerCase().includes(search.toLowerCase())
@@ -43,7 +107,7 @@ BARI/BRRI/DAE নির্দেশিকা অনুযায়ী বাং�
   return (
     <div style={{background:"var(--bg)",minHeight:"100vh"}}>
       <div className="tool-page-hdr">
-        <button className="back-btn" onClick={()=>nav("/tools")}><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button type="button" className="back-btn" onClick={()=>nav("/tools")} aria-label="Back to tools"><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
         <h1>শস্য সুরক্ষা লাইব্রেরি</h1>
         <div className="sub">Crop Protection Library · BARI/BRRI/DAE</div>
         <div className="badge-row"><span className="badge">GOVT DATA 2025</span><span className="badge">MRR/DAE SOURCED</span></div>
@@ -52,9 +116,7 @@ BARI/BRRI/DAE নির্দেশিকা অনুযায়ী বাং�
       <div style={{padding:"20px 16px 100px"}}>
         {selected ? (
           <div className="fade-up">
-            <button onClick={()=>{setSelected(null);setAdvice(null)}} style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,background:"none",border:"none",color:"var(--green)",fontWeight:700,fontSize:13}}>
-              ← সব ফসল
-            </button>
+<button type="button" onClick={()=>{setSelected(null);setAdvice(null)}} style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,background:"none",border:"none",color:"var(--green)",fontWeight:700,fontSize:13}}>← সব ফসল</button>
             <div style={{background:"linear-gradient(135deg,var(--green-dark),var(--green-mid))",borderRadius:16,padding:20,color:"#fff",marginBottom:16}}>
               <div style={{fontSize:48,marginBottom:8}}>{selected.icon}</div>
               <div style={{fontSize:22,fontWeight:700}}>{selected.name}</div>
@@ -65,14 +127,66 @@ BARI/BRRI/DAE নির্দেশিকা অনুযায়ী বাং�
               </div>
             </div>
 
+            {calendarLoading && (
+              <div style={{background:"#f0fdf4",borderRadius:12,padding:14,marginBottom:12,border:".5px solid #bbf7d0",display:"flex",alignItems:"center",gap:8,fontSize:12,color:"var(--green)"}}>
+                <span className="spin">⏳</span> GEMS ফসল ক্যালেন্ডার লোড হচ্ছে…
+              </div>
+            )}
+            {calendarError && (
+              <div style={{background:"#fff7ed",borderRadius:12,padding:14,marginBottom:12,border:".5px solid #fed7aa",fontSize:11,color:"#c2410c"}}>
+                ⚠️ {calendarError}
+              </div>
+            )}
+            {calendar && selected && (() => {
+              const cropKey = selected ? CALENDAR_CROP_MAP[selected.name] : "";
+              const match = calendar.find(e => e.crop.toLowerCase().includes(cropKey.toLowerCase()) || e.season === selected.name);
+              const riceSeasons = calendar.filter(e => e.crop.toLowerCase().includes("rice"));
+              const entry = match || (riceSeasons.length > 0 ? riceSeasons[0] : null);
+              if (!entry) return null;
+              return (
+                <div style={{background:"#f0fdf4",borderRadius:12,padding:14,marginBottom:12,border:".5px solid #bbf7d0"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"var(--green)",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                    📅 GEMS ফসল ক্যালেন্ডার
+                    <span style={{fontSize:9,background:"rgba(27,138,62,.1)",color:"var(--green)",padding:"1px 6px",borderRadius:20,fontWeight:600,marginLeft:"auto"}}>{entry.season || entry.crop}</span>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <div style={{background:"#fff",borderRadius:8,padding:10}}>
+                      <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>🌱 বপন</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#111"}}>
+                        {entry.plantingStart}{entry.plantingEnd ? ` - ${entry.plantingEnd}` : ""}
+                      </div>
+                    </div>
+                    <div style={{background:"#fff",borderRadius:8,padding:10}}>
+                      <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>🌾 ফসল কাটা</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#111"}}>
+                        {entry.harvestStart}{entry.harvestEnd ? ` - ${entry.harvestEnd}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  {riceSeasons.length > 1 && (
+                    <div style={{marginTop:10,paddingTop:8,borderTop:".5px solid #bbf7d0"}}>
+                      <div style={{fontSize:10,color:"#6b7280",marginBottom:6}}>অন্যান্য মৌসুম:</div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {riceSeasons.filter(e => e !== entry).map((e,i) => (
+                          <span key={i} style={{fontSize:10,background:"#fff",padding:"3px 8px",borderRadius:6,border:".5px solid #bbf7d0"}}>
+                            {e.season}: {e.plantingStart}–{e.harvestEnd}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div style={{background:"#fff",borderRadius:12,padding:14,marginBottom:12,border:".5px solid #e5e7eb"}}>
               <div style={{fontSize:12,fontWeight:700,color:"#111",marginBottom:8}}>🌱 সার সুপারিশ</div>
               <div style={{fontSize:12,color:"#6b7280",lineHeight:1.6}}>{selected.fertilizer}</div>
             </div>
 
-            <button onClick={()=>getAdvice(selected)} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,var(--green-dark),var(--green))",border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:16}}>
-              {loading?"⏳ AI পরামর্শ লোড হচ্ছে…":"🤖 বিস্তারিত AI পরামর্শ নিন"}
-            </button>
+<button type="button" onClick={()=>getAdvice(selected)} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,var(--green-dark),var(--green))",border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:16}}>
+               {loading?"⏳ AI পরামর্শ লোড হচ্ছে…":"🤖 বিস্তারিত AI পরামর্শ নিন"}
+             </button>
 
             {advice && !loading && (
               <div className="fade-up" style={{background:"rgba(27,74,50,.05)",border:".5px solid rgba(27,138,62,.2)",borderRadius:14,padding:16}}>

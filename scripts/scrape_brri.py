@@ -12,7 +12,7 @@ except ImportError:
     sys.exit(1)
 
 BRRI_PROFILE_URL = "https://riceprofile.brri.gov.bd/list.php"
-HEADERS = {"User-Agent": "KrishiAI-DataBot/1.0 ( krishai-web data ingestion )"}
+HEADERS = {"User-Agent": "KrishiAI-DataBot/1.0 (github.com/moniruzjaman/web.krishiai.live)"}
 
 def fetch_varieties() -> list[dict[str, Any]]:
     """Fetch the BRRI Rice variety list page and extract structured data."""
