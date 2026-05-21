@@ -23,6 +23,9 @@ export const config = { maxDuration: 60 };
 if (!process.env.GEMINI_API_KEY) {
   console.warn("[api/analyze] Missing GEMINI_API_KEY — rule-based fallback will be used");
 }
+if (!process.env.GROQ_API_KEY) {
+  console.warn("[api/analyze] Missing GROQ_API_KEY — rule-based fallback will be used");
+}
 if (!process.env.OPENROUTER_API_KEY) {
   console.warn("[api/analyze] Missing OPENROUTER_API_KEY — rule-based fallback will be used");
 }
@@ -186,7 +189,61 @@ async function callGemini(prompt, imageBase64, mimeType, history, stream) {
   return resp;
 }
 
-// ── 2. OpenRouter cascade ─────────────────────────────────────────────────────
+// ── 2. Groq (free, 14,400 RPD text / 1,000 RPD vision) ────────────────────────
+async function callGroq(prompt, imageBase64, mimeType) {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return null;
+
+  const hasImage = !!(imageBase64 && imageBase64.length > 50);
+
+  const userContent = hasImage
+    ? [
+        { type: "image_url", image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` } },
+        { type: "text", text: prompt },
+      ]
+    : prompt;
+
+  const model = hasImage
+    ? "meta-llama/llama-4-scout-17b-16e-instruct"
+    : "meta-llama/llama-3.3-70b-versatile";
+
+  try {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type":  "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM + `\n\nমৌসুম: ${season()}` },
+          { role: "user",   content: userContent },
+        ],
+        max_tokens:  900,
+        temperature: hasImage ? 0.1 : 0.65,
+      }),
+    });
+
+    if (!resp.ok) {
+      log("warn", "Groq request failed", { model, status: resp.status });
+      return null;
+    }
+
+    const d    = await resp.json();
+    const text = d?.choices?.[0]?.message?.content;
+    if (text) {
+      log("info", "Groq success", { model });
+      return { text, model: `groq-${model}` };
+    }
+    return null;
+  } catch (e) {
+    log("warn", "Groq error", { model, error: e?.message });
+    return null;
+  }
+}
+
+// ── 3. OpenRouter cascade ─────────────────────────────────────────────────────
 async function callOpenRouter(prompt, imageBase64, mimeType) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) return null;
@@ -375,10 +432,15 @@ export default async function handler(req, res) {
         }
       }
     } catch (e) {
-      log("error", "Stream fallback to OpenRouter", { requestId, error: e?.message });
-      const or = await callOpenRouter(prompt, imageBase64, mimeType).catch(() => null);
-      if (or?.text) send(or.text, or.model);
-      else          send(ruleBased(prompt, hasImage), "rule-based");
+      log("error", "Stream fallback to Groq", { requestId, error: e?.message });
+      const groq = await callGroq(prompt, imageBase64, mimeType).catch(() => null);
+      if (groq?.text) { send(groq.text, groq.model); }
+      else {
+        log("error", "Stream fallback to OpenRouter", { requestId });
+        const or = await callOpenRouter(prompt, imageBase64, mimeType).catch(() => null);
+        if (or?.text) send(or.text, or.model);
+        else          send(ruleBased(prompt, hasImage), "rule-based");
+      }
     }
 
     res.write("data: [DONE]\n\n");
@@ -397,12 +459,18 @@ export default async function handler(req, res) {
     }
   } catch (e) { log("error", "Gemini error", { requestId, error: e?.message }); }
 
-  // 2. OpenRouter — free vision cascade
+  // 2. Groq (fast fallback)
+  try {
+    const groq = await callGroq(prompt, imageBase64, mimeType);
+    if (groq?.text) return res.status(200).json({ text: groq.text, model: groq.model, ok: true });
+  } catch (e) { log("error", "Groq error", { requestId, error: e?.message }); }
+
+  // 3. OpenRouter — free vision cascade
   try {
     const or = await callOpenRouter(prompt, imageBase64, mimeType);
     if (or?.text) return res.status(200).json({ text: or.text, model: or.model, ok: true });
   } catch (e) { log("error", "OpenRouter error", { requestId, error: e?.message }); }
 
-  // 3. Rule-based
+  // 4. Rule-based
   return res.status(200).json({ text: ruleBased(prompt, hasImage), model: "rule-based", ok: true });
 }
