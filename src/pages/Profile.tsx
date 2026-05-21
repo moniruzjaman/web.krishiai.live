@@ -72,7 +72,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div style={{padding:"0 16px 100px",marginTop:-20}}>
+      <div className="container" style={{paddingBottom:100,marginTop:-20}}>
         {/* XP Card */}
         <div style={{background:"linear-gradient(135deg,#312e81,#4c1d95)",borderRadius:16,padding:18,marginBottom:16,color:"#fff",boxShadow:"0 4px 20px rgba(76,29,149,.3)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>

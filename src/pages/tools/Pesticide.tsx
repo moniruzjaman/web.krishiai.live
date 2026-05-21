@@ -43,7 +43,7 @@ IRAC/FRAC প্রটোকল অনুযায়ী ৩ মৌসুমে�
         <div className="badge-row"><span className="badge">DAE-IRAC-FRAC-BD</span><span className="badge">OFFICIAL PROTOCOL</span></div>
       </div>
 
-      <div style={{padding:"20px 16px 100px"}}>
+      <div className="container" style={{paddingTop:20,paddingBottom:100}}>
         <div style={{display:"flex",background:"#e5e7eb",borderRadius:30,padding:3,gap:2,marginBottom:20}}>
           {[["mix","🔀 মিক্সিং চেক"],["rotation","♻️ রোটেশন"]].map(([id,lbl])=>(
             <button key={id} onClick={()=>{setTab(id as "mix"|"rotation");setResult(null)}} style={{flex:1,padding:"9px 6px",borderRadius:26,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",background:tab===id?"#b91c1c":"transparent",color:tab===id?"#fff":"#6b7280",transition:"all .2s"}}>{lbl}</button>

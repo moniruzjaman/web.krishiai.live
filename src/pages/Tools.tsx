@@ -31,9 +31,9 @@ export default function Tools() {
         <p style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>{t("tools.subtitle")}</p>
       </div>
 
-      <div role="region" aria-label={t("tools.title")} style={{padding:"20px 16px 100px"}}>
+      <div role="region" aria-label={t("tools.title")} className="container" style={{paddingTop:20,paddingBottom:100}}>
         {/* Tool cards */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr",gap:12,marginBottom:28}}>
+        <div className="tools-grid" style={{display:"grid",gridTemplateColumns:"1fr",gap:12,marginBottom:28}}>
           {TOOLS.map((t,i)=>(
             <div key={i} onClick={()=>t.badge!=="শীঘ্রই"&&nav(t.to)}
               style={{background:t.bg,borderRadius:16,padding:18,cursor:t.badge==="শীঘ্রই"?"default":"pointer",display:"flex",alignItems:"center",gap:14,transition:"all .2s",opacity:t.badge==="শীঘ্রই"?.7:1,boxShadow:"0 2px 12px rgba(0,0,0,.06)"}}

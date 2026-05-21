@@ -113,7 +113,7 @@ export default function PlantHealth() {
         </div>
       </div>
 
-      <div style={{ padding:"16px 16px 100px" }}>
+      <div className="container" style={{ paddingTop:16, paddingBottom:100 }}>
 
         {/* ── embed status banner ──────────────────────────────── */}
         {embedState === "loading" && tab === "embed" && (

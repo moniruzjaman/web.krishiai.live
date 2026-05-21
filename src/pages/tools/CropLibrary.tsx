@@ -113,7 +113,7 @@ BARI/BRRI/DAE নির্দেশিকা অনুযায়ী বাং�
         <div className="badge-row"><span className="badge">GOVT DATA 2025</span><span className="badge">MRR/DAE SOURCED</span></div>
       </div>
 
-      <div style={{padding:"20px 16px 100px"}}>
+      <div className="container" style={{paddingTop:20,paddingBottom:100}}>
         {selected ? (
           <div className="fade-up">
 <button type="button" onClick={()=>{setSelected(null);setAdvice(null)}} style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,background:"none",border:"none",color:"var(--green)",fontWeight:700,fontSize:13}}>← সব ফসল</button>

@@ -10,6 +10,7 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
 }
+@media (min-width: 1024px) { body { font-size: 16px; } }
 #root { min-height: 100dvh; display: flex; flex-direction: column; }
 a { color: #1b8a3e; text-decoration: none; }
 button { cursor: pointer; font-family: inherit; }
@@ -62,7 +63,17 @@ input, textarea, select { font-family: inherit; }
 .bounce     { animation: bounce  1.2s ease-in-out infinite; }
 
 /* ── Shared page wrapper ────────────────────────────── */
-.page-wrap  { padding: 16px; max-width: 480px; margin: 0 auto; }
+.page-wrap  { padding: 16px; max-width: 640px; margin: 0 auto; width: 100%; }
+@media (min-width: 768px) { .page-wrap { max-width: 720px; padding: 24px; } }
+@media (min-width: 1024px) { .page-wrap { max-width: 800px; padding: 32px; } }
+
+/* ── Responsive container for pages without CSS modules ── */
+.container { max-width: 640px; margin: 0 auto; width: 100%; padding: 0 16px; }
+@media (min-width: 768px) { .container { max-width: 720px; padding: 0 24px; } }
+@media (min-width: 1024px) { .container { max-width: 800px; padding: 0 32px; } }
+
+/* ── Tool cards grid ──────────────────────────────────── */
+@media (min-width: 640px) { .tools-grid { grid-template-columns: repeat(2, 1fr) !important; } }
 
 /* ── Glass card ─────────────────────────────────────── */
 .glass {
@@ -144,6 +155,8 @@ input, textarea, select { font-family: inherit; }
   position: relative;
   overflow: hidden;
 }
+@media (min-width: 768px) { .tool-page-hdr { padding: 32px 32px 40px; } }
+@media (min-width: 1024px) { .tool-page-hdr { padding: 40px 40px 48px; } }
 .tool-page-hdr::after {
   content:'';
   position:absolute;

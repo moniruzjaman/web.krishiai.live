@@ -138,7 +138,7 @@ export default function Learn() {
         </div>
       </div>
 
-      <div style={{ padding:"16px 16px 100px" }}>
+      <div className="container" style={{ paddingTop:16, paddingBottom:100 }}>
 
         {/* ── Tabs ─────────────────────────────────────────────── */}
         <div style={{ display:"flex", background:"#e5e7eb", borderRadius:30, padding:3, gap:2, marginBottom:20 }}>

@@ -105,7 +105,7 @@ SRDI/BARC নির্দেশিকা অনুযায়ী:
         </div>
       </div>
 
-      <div style={{padding:"20px 16px 100px"}}>
+      <div className="container" style={{paddingTop:20,paddingBottom:100}}>
         <div style={{display:"flex",background:"#e5e7eb",borderRadius:30,padding:3,gap:2,marginBottom:20}}>
           {[["audit","⚗️ স্বাস্থ্য অডিট"],["guide","📋 গুণত নির্ণয়"],["bio","🌿 জৈব সার"]].map(([id,lbl])=>(
             <button key={id} onClick={()=>setTab(id as "audit"|"guide"|"bio")} style={{flex:1,padding:"8px 4px",borderRadius:26,border:"none",fontSize:11,fontWeight:700,cursor:"pointer",background:tab===id?"var(--green)":"transparent",color:tab===id?"#fff":"#6b7280",transition:"all .2s"}}>{lbl}</button>

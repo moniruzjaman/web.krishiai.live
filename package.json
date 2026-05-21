@@ -11,8 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "analyze": "ANALYZE=true vite build",
-    "validate:env": "node scripts/validate-env.mjs"
+    "analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
     "@sentry/react": "^10.53.1",
