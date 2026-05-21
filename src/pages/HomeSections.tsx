@@ -261,24 +261,44 @@ export function MapWidget() {
   );
 }
 
-// ── 4. MARKET PRICES (horizontal scroll) ─────────────────────────────────────
-const PRICES = [
-  { name:"মোটা চাল",     en:"Coarse Rice",   price:"৫৩–৫৫", unit:"kg", trend:"up",   icon:"🌾" },
-  { name:"মিনিকেট চাল",  en:"Fine Rice",     price:"৭২–৭৮", unit:"kg", trend:"up",   icon:"🍚" },
-  { name:"আলু",          en:"Potato",        price:"২৮–৩৫", unit:"kg", trend:"down",  icon:"🥔" },
-  { name:"পেঁয়াজ",      en:"Onion",         price:"৪৫–৫৫", unit:"kg", trend:"up",   icon:"🧅" },
-  { name:"রসুন",         en:"Garlic",        price:"১৮০–২২০",unit:"kg",trend:"up",   icon:"🧄" },
-  { name:"আদা",          en:"Ginger",        price:"১২০–১৬০",unit:"kg",trend:"up",   icon:"🫚" },
-  { name:"বেগুন",        en:"Eggplant",      price:"৫০–৭০", unit:"kg", trend:"up",   icon:"🍆" },
-  { name:"টমেটো",        en:"Tomato",        price:"৩০–৪৫", unit:"kg", trend:"down",  icon:"🍅" },
-  { name:"মুগ ডাল",      en:"Mung Lentil",   price:"১১০–১৩০",unit:"kg",trend:"flat", icon:"🫘" },
-  { name:"ভুট্টা",       en:"Corn",          price:"৩৫–৪০", unit:"kg", trend:"up",   icon:"🌽" },
-  { name:"পাট",          en:"Jute",          price:"২৫০০–৩০০০",unit:"মণ",trend:"up", icon:"🪢" },
-  { name:"গম",           en:"Wheat",         price:"৩৮–৪৫", unit:"kg", trend:"flat", icon:"🌾" },
-];
+// ── 4. MARKET PRICES (horizontal scroll, live from /api/market) ─────────────
+interface MarketPrice {
+  name: string; en: string; price: string; unit: string; trend: string; icon: string;
+}
 
 export function MarketWidget() {
+  const [prices, setPrices] = useState<MarketPrice[]>([]);
+  const [marketErr, setMarketErr] = useState(false);
   const today = bnDate(new Date());
+
+  useEffect(() => {
+    fetch("/api/market")
+      .then(r => r.json())
+      .then(d => { if (d.ok) setPrices(d.prices); else setMarketErr(true); })
+      .catch(() => setMarketErr(true));
+  }, []);
+
+  const fallbackPrices: MarketPrice[] = [
+    { name:"মোটা চাল", en:"Coarse Rice", price:"৫৩–৫৫", unit:"kg", trend:"up", icon:"🌾" },
+    { name:"মিনিকেট চাল", en:"Fine Rice", price:"৭২–৭৮", unit:"kg", trend:"up", icon:"🍚" },
+    { name:"আলু", en:"Potato", price:"২৮–৩৫", unit:"kg", trend:"down", icon:"🥔" },
+    { name:"পেঁয়াজ", en:"Onion", price:"৪৫–৫৫", unit:"kg", trend:"up", icon:"🧅" },
+    { name:"রসুন", en:"Garlic", price:"১৮০–২২০", unit:"kg", trend:"up", icon:"🧄" },
+    { name:"আদা", en:"Ginger", price:"১২০–১৬০", unit:"kg", trend:"up", icon:"🫚" },
+    { name:"বেগুন", en:"Eggplant", price:"৫০–৭০", unit:"kg", trend:"up", icon:"🍆" },
+    { name:"টমেটো", en:"Tomato", price:"৩০–৪৫", unit:"kg", trend:"down", icon:"🍅" },
+    { name:"মুগ ডাল", en:"Mung Lentil", price:"১১০–১৩০", unit:"kg", trend:"flat", icon:"🫘" },
+    { name:"ভুট্টা", en:"Corn", price:"৩৫–৪০", unit:"kg", trend:"up", icon:"🌽" },
+    { name:"পাট", en:"Jute", price:"২৫০০–৩০০০", unit:"মণ", trend:"up", icon:"🪢" },
+    { name:"গম", en:"Wheat", price:"৩৮–৪৫", unit:"kg", trend:"flat", icon:"🌾" },
+  ];
+
+  const displayPrices = prices.length > 0 ? prices : (marketErr ? fallbackPrices : []);
+
+  if (displayPrices.length === 0) {
+    return <div className={styles.widgetLoad}>📊 বাজার মূল্য লোড হচ্ছে…</div>;
+  }
+
   return (
     <div className={styles.marketCard}>
       <div className={styles.marketHead}>
@@ -291,7 +311,7 @@ export function MarketWidget() {
       </div>
       <div className={styles.marketDate}>{today}</div>
       <div className={styles.priceScroll}>
-        {PRICES.map((p, i) => (
+        {displayPrices.map((p, i) => (
           <div key={i} className={styles.priceCard}>
             <div className={styles.priceIcon}>{p.icon}</div>
             <div className={styles.priceName}>{p.name}</div>
@@ -310,17 +330,13 @@ export function MarketWidget() {
   );
 }
 
-// ── 5. AGRI NEWS (newspapers + TV + 8 official portals) ──────────────────────
+// ── 5. AGRI NEWS (newspapers + TV + official portals) ────────────────────────
 /**
- * All BD govt portals follow the National Web Portal pattern.
- * Direct RSS: none. We use rss2json for newspapers/TV,
- * and scrape NWP JSON API for official agencies.
- *
  * NWP news API (public, no auth):
  *   https://[org].portal.gov.bd/home/get_latest_news
  *   Returns JSON array of {title, date, url}
- *
- * Fallback: curated recent headlines from each source.
+ * Fetched through the proxy to bypass CORS.
+ * Falls back to curated hardcoded headlines when NWP is unavailable.
  */
 
 const MEDIA_SOURCES = [
@@ -338,49 +354,54 @@ const MEDIA_SOURCES = [
     agri: true },
 ];
 
-// Official BD agriculture portal curated bulletins (NWP JSON — CORS-blocked in browser, use static recent)
-const OFFICIAL_NEWS = [
-  { source:"DAE",    color:"#065f46", icon:"🌿",
-    items:[
+interface OfficialSource {
+  id: string; name: string; color: string; icon: string;
+  nwpUrl: string;
+  fallback: { title: string; date: string; url: string }[];
+}
+
+const OFFICIAL_SOURCES: OfficialSource[] = [
+  { id:"dae",    name:"DAE",    color:"#065f46", icon:"🌿", nwpUrl:"https://dae.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"আমন ধানের বীজতলা তৈরি ও ব্যবস্থাপনা নিয়ে DAE-এর নির্দেশিকা জারি",                  date:"2026-05-18", url:"https://dae.gov.bd/site/view/notices" },
       { title:"২০২৬-২৭ মৌসুমে কৃষি প্রণোদনা প্যাকেজ ঘোষণা — DAE",                                 date:"2026-05-16", url:"https://dae.gov.bd/pages/news" },
       { title:"বন্যাপ্রবণ এলাকায় আগাম রোপা আমন চাষের পরামর্শ দিচ্ছে DAE",                          date:"2026-05-14", url:"https://dae.gov.bd" },
     ]},
-  { source:"BRRI",   color:"#1d4ed8", icon:"🌾",
-    items:[
+  { id:"brri",   name:"BRRI",   color:"#1d4ed8", icon:"🌾", nwpUrl:"https://brri.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"বন্যাপ্রবণ এলাকার জন্য নতুন আমন ধানের জাত 'BRRI dhan114' উদ্ভাবন",                   date:"2026-05-19", url:"https://brri.gov.bd/site/view/notices" },
       { title:"আমন ধানের বীজতলার পরিচর্যা ও সার ব্যবস্থাপনা — BRRI পরামর্শ",                        date:"2026-05-17", url:"https://brri.gov.bd" },
       { title:"BRRI-র নতুন গবেষণা: খরা সহনশীল ধানের জাত উদ্ভাবনে সাফল্য",                           date:"2026-05-15", url:"https://brri.gov.bd" },
     ]},
-  { source:"BARI",   color:"#b45309", icon:"🥦",
-    items:[
+  { id:"bari",   name:"BARI",   color:"#b45309", icon:"🥦", nwpUrl:"https://bari.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"বর্ষাকালীন সবজি চাষে উন্নত প্রযুক্তি ও রোগ ব্যবস্থাপনা — BARI",                      date:"2026-05-18", url:"https://bari.gov.bd/site/view/notices" },
       { title:"গ্রীষ্মকালীন টমেটোর নতুন জাত অবমুক্ত করলো BARI",                                    date:"2026-05-16", url:"https://bari.gov.bd" },
       { title:"BARI-এর আধুনিক পদ্ধতিতে পেঁয়াজ সংরক্ষণ নির্দেশিকা প্রকাশিত",                          date:"2026-05-13", url:"https://bari.gov.bd" },
     ]},
-  { source:"BADC",   color:"#0284c7", icon:"🌱",
-    items:[
+  { id:"badc",   name:"BADC",   color:"#0284c7", icon:"🌱", nwpUrl:"https://badc.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"আমন মৌসুমের উন্নতমানের বীজ বিতরণ শুরু — BADC",                                       date:"2026-05-19", url:"https://badc.gov.bd" },
       { title:"গ্রীষ্মকালীন সবজি বীজের চাহিদা পূরণে BADC-এর বিশেষ কার্যক্রম",                       date:"2026-05-15", url:"https://badc.gov.bd" },
     ]},
-  { source:"BARC",   color:"#6d28d9", icon:"🔬",
-    items:[
+  { id:"barc",   name:"BARC",   color:"#6d28d9", icon:"🔬", nwpUrl:"https://barc.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"জলবায়ু সহনশীল কৃষি প্রযুক্তি উদ্ভাবনে NARS-এর নতুন উদ্যোগ — BARC",                 date:"2026-05-17", url:"https://barc.portal.gov.bd" },
       { title:"কৃষি গবেষণা ও সম্প্রসারণ সমন্বয় সভা অনুষ্ঠিত — BARC",                                date:"2026-05-12", url:"https://barc.portal.gov.bd" },
     ]},
-  { source:"SRDI",   color:"#065f46", icon:"🏔️",
-    items:[
+  { id:"srdi",   name:"SRDI",   color:"#065f46", icon:"🏔️", nwpUrl:"https://srdi.portal.gov.bd/home/get_latest_news",
+    fallback:[
       { title:"বন্যা পরবর্তী মাটি পরীক্ষা ও পুনরুদ্ধার নির্দেশিকা — SRDI",                          date:"2026-05-18", url:"https://srdi.gov.bd" },
       { title:"মাটির উর্বরতা সংরক্ষণে জৈব সারের ব্যবহার বাড়ানোর পরামর্শ SRDI-র",                  date:"2026-05-14", url:"https://srdi.gov.bd" },
     ]},
-  { source:"MoA",    color:"#991b1b", icon:"🏛️",
-    items:[
+  { id:"moa",    name:"MoA",    color:"#991b1b", icon:"🏛️", nwpUrl:"",
+    fallback:[
       { title:"কৃষিমন্ত্রী: চলতি মৌসুমে বীজ ও সারের পর্যাপ্ত মজুদ নিশ্চিত করা হয়েছে",             date:"2026-05-20", url:"https://minagri.gov.bd" },
       { title:"আমন ধান চাষে কৃষকদের ৫০% ভর্তুকি দেবে সরকার",                                       date:"2026-05-17", url:"https://minagri.gov.bd" },
       { title:"ডিজিটাল কৃষি সেবা সম্প্রসারণে ২০০ কোটি টাকার প্রকল্প অনুমোদন",                      date:"2026-05-15", url:"https://minagri.gov.bd" },
     ]},
-  { source:"Channel i", color:"#dc2626", icon:"📺",
-    items:[
+  { id:"channeli", name:"Channel i", color:"#dc2626", icon:"📺", nwpUrl:"",
+    fallback:[
       { title:"দেশে চলতি মৌসুমে বোরো ধানের বাম্পার ফলনের আশা",                                     date:"2026-05-19", url:"https://www.channelionline.com" },
       { title:"ATN Bangla কৃষি সংবাদ: আমন ধানের বীজতলা প্রস্তুতির নির্দেশনা",                     date:"2026-05-17", url:"https://www.atnbangla.tv" },
     ]},
@@ -421,45 +442,63 @@ export function NewsWidget() {
   const [tab, setTab] = useState<"official"|"media">("official");
 
   useEffect(() => {
-    // Load official news immediately (static)
-    const official: NewsItem[] = [];
-    OFFICIAL_NEWS.forEach(src =>
-      src.items.forEach(it => official.push({
-        title: it.title, link: it.url,
-        pubDate: it.date, source: src.source,
-        color: src.color, icon: src.icon,
-      }))
-    );
-    official.sort((a,b)=>new Date(b.pubDate).getTime()-new Date(a.pubDate).getTime());
+    // Try NWP live API for each official source, fall back to hardcoded
+    const fetchOfficial = async (src: OfficialSource): Promise<NewsItem[]> => {
+      if (!src.nwpUrl) return src.fallback.map(it => ({
+        title: it.title, link: it.url, pubDate: it.date,
+        source: src.name, color: src.color, icon: src.icon,
+      }));
+      try {
+        const res = await fetch(`/api/proxy?target=${encodeURIComponent(src.nwpUrl)}`)
+          .then(r => r.json());
+        if (Array.isArray(res) && res.length > 0) {
+          return res.slice(0, 5).map((it: {title:string;date:string;url:string}) => ({
+            title: it.title, link: it.url || "#",
+            pubDate: it.date || new Date().toISOString().slice(0,10),
+            source: src.name, color: src.color, icon: src.icon,
+          }));
+        }
+      } catch { /* fall through to hardcoded */ }
+      return src.fallback.map(it => ({
+        title: it.title, link: it.url, pubDate: it.date,
+        source: src.name, color: src.color, icon: src.icon,
+      }));
+    };
 
-    // Load RSS media news
-    Promise.allSettled(
-      MEDIA_SOURCES.map(s =>
-        fetch(`/api/proxy?target=${encodeURIComponent(s.url)}`).then(r => r.json())
-          .then(d => (d.items || [])
-            .filter((it: {title:string}) => isAgriNews(it.title))
-            .slice(0, 5)
-            .map((it: {title:string;link:string;pubDate:string}) => ({
-              title: it.title, link: it.link,
-              pubDate: it.pubDate, source: s.name, color: s.color, icon: "📰",
-            }))
+    // Load official news (live NWP + fallback)
+    const loadAll = async () => {
+      const [officialResults, mediaResults] = await Promise.all([
+        Promise.all(OFFICIAL_SOURCES.map(fetchOfficial)),
+        Promise.allSettled(
+          MEDIA_SOURCES.map(s =>
+            fetch(`/api/proxy?target=${encodeURIComponent(s.url)}`).then(r => r.json())
+              .then(d => (d.items || [])
+                .filter((it: {title:string}) => isAgriNews(it.title))
+                .slice(0, 5)
+                .map((it: {title:string;link:string;pubDate:string}) => ({
+                  title: it.title, link: it.link,
+                  pubDate: it.pubDate, source: s.name, color: s.color, icon: "📰",
+                }))
+              )
           )
-      )
-    ).then(rs => {
+        ),
+      ]);
+
+      const official: NewsItem[] = officialResults.flat();
+      official.sort((a,b)=>new Date(b.pubDate).getTime()-new Date(a.pubDate).getTime());
+
       const media: NewsItem[] = [];
-      rs.forEach(r => { if (r.status === "fulfilled") media.push(...r.value); });
+      mediaResults.forEach(r => { if (r.status === "fulfilled") media.push(...r.value); });
       media.sort((a,b)=>new Date(b.pubDate).getTime()-new Date(a.pubDate).getTime());
+
       setItems([...official, ...media]);
       setLoading(false);
-    });
+    };
+    loadAll();
   }, []);
 
-  const official = items.filter(it =>
-    OFFICIAL_NEWS.map(s=>s.source).includes(it.source)
-  );
-  const media = items.filter(it =>
-    !OFFICIAL_NEWS.map(s=>s.source).includes(it.source)
-  );
+  const official = items.filter(it => OFFICIAL_SOURCES.map(s=>s.name).includes(it.source));
+  const media = items.filter(it => !OFFICIAL_SOURCES.map(s=>s.name).includes(it.source));
   const shown = tab === "official" ? official : media;
 
   return (

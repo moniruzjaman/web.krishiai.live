@@ -1,11 +1,29 @@
-/** Whitelisted external hosts the proxy is allowed to reach */
+/**
+ * Whitelisted external hosts the proxy is allowed to reach.
+ * Supports exact hostnames and wildcard patterns:
+ *   "*.portal.gov.bd" matches "dae.portal.gov.bd", "brri.portal.gov.bd", etc.
+ */
 const ALLOWED_HOSTS = [
   "api.open-meteo.com",
   "geocoding-api.open-meteo.com",
+  "nominatim.openstreetmap.org",
   "gems.umn.edu",
   "rest.isric.org",
   "api.rss2json.com",
+  "*.portal.gov.bd",
 ];
+
+function hostAllowed(hostname) {
+  for (const rule of ALLOWED_HOSTS) {
+    if (rule.startsWith("*.")) {
+      const suffix = rule.slice(1); // ".portal.gov.bd"
+      if (hostname.endsWith(suffix)) return true;
+    } else if (rule === hostname) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function cors(req, res) {
   const allowedOrigins = [
@@ -32,8 +50,8 @@ export default async function handler(req, res) {
   try {
     const url = new URL(target);
 
-    // block open proxy — only allow whitelisted hosts
-    if (!ALLOWED_HOSTS.includes(url.hostname)) {
+    // block open proxy — only allow whitelisted hosts (exact or wildcard)
+    if (!hostAllowed(url.hostname)) {
       return res.status(403).json({ error: "Target host not allowed" });
     }
 
