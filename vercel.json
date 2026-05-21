@@ -41,7 +41,7 @@
         { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },
         { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Permissions-Policy", "value": "camera=(), geolocation=(self), microphone=()" },
+        { "key": "Permissions-Policy", "value": "camera=(self), geolocation=(self), microphone=(self)" },
         { "key": "Content-Security-Policy", "value": "default-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://*.tile.openstreetmap.org https://raw.githubusercontent.com https://unpkg.com https://images.unsplash.com; connect-src 'self'; frame-src 'self' https://game.krishiai.live; frame-ancestors 'self'" }
       ]
     }
