@@ -11,7 +11,7 @@
  */
 
 import { checkRateLimiter } from "./middleware/rate-limit";
-import { corsHeaders, handleCORS } from "./middleware/cors";
+import { corsHeaders, handleCORS, resolveOrigin } from "./middleware/cors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Env {
@@ -132,6 +132,15 @@ function setInMemory(key: string, data: unknown, ttl: number, baseHeaders: Recor
   });
 }
 
+// ── Helper: Simple auth check ────────────────────────────────────────────────
+function checkAuth(req: Request, _env: Env): boolean {
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) return true;
+  const apiKey = req.headers.get("X-API-Key");
+  if (apiKey) return true;
+  return false;
+}
+
 // ── Main Worker Entry Point ──────────────────────────────────────────────────
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -211,15 +220,21 @@ export default {
     }
 
     // ── Rate limiting ────────────────────────────────────────────────────────
-    if (!checkRateLimiter(typeof clientIp === "string" ? clientIp : "unknown", 100, 60_000)) {
+    const rateResult = checkRateLimiter(clientIp, 100, 60);
+    const rateLimitHeaders: Record<string, string> = {
+      "X-RateLimit-Limit": "100",
+      "X-RateLimit-Remaining": rateResult.remaining.toString(),
+      "X-RateLimit-Reset": rateResult.reset.toString(),
+    };
+    if (!rateResult.allowed) {
       return new Response(
         JSON.stringify({ ok: false, error: "Rate limit exceeded", retryAfterSec: 60 }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, "Retry-After": "60" } }
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, ...rateLimitHeaders, "Retry-After": "60" } }
       );
     }
 
     // ── Auth (if route requires it) ──────────────────────────────────────────
-    if (matchedRoute.auth && !checkAuth(req)) {
+    if (matchedRoute.auth && !checkAuth(req, env)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Unauthorized", message: "Provide Authorization: Bearer <token> or X-API-Key header" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -269,6 +284,7 @@ export default {
     const responseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       ...corsHeaders,
+      ...rateLimitHeaders,
       "X-Upstream-Status": upstreamResp.status.toString(),
       "X-Route": matchedRoute.description,
     };
@@ -279,13 +295,19 @@ export default {
     }
 
     const responseBody = await upstreamResp.text();
+    let parsedData: unknown;
+    try {
+      parsedData = JSON.parse(responseBody);
+    } catch {
+      parsedData = { error: "Invalid upstream response", raw: responseBody.slice(0, 500) };
+    }
     const responseData = {
       ok: upstreamResp.ok,
       status: upstreamResp.status,
       gateway: "cloudflare-workers",
       upstream: matchedRoute.upstream,
       timestamp: new Date().toISOString(),
-      data: JSON.parse(responseBody),
+      data: parsedData,
     };
 
     const finalResponse = new Response(JSON.stringify(responseData), {
