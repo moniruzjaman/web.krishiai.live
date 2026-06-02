@@ -211,19 +211,24 @@ export default {
     }
 
     // ── Rate limiting ────────────────────────────────────────────────────────
-    if (!checkRateLimiter(typeof clientIp === "string" ? clientIp : "unknown", 100, 60_000)) {
+    const rateResult = checkRateLimiter(typeof clientIp === "string" ? clientIp : "unknown", 100, 60);
+    if (!rateResult.allowed) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Rate limit exceeded", retryAfterSec: 60 }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, "Retry-After": "60" } }
+        JSON.stringify({ ok: false, error: "Rate limit exceeded", retryAfterSec: rateResult.reset }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, "Retry-After": String(rateResult.reset) } }
       );
     }
 
     // ── Auth (if route requires it) ──────────────────────────────────────────
-    if (matchedRoute.auth && !checkAuth(req)) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Unauthorized", message: "Provide Authorization: Bearer <token> or X-API-Key header" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (matchedRoute.auth) {
+      const authHeader = req.headers.get("Authorization");
+      const apiKey = req.headers.get("X-API-Key");
+      if (!authHeader && !apiKey) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Unauthorized", message: "Provide Authorization: Bearer <token> or X-API-Key header" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
 
     // ── Try cache (KV first, then memory, then upstream) ─────────────────────
@@ -266,11 +271,17 @@ export default {
     }
 
     // ── Build response with CORS & caching headers ───────────────────────────
+    const dynamicOrigin = origin && (isLocalhost || isAllowed) ? origin : "https://web.krishiai.live";
     const responseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
-      ...corsHeaders,
+      "Access-Control-Allow-Origin": dynamicOrigin,
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
       "X-Upstream-Status": upstreamResp.status.toString(),
       "X-Route": matchedRoute.description,
+      "X-RateLimit-Limit": "100",
+      "X-RateLimit-Remaining": String(rateResult.remaining),
+      "X-RateLimit-Reset": String(rateResult.reset),
     };
 
     // Add cache headers based on route

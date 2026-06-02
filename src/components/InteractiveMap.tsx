@@ -57,10 +57,15 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
 
+  // Initialize map once
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    let cancelled = false;
 
     import("leaflet").then((L) => {
+      if (cancelled || !mapRef.current) return;
+
       // Import CSS
       const existingLink = document.querySelector('link[href*="leaflet"]');
       if (!existingLink) {
@@ -80,50 +85,73 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
 
       if (!mapRef.current) return;
 
-      // Create or reuse map
-      let map: L.Map;
-      if (mapInstanceRef.current) {
-        map = mapInstanceRef.current as L.Map;
-      } else {
-        map = L.map(mapRef.current, {
-          center,
-          zoom: 10,
-          zoomControl: true,
-          attributionControl: true,
-        });
-        mapInstanceRef.current = map;
+      const map = L.map(mapRef.current, {
+        center,
+        zoom: 10,
+        zoomControl: true,
+        attributionControl: true,
+      });
+      mapInstanceRef.current = map;
 
-        // User location marker
-        const userIcon = L.divIcon({
+      // User location marker
+      const userIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+
+      L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
+        .addTo(map)
+        .bindPopup("<b>📍 আপনার অবস্থান</b>");
+
+      // Add institution markers
+      INSTITUTIONS.forEach((inst) => {
+        const icon = L.divIcon({
           className: "",
-          html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
         });
 
-        L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
+        L.marker(inst.pos, { icon })
           .addTo(map)
-          .bindPopup("<b>📍 আপনার অবস্থান</b>");
+          .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
+      });
 
-        // Add institution markers
-        INSTITUTIONS.forEach((inst) => {
-          const icon = L.divIcon({
-            className: "",
-            html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
-          });
+      // Default tile layer
+      const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        maxZoom: 18,
+      });
+      tileLayer.addTo(map);
+      tileLayerRef.current = tileLayer;
 
-          L.marker(inst.pos, { icon })
-            .addTo(map)
-            .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
-        });
+      // Invalidate size after mount
+      setTimeout(() => map.invalidateSize(), 200);
+    });
 
-        // Invalidate size after mount
-        setTimeout(() => map.invalidateSize(), 200);
+    return () => {
+      cancelled = true;
+      if (mapInstanceRef.current) {
+        (mapInstanceRef.current as { remove: () => void }).remove();
+        mapInstanceRef.current = null;
+        tileLayerRef.current = null;
       }
+    };
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      // Update tile layer based on mapStyle
+  // Update tile layer when mapStyle changes (without remounting the map)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    import("leaflet").then((L) => {
+      const map = mapInstanceRef.current as L.Map | null;
+      if (!map) return;
+
+      // Remove old tile layer
       if (tileLayerRef.current) {
         map.removeLayer(tileLayerRef.current as L.TileLayer);
       }
@@ -141,16 +169,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       tileLayer.addTo(map);
       tileLayerRef.current = tileLayer;
     });
-
-    return () => {
-      // Only cleanup on unmount
-      if (mapInstanceRef.current) {
-        (mapInstanceRef.current as { remove: () => void }).remove();
-        mapInstanceRef.current = null;
-        tileLayerRef.current = null;
-      }
-    };
-  }, [center, mapStyle]);
+  }, [mapStyle]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }

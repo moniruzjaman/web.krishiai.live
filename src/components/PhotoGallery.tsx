@@ -90,7 +90,7 @@ const SEASON_TABS: { key: Season; label: string; icon: string }[] = [
   { key: "সব", label: "সব", icon: "📷" },
   { key: "রবি", label: "রবি", icon: "❄️" },
   { key: "খরিফ", label: "খরিফ", icon: "🌧️" },
-  { key: "সারাবছর", label: "সারাবছর", icon: "FullYear" },
+  { key: "সারাবছর", label: "সারাবছর", icon: "📅" },
 ];
 
 export default function PhotoGallery() {

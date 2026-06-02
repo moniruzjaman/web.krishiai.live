@@ -388,9 +388,15 @@ export async function GET(request: NextRequest) {
       source: "Open-Meteo · BMD",
     };
 
+    const origin = request.headers.get("origin") || "";
+    const accessControl = isAllowedOrigin(origin) ? origin : "https://web.krishiai.live";
+
     return NextResponse.json(weatherData, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
+        "Access-Control-Allow-Origin": accessControl,
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
       },
     });
   } catch (e) {
