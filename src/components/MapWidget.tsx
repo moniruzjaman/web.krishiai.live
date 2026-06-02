@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 
 const InteractiveMap = dynamic(() => import("./InteractiveMap"), {
@@ -26,24 +26,9 @@ const InteractiveMap = dynamic(() => import("./InteractiveMap"), {
 });
 
 export default function MapWidget() {
-  const [coords, setCoords] = useState<[number, number] | null>(null);
-  const [locLabel, setLocLabel] = useState<string>("ঢাকা");
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
-  useEffect(() => {
-    navigator.geolocation?.getCurrentPosition(
-      (p) => {
-        setCoords([p.coords.latitude, p.coords.longitude]);
-        setLocLabel("📍 লাইভ লোকেশন");
-      },
-      () => {
-        setCoords([23.8103, 90.4125]);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  }, []);
-
-  const center: [number, number] = coords ?? [23.8103, 90.4125];
+  const center: [number, number] = [23.8103, 90.4125];
 
   return (
     <div className="bg-white rounded-[14px] border border-gray-200 overflow-hidden card-shadow">
@@ -77,7 +62,7 @@ export default function MapWidget() {
             </button>
           </div>
           <span className="text-[9px] bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded-full font-bold">
-            {locLabel}
+            ঢাকা
           </span>
         </span>
       </div>
@@ -105,12 +90,10 @@ export default function MapWidget() {
           <span className="w-2.5 h-2.5 bg-amber-500 rounded-full" />
           আবহাওয়া কেন্দ্র
         </span>
-        {coords && (
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 bg-red-500 rounded-full" />
             আপনার অবস্থান
           </span>
-        )}
       </div>
     </div>
   );
