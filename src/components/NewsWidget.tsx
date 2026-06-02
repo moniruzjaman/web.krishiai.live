@@ -1,14 +1,14 @@
 /**
  * NewsWidget.tsx — Enhanced News Widget for KrishiAI
  *
- * Key improvements over original:
- * - Tab renamed: "🏛️ সরকারি সংস্থা" → "🌱 কৃষি সংবাদ" (more honest — source is Google News)
- * - New tab: "📰 ইংরেজি সংবাদ" for English agri news from Google News
- * - Source badges with colored styling
- * - Relative time display
- * - Hover effects with left border accent
- * - Better empty state handling
- * - Footer freshness indicators
+ * 4 tabs:
+ * - 📋 দৈনিক বুলেটিন — AI-generated daily agriculture bulletin
+ * - 🌱 কৃষি সংবাদ — Bengali agriculture headlines from Google News
+ * - 📰 ইংরেজি সংবাদ — English agriculture headlines from Google News
+ * - 🏛️ সরকারি প্রতিবেদন — .gov.bd portal news (CORS proxy + Google site:gov.bd + curated)
+ *
+ * Source badges with colored styling, relative time display,
+ * hover effects, freshness indicators, and auto-refresh.
  */
 
 "use client";
@@ -28,6 +28,7 @@ interface NewsItem {
   source: string;
   color: string;
   icon?: string;
+  isGov?: boolean;
 }
 
 interface DailyBulletin {
@@ -46,9 +47,11 @@ interface NewsResponse {
   bulletin: DailyBulletin | null;
   headlines: NewsItem[];
   englishHeadlines: NewsItem[];
+  govHeadlines: NewsItem[];
   sources: {
     headlines: "google-news-rss" | "fallback";
     bulletin: "ai-generated" | "unavailable";
+    gov: "cors-proxy" | "google-site-gov" | "curated" | "unavailable";
   };
 }
 
@@ -107,7 +110,7 @@ function setCache(data: NewsResponse) {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
-type TabType = "bulletin" | "headlines" | "english";
+type TabType = "bulletin" | "headlines" | "english" | "gov";
 
 function useNewsData() {
   const [data, setData] = useState<NewsResponse | null>(null);
@@ -191,6 +194,21 @@ function useNewsData() {
   return { data, loading, lastUpdated, refresh: () => fetchNews(true) };
 }
 
+// ── Gov source status badge helper ───────────────────────────────────────────
+function govSourceLabel(gov: string): { text: string; color: string } {
+  switch (gov) {
+    case "cors-proxy":
+      return { text: "সরাসরি .gov.bd পোর্টাল", color: "bg-green-100 text-green-700" };
+    case "google-site-gov":
+      return { text: "Google News → .gov.bd", color: "bg-blue-100 text-blue-700" };
+    case "curated":
+      return { text: "মৌসুমি সরকারি পরামর্শ", color: "bg-amber-100 text-amber-700" };
+    default:
+      return { text: "প্রাপ্তিসাধ্য নয়", color: "bg-gray-100 text-gray-500" };
+  }
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
 export default function NewsWidget() {
   const { data, loading, lastUpdated, refresh } = useNewsData();
   const [tab, setTab] = useState<TabType>("bulletin");
@@ -198,6 +216,7 @@ export default function NewsWidget() {
   const getShownItems = (): NewsItem[] => {
     if (tab === "headlines") return data?.headlines ?? [];
     if (tab === "english") return data?.englishHeadlines ?? [];
+    if (tab === "gov") return data?.govHeadlines ?? [];
     return [];
   };
 
@@ -219,7 +238,7 @@ export default function NewsWidget() {
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — 4 tabs with scrollable container on mobile */}
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as TabType)}
@@ -228,21 +247,27 @@ export default function NewsWidget() {
         <TabsList className="w-full h-auto p-0 bg-transparent border-b border-gray-200 rounded-none">
           <TabsTrigger
             value="bulletin"
-            className="flex-1 py-2.5 px-2 text-xs font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
+            className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
           >
-            📋 দৈনিক বুলেটিন
+            📋 বুলেটিন
           </TabsTrigger>
           <TabsTrigger
             value="headlines"
-            className="flex-1 py-2.5 px-2 text-xs font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
+            className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
           >
-            🌱 কৃষি সংবাদ
+            🌱 বাংলা
           </TabsTrigger>
           <TabsTrigger
             value="english"
-            className="flex-1 py-2.5 px-2 text-xs font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
+            className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-green-700 data-[state=active]:bg-green-50 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none border-b-2 border-transparent transition-all"
           >
-            📰 ইংরেজি সংবাদ
+            📰 English
+          </TabsTrigger>
+          <TabsTrigger
+            value="gov"
+            className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-emerald-700 data-[state=active]:bg-emerald-50 data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 rounded-none border-b-2 border-transparent transition-all"
+          >
+            🏛️ সরকারি
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -345,6 +370,75 @@ export default function NewsWidget() {
             </div>
           </div>
         )
+      ) : tab === "gov" ? (
+        /* ── GOVERNMENT TAB ───────────────────────────────────────── */
+        <>
+          {/* Gov source status banner */}
+          {data?.sources?.gov && (
+            <div className="px-4 py-2 border-b border-gray-100 bg-emerald-50/50">
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className={`text-[10px] border-0 px-2 py-0.5 font-bold ${govSourceLabel(data.sources.gov).color}`}
+                >
+                  {govSourceLabel(data.sources.gov).text}
+                </Badge>
+                <span className="text-[10px] text-gray-400">
+                  {data.govHeadlines?.length ?? 0} টি প্রতিবেদন
+                </span>
+              </div>
+            </div>
+          )}
+          {shown.length === 0 ? (
+            <div className="p-5 text-center text-sm text-gray-400">
+              সরকারি প্রতিবেদন লোড হচ্ছে…
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[400px] custom-scrollbar">
+              <div className="divide-y divide-gray-100">
+                {shown.map((it, i) => (
+                  <a
+                    key={i}
+                    href={it.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="news-item-hover block px-4 py-3 no-underline"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      {/* Source badge — gov sources get special styling */}
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{
+                          color: it.color,
+                          backgroundColor: it.color + "15",
+                          border: `1px solid ${it.color}30`,
+                        }}
+                      >
+                        {it.icon || "🏛️"} {it.source}
+                      </span>
+                      {/* Time info */}
+                      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                        <span className="text-[10px] text-emerald-600 font-semibold whitespace-nowrap">
+                          {timeAgo(it.pubDate)}
+                        </span>
+                        <span className="text-[9px] text-gray-400 whitespace-nowrap">
+                          {formatBnDate(it.pubDate)}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Title */}
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[12.5px] text-gray-900 leading-relaxed font-medium flex-1">
+                        {it.title}
+                      </span>
+                      <ExternalLink className="w-3 h-3 text-gray-300 flex-shrink-0 mt-1" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </>
       ) : /* ── HEADLINES / ENGLISH TABS ────────────────────────────────── */
       shown.length === 0 ? (
         <div className="p-5 text-center text-sm text-gray-400">
@@ -408,6 +502,22 @@ export default function NewsWidget() {
               }`}
             />
             {data.sources.headlines === "google-news-rss" ? "Google News RSS" : "মৌসুমি তথ্য"}
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                data.sources.gov === "cors-proxy"
+                  ? "bg-green-500"
+                  : data.sources.gov === "google-site-gov"
+                  ? "bg-blue-500"
+                  : "bg-amber-500"
+              }`}
+            />
+            {data.sources.gov === "cors-proxy"
+              ? ".gov.bd লাইভ"
+              : data.sources.gov === "google-site-gov"
+              ? ".gov.bd (Google)"
+              : "সরকারি পরামর্শ"}
           </span>
           {lastUpdated && (
             <span>
