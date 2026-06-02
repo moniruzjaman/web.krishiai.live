@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -130,6 +130,7 @@ export default function WeatherWidget() {
   const [locating, setLocating] = useState(true);
   const [showHourly, setShowHourly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const cityRef = useRef<string>("ঢাকা");
 
   const loadWeather = useCallback(async (lat: number, lon: number, city: string) => {
     const r = await fetch(
@@ -150,11 +151,13 @@ export default function WeatherWidget() {
           });
         });
         const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, "আপনার অবস্থান");
+        cityRef.current = data.city || "ঢাকা";
         setW(data);
         setLastUpdated(new Date());
       } catch {
         try {
           const data = await loadWeather(23.8103, 90.4125, "ঢাকা");
+          cityRef.current = data.city || "ঢাকা";
           setW(data);
           setLastUpdated(new Date());
         } catch {
@@ -175,14 +178,15 @@ export default function WeatherWidget() {
             maximumAge: 60000,
           });
         });
-        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, w?.city || "ঢাকা");
+        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, cityRef.current);
+        cityRef.current = data.city || cityRef.current;
         setW(data);
         setLastUpdated(new Date());
       } catch { /* ignore */ }
     }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [loadWeather, w?.city]);
+  }, [loadWeather]);
 
   if (err) {
     return (

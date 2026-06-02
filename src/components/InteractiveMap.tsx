@@ -57,9 +57,16 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
 
-  // Initialize map once
+  // Initialize map — reinitialize when center changes
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
+
+    // Clean up previous instance if it exists
+    if (mapInstanceRef.current) {
+      (mapInstanceRef.current as { remove: () => void }).remove();
+      mapInstanceRef.current = null;
+      tileLayerRef.current = null;
+    }
 
     let cancelled = false;
 
@@ -119,11 +126,16 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
           .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
       });
 
-      // Default tile layer
-      const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        maxZoom: 18,
-      });
+      // Tile layer based on current mapStyle
+      const tileLayer = mapStyle === "satellite"
+        ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            attribution: "Esri World Imagery",
+            maxZoom: 18,
+          })
+        : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            maxZoom: 18,
+          });
       tileLayer.addTo(map);
       tileLayerRef.current = tileLayer;
 
@@ -139,9 +151,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         tileLayerRef.current = null;
       }
     };
-  // Only run once on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [center]); // Reinitialize only when center changes
 
   // Update tile layer when mapStyle changes (without remounting the map)
   useEffect(() => {

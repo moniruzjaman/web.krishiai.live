@@ -10,8 +10,68 @@
  * - Logging & observability hooks
  */
 
-import { checkRateLimiter } from "./middleware/rate-limit";
-import { corsHeaders, handleCORS } from "./middleware/cors";
+// ── Inlined CORS middleware ──────────────────────────────────────────────────
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "https://web.krishiai.live",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, CF-Connecting-IP",
+  "Access-Control-Expose-Headers": "X-Upstream-Status, X-Route, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset",
+  "Access-Control-Max-Age": "86400",
+};
+
+function handleCORS(req: Request, allowedOrigins?: string[]): Response {
+  const origin = req.headers.get("Origin") || req.headers.get("Referer") || "";
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  const isAllowed = allowedOrigins
+    ? allowedOrigins.some((o) => origin.startsWith(o))
+    : origin.includes("web.krishiai.live");
+
+  const finalOrigin = isLocalhost || isAllowed ? origin : "https://web.krishiai.live";
+
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": finalOrigin,
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+      "Access-Control-Expose-Headers": "X-Upstream-Status, X-RateLimit-Limit",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}
+
+// ── Inlined Rate Limiting middleware ─────────────────────────────────────────
+const globalBuckets = new Map<string, { count: number; reset: number }>();
+
+function checkRateLimiter(
+  clientId: string,
+  limit = 100,
+  windowSec = 60
+): { allowed: boolean; remaining: number; reset: number } {
+  const windowMs = windowSec * 1000;
+  const now = Date.now();
+  const entry = globalBuckets.get(clientId);
+
+  if (!entry || now > entry.reset) {
+    globalBuckets.set(clientId, { count: 1, reset: now + windowMs });
+    return { allowed: true, remaining: limit - 1, reset: windowSec };
+  }
+
+  entry.count++;
+  const remaining = limit - entry.count;
+
+  if (remaining <= 0) {
+    return { allowed: false, remaining: 0, reset: Math.ceil((entry.reset - now) / 1000) };
+  }
+
+  if (globalBuckets.size > 10000) {
+    for (const [k, v] of globalBuckets) {
+      if (v.reset < now - windowMs) globalBuckets.delete(k);
+    }
+  }
+
+  return { allowed: true, remaining, reset: Math.ceil((entry.reset - now) / 1000) };
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Env {

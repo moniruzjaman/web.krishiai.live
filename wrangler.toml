@@ -1,4 +1,6 @@
 name = "krishiai-api-gateway"
+# Entry point — middleware (CORS, rate-limit) is inlined directly into this file
+# so wrangler/esbuild can bundle it without relative import issues.
 main = "src/workers/api-gateway.ts"
 route = { pattern = "api.krishiai.live/*", zone_name = "krishiai.live" }
 compatibility_date = "2024-12-01"

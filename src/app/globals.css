@@ -193,3 +193,18 @@
 .card-shadow {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 }
+
+/* ── Scrollbar-none utility (hides scrollbar while keeping scroll) ────── */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Scroll snap alignment for horizontal scroll containers ──────────── */
+.scroll-snap-align-start {
+  scroll-snap-align: start;
+}
