@@ -14,6 +14,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+const isAllowedOrigin = (origin: string | null) => {
+  if (!origin) return false;
+  return (
+    origin === "https://krishiai.live" ||
+    origin === "https://www.krishiai.live" ||
+    origin === "https://web.krishiai.live" ||
+    origin.includes("localhost") ||
+    origin.includes("127.0.0.1")
+  );
+};
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
   time: string;

@@ -1,0 +1,13 @@
+name = "krishiai-api-gateway"
+main = "src/workers/api-gateway.ts"
+route = "https://api.krishiai.live/*"
+compatibility_date = "2024-04-01"
+
+# Wrangler supports .dev.vars for local secrets (gitignored by default)
+# KV and other bindings are commented out as optional upgrades
+
+# Uncomment below when ready to enable durable caching
+# [[kv_namespaces]]
+# binding = "GATEWAY_CACHE"
+# id = "cd1a6bXXXXXXXXXX"
+# preview_id = "cd1a6bXXXXXXXXXX"
