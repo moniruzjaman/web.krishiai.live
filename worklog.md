@@ -148,3 +148,29 @@ Build passes successfully with all routes rendering correctly.
 | `src/components/WeatherWidget.tsx` | Replaced `w?.city` dependency with `cityRef` to fix infinite re-render |
 | `src/components/InteractiveMap.tsx` | Added `center` to dep array, kept tile-layer swap effect for `mapStyle` |
 | `src/app/globals.css` | Added `.scrollbar-none` and `.scroll-snap-align-start` classes |
+---
+Task ID: fix-all-issues
+Agent: Main Agent
+Task: Fix git commit issue, home page weather route, commit a64ae6a, Cloudflare API gateway, GitHub CI/CD
+
+Work Log:
+- Investigated full git history and found commit a64ae6a was "enhance all features to best-in-class level"
+- Found garbage commit messages (session IDs used as messages) for commits 9d74b54 and b02f034
+- Verified CI/CD workflow file already had correct `branches: [main, master]` syntax
+- Fixed WeatherWidget infinite re-render: replaced w?.city useEffect dependency with useRef
+- Inlined Cloudflare Worker middleware (cors.ts, rate-limit.ts) into api-gateway.ts to fix wrangler import issues
+- Added wrangler.toml clarifying comment about entry point
+- Fixed InteractiveMap to properly handle tile layer switching without map remount
+- Added missing CSS classes: scrollbar-none, scroll-snap-align-start
+- Verified all API routes work: /api/weather (200 OK), /api/market, /api/news, /api
+- Verified Next.js build passes successfully
+- Committed and pushed all fixes to GitHub (bd43aaa)
+
+Stage Summary:
+- Build: ✅ Passing (Next.js 16.1.3 Turbopack)
+- Weather API: ✅ Working (returns hourly, daily, alerts, advisory, agri indices)
+- Market API: ✅ Working (DAM live + seasonal fallback)
+- News API: ✅ Working (Google News RSS + .gov.bd CORS proxy + AI bulletin)
+- Cloudflare Gateway: ✅ Fixed (middleware inlined, no more import errors)
+- Git: ✅ Pushed to origin/main (bd43aaa)
+- CI/CD: ✅ Syntax correct (branches: [main, master])
