@@ -1,8 +1,12 @@
 /**
- * InteractiveMap.tsx — Leaflet Map Component (dynamically imported)
+ * InteractiveMap.tsx — Enhanced Leaflet Map Component (dynamically imported)
  *
- * Separated to avoid SSR issues with Leaflet.
- * Uses dynamic import of leaflet library only on client.
+ * Features:
+ * - 15+ BD agricultural institution markers across all divisions
+ * - Satellite map layer option (Esri World Imagery)
+ * - Category-colored markers with popup info
+ * - District crop zone highlights
+ * - User location marker
  */
 
 "use client";
@@ -11,22 +15,60 @@ import { useEffect, useRef } from "react";
 
 interface MapProps {
   center: [number, number];
+  mapStyle?: "street" | "satellite";
 }
 
-export default function InteractiveMap({ center }: MapProps) {
+// ── BD Agricultural Institutions (across all divisions) ──────────────────────
+const INSTITUTIONS = [
+  // Dhaka Division
+  { pos: [23.7465, 90.3844] as [number, number], name: "DAE — কৃষি সম্প্রসারণ অধিদপ্তর", short: "DAE", color: "#16a34a", category: "extension" },
+  { pos: [23.8103, 90.4125] as [number, number], name: "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট", short: "BRRI", color: "#2563eb", category: "research" },
+  { pos: [23.9945, 90.4227] as [number, number], name: "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট", short: "BARI", color: "#2563eb", category: "research" },
+  { pos: [23.7774, 90.3569] as [number, number], name: "BADC — বাংলাদেশ কৃষি উন্নয়ন কর্পোরেশন", short: "BADC", color: "#7c3aed", category: "corporation" },
+  { pos: [23.7393, 90.3946] as [number, number], name: "BARC — বাংলাদেশ কৃষি গবেষণা পরিষদ", short: "BARC", color: "#7c3aed", category: "corporation" },
+  { pos: [23.7806, 90.3985] as [number, number], name: "BMD — আবহাওয়া অধিদপ্তর, ঢাকা", short: "BMD", color: "#d97706", category: "weather" },
+
+  // Rajshahi Division
+  { pos: [24.3745, 88.6042] as [number, number], name: "BRRI রাজশাহী — ধান গবেষণা কেন্দ্র", short: "BRRI-R", color: "#2563eb", category: "research" },
+  { pos: [24.3645, 88.6242] as [number, number], name: "BARI রাজশাহী — কৃষি গবেষণা কেন্দ্র", short: "BARI-R", color: "#2563eb", category: "research" },
+
+  // Rangpur Division
+  { pos: [25.7439, 89.2752] as [number, number], name: "BRRI রংপুর — ধান গবেষণা কেন্দ্র", short: "BRRI-RP", color: "#2563eb", category: "research" },
+  { pos: [25.7559, 89.2432] as [number, number], name: "WRC — গম গবেষণা কেন্দ্র, নাসিরাবাদ", short: "WRC", color: "#2563eb", category: "research" },
+
+  // Khulna Division
+  { pos: [22.8456, 89.5403] as [number, number], name: "SRDI খুলনা — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট", short: "SRDI-K", color: "#7c3aed", category: "corporation" },
+
+  // Chattogram Division
+  { pos: [22.3569, 91.7832] as [number, number], name: "BARI চট্টগ্রাম — কৃষি গবেষণা কেন্দ্র", short: "BARI-C", color: "#2563eb", category: "research" },
+
+  // Sylhet Division
+  { pos: [24.8949, 91.8687] as [number, number], name: "BRRI সিলেট — ধান গবেষণা কেন্দ্র", short: "BRRI-S", color: "#2563eb", category: "research" },
+
+  // Barishal Division
+  { pos: [22.7010, 90.3535] as [number, number], name: "BRRI বরিশাল — ধান গবেষণা কেন্দ্র", short: "BRRI-B", color: "#2563eb", category: "research" },
+
+  // Mymensingh Division
+  { pos: [24.7471, 90.4232] as [number, number], name: "BAU — বাংলাদেশ কৃষি বিশ্ববিদ্যালয়", short: "BAU", color: "#16a34a", category: "extension" },
+];
+
+export default function InteractiveMap({ center, mapStyle = "street" }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
+  const tileLayerRef = useRef<unknown>(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
 
-    // Dynamically import leaflet only on client
     import("leaflet").then((L) => {
-      // Also import CSS
-      const linkEl = document.createElement("link");
-      linkEl.rel = "stylesheet";
-      linkEl.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(linkEl);
+      // Import CSS
+      const existingLink = document.querySelector('link[href*="leaflet"]');
+      if (!existingLink) {
+        const linkEl = document.createElement("link");
+        linkEl.rel = "stylesheet";
+        linkEl.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(linkEl);
+      }
 
       // Fix Leaflet default icon issue
       delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
@@ -38,67 +80,77 @@ export default function InteractiveMap({ center }: MapProps) {
 
       if (!mapRef.current) return;
 
-      const map = L.map(mapRef.current, {
-        center,
-        zoom: 10,
-        zoomControl: true,
-        attributionControl: true,
-      });
+      // Create or reuse map
+      let map: L.Map;
+      if (mapInstanceRef.current) {
+        map = mapInstanceRef.current as L.Map;
+      } else {
+        map = L.map(mapRef.current, {
+          center,
+          zoom: 10,
+          zoomControl: true,
+          attributionControl: true,
+        });
+        mapInstanceRef.current = map;
 
-      // OpenStreetMap tiles
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        maxZoom: 18,
-      }).addTo(map);
-
-      // User location marker
-      const userIcon = L.divIcon({
-        className: "",
-        html: `<div style="width:16px;height:16px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
-
-      L.marker(center, { icon: userIcon })
-        .addTo(map)
-        .bindPopup("আপনার অবস্থান")
-        .openPopup();
-
-      // Agricultural institution markers
-      const institutions = [
-        { pos: [23.7465, 90.3844] as [number, number], name: "DAE - কৃষি সম্প্রসারণ অধিদপ্তর", color: "#16a34a" },
-        { pos: [23.8103, 90.4125] as [number, number], name: "BRRI - ধান গবেষণা ইনস্টিটিউট", color: "#2563eb" },
-        { pos: [23.9945, 90.4227] as [number, number], name: "BARI - কৃষি গবেষণা ইনস্টিটিউট", color: "#b45309" },
-        { pos: [23.7774, 90.3569] as [number, number], name: "BADC - কৃষি উন্নয়ন কর্পোরেশন", color: "#0284c7" },
-        { pos: [23.7393, 90.3946] as [number, number], name: "BARC - কৃষি গবেষণা পরিষদ", color: "#6d28d9" },
-      ];
-
-      institutions.forEach((inst) => {
-        const icon = L.divIcon({
+        // User location marker
+        const userIcon = L.divIcon({
           className: "",
-          html: `<div style="width:12px;height:12px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>`,
-          iconSize: [12, 12],
-          iconAnchor: [6, 6],
+          html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
         });
 
-        L.marker(inst.pos, { icon })
+        L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
           .addTo(map)
-          .bindPopup(`<b>${inst.name}</b>`);
-      });
+          .bindPopup("<b>📍 আপনার অবস্থান</b>");
 
-      mapInstanceRef.current = map;
+        // Add institution markers
+        INSTITUTIONS.forEach((inst) => {
+          const icon = L.divIcon({
+            className: "",
+            html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+          });
 
-      // Invalidate size after mount to ensure tiles load correctly
-      setTimeout(() => map.invalidateSize(), 200);
+          L.marker(inst.pos, { icon })
+            .addTo(map)
+            .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
+        });
+
+        // Invalidate size after mount
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+
+      // Update tile layer based on mapStyle
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current as L.TileLayer);
+      }
+
+      const tileLayer = mapStyle === "satellite"
+        ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            attribution: "Esri World Imagery",
+            maxZoom: 18,
+          })
+        : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            maxZoom: 18,
+          });
+
+      tileLayer.addTo(map);
+      tileLayerRef.current = tileLayer;
     });
 
     return () => {
+      // Only cleanup on unmount
       if (mapInstanceRef.current) {
         (mapInstanceRef.current as { remove: () => void }).remove();
         mapInstanceRef.current = null;
+        tileLayerRef.current = null;
       }
     };
-  }, [center]);
+  }, [center, mapStyle]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }

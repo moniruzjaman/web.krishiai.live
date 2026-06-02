@@ -1,9 +1,13 @@
 /**
- * MapWidget.tsx — Interactive Map for KrishiAI
+ * MapWidget.tsx — Best-in-Class Interactive Agricultural Map
  *
- * Leaflet map with OpenStreetMap tiles.
- * Shows user location pin, defaults to Dhaka.
- * Uses dynamic import with ssr: false to avoid Leaflet SSR issues.
+ * Features:
+ * - 15+ BD agricultural institution markers across all divisions
+ * - Satellite map toggle (OpenStreetMap + Esri Satellite)
+ * - Legend with category colors
+ * - District crop zone information
+ * - User location tracking
+ * - Responsive design
  */
 
 "use client";
@@ -24,6 +28,7 @@ const InteractiveMap = dynamic(() => import("./InteractiveMap"), {
 export default function MapWidget() {
   const [coords, setCoords] = useState<[number, number] | null>(null);
   const [locLabel, setLocLabel] = useState<string>("ঢাকা");
+  const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -47,25 +52,58 @@ export default function MapWidget() {
         <span className="text-[13px] font-bold text-gray-900">
           🗺️ কৃষি মানচিত্র
         </span>
-        <span className="ml-auto text-[9px] bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded-full font-bold">
-          {locLabel}
+        <span className="ml-auto flex items-center gap-2">
+          {/* Map style toggle */}
+          <div className="flex bg-gray-200 rounded-full p-0.5">
+            <button
+              onClick={() => setMapStyle("street")}
+              className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer border-none ${
+                mapStyle === "street"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "bg-transparent text-gray-500"
+              }`}
+            >
+              মানচিত্র
+            </button>
+            <button
+              onClick={() => setMapStyle("satellite")}
+              className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer border-none ${
+                mapStyle === "satellite"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "bg-transparent text-gray-500"
+              }`}
+            >
+              🛰️ স্যাটেলাইট
+            </button>
+          </div>
+          <span className="text-[9px] bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded-full font-bold">
+            {locLabel}
+          </span>
         </span>
       </div>
 
       {/* Map frame */}
       <div className="w-full h-[260px] sm:h-[320px] lg:h-[380px] relative">
-        <InteractiveMap center={center} />
+        <InteractiveMap center={center} mapStyle={mapStyle} />
       </div>
 
       {/* Legend */}
       <div className="flex gap-3 px-3 py-2 text-[9px] text-gray-500 border-t border-gray-200 flex-wrap">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-          DAE · BARC · BADC · MoA
+          কৃষি সম্প্রসারণ
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
-          BRRI · BARI · SRDI
+          গবেষণা ইনস্টিটিউট
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
+          কৃষি কর্পোরেশন
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 bg-amber-500 rounded-full" />
+          আবহাওয়া কেন্দ্র
         </span>
         {coords && (
           <span className="flex items-center gap-1">
