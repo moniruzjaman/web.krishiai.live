@@ -48,10 +48,12 @@ interface NewsResponse {
   headlines: NewsItem[];
   englishHeadlines: NewsItem[];
   govHeadlines: NewsItem[];
+  intlHeadlines: NewsItem[];
   sources: {
     headlines: "google-news-rss" | "fallback";
     bulletin: "ai-generated" | "unavailable";
     gov: "cors-proxy" | "google-site-gov" | "curated" | "unavailable";
+    intl: "rss-live" | "unavailable";
   };
 }
 
@@ -110,7 +112,7 @@ function setCache(data: NewsResponse) {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
-type TabType = "bulletin" | "headlines" | "english" | "gov";
+type TabType = "bulletin" | "headlines" | "english" | "gov" | "intl";
 
 function useNewsData() {
   const [data, setData] = useState<NewsResponse | null>(null);
@@ -217,6 +219,7 @@ export default function NewsWidget() {
     if (tab === "headlines") return data?.headlines ?? [];
     if (tab === "english") return data?.englishHeadlines ?? [];
     if (tab === "gov") return data?.govHeadlines ?? [];
+    if (tab === "intl") return data?.intlHeadlines ?? [];
     return [];
   };
 
@@ -268,6 +271,12 @@ export default function NewsWidget() {
             className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-emerald-700 data-[state=active]:bg-emerald-50 data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 rounded-none border-b-2 border-transparent transition-all"
           >
             🏛️ সরকারি
+          </TabsTrigger>
+          <TabsTrigger
+            value="intl"
+            className="flex-1 py-2.5 px-1.5 text-[11px] font-semibold text-gray-500 data-[state=active]:text-blue-700 data-[state=active]:bg-blue-50 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none border-b-2 border-transparent transition-all"
+          >
+            🌐 আন্তর্জাতিক
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -518,6 +527,16 @@ export default function NewsWidget() {
               : data.sources.gov === "google-site-gov"
               ? ".gov.bd (Google)"
               : "সরকারি পরামর্শ"}
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                data.sources.intl === "rss-live"
+                  ? "bg-green-500"
+                  : "bg-gray-300"
+              }`}
+            />
+            {data.sources.intl === "rss-live" ? "FAO/IFPRI/World Bank" : "আঞ্চলিক"}
           </span>
           {lastUpdated && (
             <span>

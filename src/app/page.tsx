@@ -24,12 +24,13 @@ import NewsWidget from "@/components/NewsWidget";
 const TOOLS = [
   {
     icon: "🔬",
-    title: "অফিসিয়াল সায়েন্টিফিক অডিট",
+    title: "ফসল রোগ নির্ণয়",
     cat: "PLANT HEALTH",
     catColor: "#ca8a04",
     bg: "#fef9c3",
-    desc: "AI-চালিত ফসল রোগ শনাক্তকরণ ও চিকিৎসা পরামর্শ",
+    desc: "AI-চালিত ফসল রোগ শনাক্তকরণ, চিকিৎসা পরামর্শ ও প্রতিরোধ ব্যবস্থা",
     features: ["রোগ শনাক্ত", "চিকিৎসা পরামর্শ", "প্রতিরোধ ব্যবস্থা"],
+    url: "#",
   },
   {
     icon: "🛰️",
@@ -37,26 +38,29 @@ const TOOLS = [
     cat: "SATELLITE TECH",
     catColor: "#1d4ed8",
     bg: "#dbeafe",
-    desc: "স্যাটেলাইট থেকে ফসলের স্বাস্থ্য ও বৃদ্ধি পর্যবেক্ষণ",
+    desc: "স্যাটেলাইট থেকে ফসলের স্বাস্থ্য, NDVI ম্যাপিং ও বৃদ্ধি পর্যবেক্ষণ",
     features: ["NDVI ম্যাপিং", "ফসল স্বাস্থ্য", "বৃদ্ধি ট্র্যাকিং"],
+    url: "#",
   },
   {
     icon: "🌾",
-    title: "শস্য সুরক্ষা লাইব্রেরি",
+    title: "শস্য তথ্যভাণ্ডার",
     cat: "CROP LIBRARY",
     catColor: "#166534",
     bg: "#dcfce7",
-    desc: "২০০+ ফসলের বিস্তারিত চাষ পদ্ধতি ও যত্ন নির্দেশিকা",
-    features: ["২০০+ ফসল", "চাষ পদ্ধতি", "যত্ন নির্দেশিকা"],
+    desc: "২০০+ ফসলের বিস্তারিত চাষ পদ্ধতি, রোগ প্রতিকার ও যত্ন নির্দেশিকা",
+    features: ["২০০+ ফসল", "চাষ পদ্ধতি", "রোগ প্রতিকার"],
+    url: "#",
   },
   {
     icon: "🏺",
-    title: "মৃত্তিকা বিশেষজ্ঞ ও অডিট",
+    title: "মৃত্তিকা বিশেষজ্ঞ",
     cat: "SOIL SCIENCE",
     catColor: "#9d174d",
     bg: "#fce7f3",
-    desc: "মাটির গুণমান পরীক্ষা ও সারের সুনির্দিষ্ট মাত্রা নির্ধারণ",
+    desc: "মাটির গুণমান পরীক্ষা, পুষ্টি বিশ্লেষণ ও সারের সুনির্দিষ্ট মাত্রা নির্ধারণ",
     features: ["মাটি পরীক্ষা", "সার মাত্রা", "পুষ্টি বিশ্লেষণ"],
+    url: "#",
   },
   {
     icon: "📈",
@@ -64,8 +68,9 @@ const TOOLS = [
     cat: "YIELD FORECAST",
     catColor: "#6d28d9",
     bg: "#ede9fe",
-    desc: "AI মডেল ভিত্তিক ফসলের ফলন পূর্বাভাস ও বাজার মূল্য প্রক্ষেপণ",
+    desc: "AI মডেল ভিত্তিক ফসলের ফলন পূর্বাভাস, বাজার মূল্য প্রক্ষেপণ ও ঝুঁকি মূল্যায়ন",
     features: ["ফলন পূর্বাভাস", "মূল্য প্রক্ষেপণ", "ঝুঁকি মূল্যায়ন"],
+    url: "#",
   },
   {
     icon: "🧪",
@@ -73,8 +78,9 @@ const TOOLS = [
     cat: "PESTICIDE EXPERT",
     catColor: "#b45309",
     bg: "#fef3c7",
-    desc: "নিরাপদ ও কার্যকর কীটনাশক নির্বাচন ও প্রয়োগ নির্দেশিকা",
+    desc: "নিরাপদ ও কার্যকর কীটনাশক নির্বাচন, প্রয়োগ মাত্রা ও সতর্কতা নির্দেশিকা",
     features: ["নিরাপদ নির্বাচন", "প্রয়োগ মাত্রা", "সতর্কতা"],
+    url: "#",
   },
   {
     icon: "🎓",
@@ -82,8 +88,39 @@ const TOOLS = [
     cat: "LEARNING CENTER",
     catColor: "#c2410c",
     bg: "#ffedd5",
-    desc: "ভিডিও টিউটোরিয়াল, প্রশিক্ষণ মডিউল ও কৃষি জ্ঞান ভাণ্ডার",
-    features: ["ভিডিও টিউটোরিয়াল", "প্রশিক্ষণ", "জ্ঞান ভাণ্ডার"],
+    desc: "ভিডিও টিউটোরিয়াল, প্রশিক্ষণ মডিউল, কুইজ ও কৃষি জ্ঞান ভাণ্ডার",
+    features: ["ভিডিও টিউটোরিয়াল", "প্রশিক্ষণ", "কুইজ"],
+    url: "#",
+  },
+  {
+    icon: "🏛️",
+    title: "সরকারি সেবা ও ভর্তুকি",
+    cat: "GOVT SERVICES",
+    catColor: "#065f46",
+    bg: "#ecfdf5",
+    desc: "সরকারি কৃষি প্রকল্প, সার-বীজ ভর্তুকি, প্রণোদনা ও ঋণ সুবিধার তথ্য",
+    features: ["সার ভর্তুকি", "প্রণোদনা", "কৃষি ঋণ"],
+    url: "#",
+  },
+  {
+    icon: "💧",
+    title: "স্মার্ট সেচ ব্যবস্থাপনা",
+    cat: "IRRIGATION",
+    catColor: "#0e7490",
+    bg: "#ecfeff",
+    desc: "আবহাওয়া ও মাটির আর্দ্রতা ভিত্তিক স্মার্ট সেচ পরামর্শ ও পানি ব্যবস্থাপনা",
+    features: ["সেচ পরামর্শ", "পানি ব্যবস্থাপনা", "আর্দ্রতা পর্যবেক্ষণ"],
+    url: "#",
+  },
+  {
+    icon: "🛡️",
+    title: "ফসল বীমা ও ঋণ",
+    cat: "FINANCE",
+    catColor: "#6d28d9",
+    bg: "#f5f3ff",
+    desc: "ফসল বীমা, কৃষি ঋণ, সরকারি প্রণোদনা ও আর্থিক সুরক্ষা সংক্রান্ত নির্দেশিকা",
+    features: ["ফসল বীমা", "কৃষি ঋণ", "আর্থিক সুরক্ষা"],
+    url: "#",
   },
 ];
 
@@ -328,12 +365,13 @@ export default function HomePage() {
             কৃষকদের জন্য সম্পূর্ণ ডিজিটাল কৃষি সমাধান — AI থেকে স্যাটেলাইট পর্যন্ত।
           </p>
 
-          {/* Tool cards — enhanced with descriptions and feature tags */}
-          <div className="space-y-3">
+          {/* Tool cards — enhanced with clickable links and grid layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TOOLS.map((t, i) => (
-              <div
+              <a
                 key={i}
-                className="flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-3.5 hover:border-green-300 hover:bg-green-50/30 transition-all cursor-pointer card-shadow group"
+                href={t.url}
+                className="flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-3.5 hover:border-green-300 hover:bg-green-50/30 transition-all cursor-pointer card-shadow group no-underline"
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
@@ -368,7 +406,7 @@ export default function HomePage() {
                 <div className="text-[11px] font-semibold text-gray-400 group-hover:text-green-600 transition-colors flex-shrink-0 mt-1">
                   বিস্তারিত →
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>

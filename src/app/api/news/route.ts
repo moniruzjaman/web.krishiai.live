@@ -40,10 +40,12 @@ interface NewsResponse {
   headlines: NewsItem[];
   englishHeadlines: NewsItem[];
   govHeadlines: NewsItem[];
+  intlHeadlines: NewsItem[];
   sources: {
     headlines: "google-news-rss" | "fallback";
     bulletin: "ai-generated" | "unavailable";
     gov: "cors-proxy" | "google-site-gov" | "curated" | "unavailable";
+    intl: "rss-live" | "unavailable";
   };
 }
 
@@ -156,6 +158,9 @@ const AGRI_KW_BN = [
   "পানি", "মাটি", "মৃত্তিকা", "মৎস্য", "পশুপালন", "দুগ্ধ",
   "কৃষি সম্প্রসারণ", "বীজ বিতরণ", "সার ভর্তুকি", "ফসল ক্ষতিপূরণ",
   "কৃষি ঋণ", "পানি সেচ", "খাদ্য নিরাপত্তা", "ভাসমান কৃষি",
+  "জলবায়ু", "প্রাণিসম্পদ", "হাঁস-মুরগি", "গবাদি", "মাছ চাষ", "ঘাস",
+  "তেল ফসল", "ডাল", "মসলা", "ফল", "পেঁয়াজ", "রসুন", "মরিচ",
+  "সরিষা", "চিনি", "আখ", "চা", "তামাক", "কফি", "FAO",
 ];
 
 const AGRI_KW_EN = [
@@ -164,6 +169,9 @@ const AGRI_KW_EN = [
   "flood", "cultivation", "livestock", "fisheries", "crop-yield", "Bangladesh",
   "monsoon", "boro", "aman", "aus", "jute", "potato", "onion", "vegetable",
   "subsidy", "extension", "seedling", "transplant", "pesticide", "blight",
+  "fao", "food and agriculture", "ifpri", "world bank", "climate", "dairy",
+  "poultry", "aquaculture", "nutrition", "food security", "organic",
+  "sustainable", "biodiversity", "soil", "water", "market price",
 ];
 
 const isAgri = (t: string): boolean => {
@@ -275,6 +283,30 @@ const GOV_RSS_FEEDS = [
     color: "#9d174d",
     icon: "🏛️",
   },
+  {
+    url: "https://ais.gov.bd/site/rss",
+    source: "AIS (কৃষি তথ্য সার্ভিস)",
+    color: "#15803d",
+    icon: "🏛️",
+  },
+  {
+    url: "https://dls.gov.bd/site/rss",
+    source: "DLS (প্রাণিসম্পদ অধিদপ্তর)",
+    color: "#a16207",
+    icon: "🏛️",
+  },
+  {
+    url: "https://fisheries.gov.bd/site/rss",
+    source: "DoF (মৎস্য অধিদপ্তর)",
+    color: "#0e7490",
+    icon: "🏛️",
+  },
+  {
+    url: "https://srdi.gov.bd/site/rss",
+    source: "SRDI (মৃত্তিকা উন্নয়ন ইনস্টিটিউট)",
+    color: "#92400e",
+    icon: "🏛️",
+  },
 ];
 
 // ── Fetch .gov.bd RSS feeds via CORS proxy ───────────────────────────────────
@@ -315,6 +347,85 @@ async function fetchGovRSSFeeds(): Promise<NewsItem[]> {
   return allItems;
 }
 
+// ── International authentic RSS feeds ──────────────────────────────────────────
+const INTL_RSS_FEEDS = [
+  {
+    url: "https://www.fao.org/news/rss/crop-production.xml",
+    source: "FAO (খাদ্য ও কৃষি সংস্থা)",
+    color: "#1e40af",
+    icon: "🌍",
+  },
+  {
+    url: "https://www.fao.org/news/rss/agriculture.xml",
+    source: "FAO",
+    color: "#1e40af",
+    icon: "🌍",
+  },
+  {
+    url: "https://www.fao.org/news/rss/climate-change.xml",
+    source: "FAO জলবায়ু",
+    color: "#dc2626",
+    icon: "🌍",
+  },
+  {
+    url: "https://www.ifpri.org/rss.xml",
+    source: "IFPRI (আন্তর্জাতিক খাদ্য নীতি গবেষণা)",
+    color: "#6d28d9",
+    icon: "🌍",
+  },
+  {
+    url: "https://www.irri.org/rss.xml",
+    source: "IRRI (আন্তর্জাতিক ধান গবেষণা ইনস্টিটিউট)",
+    color: "#1b8a3e",
+    icon: "🌾",
+  },
+  {
+    url: "https://www.worldbank.org/en/topic/agriculture/rss",
+    source: "World Bank কৃষি",
+    color: "#0e7490",
+    icon: "🌍",
+  },
+  {
+    url: "https://www.cgiar.org/rss.xml",
+    source: "CGIAR",
+    color: "#1b8a3e",
+    icon: "🌍",
+  },
+];
+
+async function fetchIntlRSSFeeds(): Promise<NewsItem[]> {
+  const allItems: NewsItem[] = [];
+  const results = await Promise.allSettled(
+    INTL_RSS_FEEDS.map(async (feed) => {
+      try {
+        const xml = await fetchViaCORSProxy(feed.url, 10000);
+        if (!xml) return [];
+        const parsed = parseRSS(xml);
+        return parsed
+          .filter((it) => isAgri(it.title) && isRecent(it.pubDate))
+          .slice(0, 5)
+          .map((it) => ({
+            title: it.title,
+            link: it.link,
+            pubDate: it.pubDate,
+            source: feed.source,
+            color: feed.color,
+            icon: feed.icon,
+            isGov: false,
+          }));
+      } catch {
+        return [];
+      }
+    })
+  );
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      allItems.push(...result.value);
+    }
+  }
+  return allItems;
+}
+
 // ── Fetch Google News RSS with site:gov.bd queries ───────────────────────────
 async function fetchGoogleGovNews(): Promise<NewsItem[]> {
   // Multiple queries to maximize coverage of .gov.bd content
@@ -322,6 +433,8 @@ async function fetchGoogleGovNews(): Promise<NewsItem[]> {
     "site:gov.bd কৃষি",
     "site:gov.bd ধান ফসল কৃষক",
     "site:gov.bd agriculture crop",
+    "site:gov.bd কৃষি সম্প্রসারণ",
+    "site:gov.bd সার বীজ সেচ",
   ];
 
   const allItems: NewsItem[] = [];
@@ -666,6 +779,26 @@ async function fetchGoogleNewsRSS(
           "BRRI": "BRRI",
           "BARI": "BARI",
           "BADC": "BADC",
+          "FAO": "FAO",
+          "Food and Agriculture Organization": "FAO",
+          "IFPRI": "IFPRI",
+          "IRRI": "IRRI",
+          "World Bank": "World Bank",
+          "World Bank Group": "World Bank",
+          "Inter Press Service": "IPS",
+          "Reuters": "Reuters",
+          "Associated Press": "AP",
+          "Bloomberg": "Bloomberg",
+          "The Guardian": "The Guardian",
+          "SciDev.Net": "SciDev.Net",
+          "financialexpress.com.bd": "Financial Express",
+          "The Financial Express": "Financial Express",
+          "dailymessenger.net": "Daily Messenger",
+          "Daily Observer": "Daily Observer",
+          "observerbd.com": "Daily Observer",
+          "theindependentbd.com": "The Independent",
+          "en.prothomalo.com": "প্রথম আলো (EN)",
+          "en.samakal.com": "সমকাল (EN)",
         };
 
         const normalizedSource = sourceNameMap[source] || source;
@@ -696,6 +829,21 @@ async function fetchGoogleNewsRSS(
           "BRRI": "#1d4ed8",
           "BARI": "#b45309",
           "BADC": "#0284c7",
+          "FAO": "#1e40af",
+          "IFPRI": "#6d28d9",
+          "World Bank": "#0e7490",
+          "Reuters": "#dc2626",
+          "AP": "#1d4ed8",
+          "Bloomberg": "#6d28d9",
+          "The Guardian": "#7c3aed",
+          "SciDev.Net": "#15803d",
+          "Financial Express": "#b45309",
+          "Daily Messenger": "#0284c7",
+          "Daily Observer": "#9d174d",
+          "The Independent": "#6d28d9",
+          "প্রথম আলো (EN)": "#1b8a3e",
+          "সমকাল (EN)": "#0284c7",
+          "IPS": "#1d4ed8",
         };
 
         const color = sourceColors[normalizedSource] || (lang === "bn" ? "#1b8a3e" : "#1d4ed8");
@@ -1021,19 +1169,23 @@ export async function GET(request: NextRequest) {
   const ctx = bdAgriContext();
 
   // ── Fetch ALL sources in parallel ─────────────────────────────────────
-  const [bnAgri, bnFertilizer, bnRice, enAgri, govRSS, govGoogle] = await Promise.all([
+  const [bnAgri, bnFertilizer, bnRice, bnWeather, bnAll, enAgri, enClimate, govRSS, govGoogle, intlRSS] = await Promise.all([
     fetchGoogleNewsRSS("কৃষি ফসল ধান বাংলাদেশ", "bn"),
     fetchGoogleNewsRSS("কৃষি সার বীজ সেচ", "bn"),
     fetchGoogleNewsRSS("বোরো আমন আউশ ধান", "bn"),
+    fetchGoogleNewsRSS("আবহাওয়া কৃষি বাংলাদেশ", "bn"),
+    fetchGoogleNewsRSS("বাংলাদেশ কৃষি সংবাদ সম্প্রসারণ", "bn"),
     fetchGoogleNewsRSS("agriculture Bangladesh crop rice", "en"),
+    fetchGoogleNewsRSS("agriculture climate food security farming", "en"),
     fetchGovRSSFeeds(),          // CORS proxy → .gov.bd RSS
     fetchGoogleGovNews(),        // Google News site:gov.bd queries
+    fetchIntlRSSFeeds(),         // International orgs (FAO, IFPRI, IRRI, etc.)
   ]);
 
   // ── Combine and deduplicate Bengali headlines ─────────────────────────
   const seenTitles = new Set<string>();
   const bengaliHeadlines: NewsItem[] = [];
-  for (const item of [...bnAgri, ...bnFertilizer, ...bnRice]) {
+  for (const item of [...bnAgri, ...bnFertilizer, ...bnRice, ...bnWeather, ...bnAll]) {
     const key = item.title.slice(0, 40).toLowerCase();
     if (!seenTitles.has(key)) {
       seenTitles.add(key);
@@ -1050,7 +1202,7 @@ export async function GET(request: NextRequest) {
   // ── English headlines (deduplicated) ──────────────────────────────────
   const seenEnTitles = new Set<string>();
   const englishHeadlines: NewsItem[] = [];
-  for (const item of enAgri) {
+  for (const item of [...enAgri, ...enClimate]) {
     const key = item.title.slice(0, 40).toLowerCase();
     if (!seenEnTitles.has(key)) {
       seenEnTitles.add(key);
@@ -1123,9 +1275,34 @@ export async function GET(request: NextRequest) {
       ? bengaliHeadlines.slice(0, 20)
       : buildSeasonalFallback(ctx);
 
+  // ── Deduplicate intl RSS with english headlines ───────────────────────
+  const seenIntlTitles = new Set<string>();
+  for (const item of intlRSS) {
+    const key = item.title.slice(0, 40).toLowerCase();
+    if (!seenIntlTitles.has(key)) {
+      seenIntlTitles.add(key);
+      if (isRecent(item.pubDate)) {
+        // Add intl news to english headlines if not already present
+        const exists = englishHeadlines.some((h) => h.title.slice(0, 40).toLowerCase() === key);
+        if (!exists) {
+          englishHeadlines.push(item);
+        }
+      }
+    }
+  }
+  englishHeadlines.sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
+
   // ── AI Daily Bulletin ─────────────────────────────────────────────────
   const allHeadlines = [...finalHeadlines, ...englishHeadlines.slice(0, 5), ...govHeadlines.slice(0, 3)];
   const bulletin = await generateDailyBulletin(ctx, allHeadlines);
+
+  // Separate intl from english for dedicated display
+  const intlHeadlines = englishHeadlines.filter((h) =>
+    ["FAO", "IFPRI", "IRRI", "World Bank", "CGIAR", "IPS", "SciDev.Net"].includes(h.source)
+  );
+  const intlSource: "rss-live" | "unavailable" = intlRSS.length > 0 ? "rss-live" : "unavailable";
 
   const response: NewsResponse = {
     ok: true,
@@ -1135,10 +1312,12 @@ export async function GET(request: NextRequest) {
     headlines: finalHeadlines,
     englishHeadlines: englishHeadlines.slice(0, 15),
     govHeadlines: govHeadlines.slice(0, 15),
+    intlHeadlines: intlHeadlines.slice(0, 10),
     sources: {
       headlines: headlinesSource,
       bulletin: bulletin ? "ai-generated" : "unavailable",
       gov: govSource,
+      intl: intlSource,
     },
   };
 
