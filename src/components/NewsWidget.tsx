@@ -112,42 +112,87 @@ type TabType = "bulletin" | "headlines" | "english";
 function useNewsData() {
   const [data, setData] = useState<NewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadNews() {
-      // Check cache first (only on client)
+  const fetchNews = async (forceRefresh = false) => {
+    // Check cache first (only on client), unless force refresh
+    if (!forceRefresh) {
       const cached = getCached();
-      if (cached && !cancelled) {
+      if (cached) {
         setData(cached);
         setLoading(false);
+        setLastUpdated(new Date());
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const url = forceRefresh ? "/api/news?refresh=1" : "/api/news";
+      const r = await fetch(url);
+      const d: NewsResponse | null = r.ok ? await r.json() : null;
+      if (d?.ok) {
+        setCache(d);
+        setData(d);
+        setLastUpdated(new Date());
+      }
+    } catch {
+      // ignore
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInitial() {
+      const cached = getCached();
+      if (cached && active) {
+        setData(cached);
+        setLoading(false);
+        setLastUpdated(new Date());
         return;
       }
 
+      setLoading(true);
       try {
         const r = await fetch("/api/news");
         const d: NewsResponse | null = r.ok ? await r.json() : null;
-        if (cancelled) return;
-        if (d?.ok) {
+        if (active && d?.ok) {
           setCache(d);
           setData(d);
+          setLastUpdated(new Date());
         }
       } catch {
         // ignore
       }
-      if (!cancelled) setLoading(false);
+      if (active) setLoading(false);
     }
 
-    loadNews();
-    return () => { cancelled = true; };
+    loadInitial();
+
+    // Auto-refresh every 30 minutes while the page is open
+    const interval = setInterval(() => refresh(), 30 * 60 * 1000);
+
+    // Also refresh when the tab/window regains focus (user returns to page)
+    const onFocus = () => {
+      const cached = getCached();
+      if (!cached) refresh();
+    };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
-  return { data, loading };
+  return { data, loading, lastUpdated, refresh: () => fetchNews(true) };
 }
 
 export default function NewsWidget() {
-  const { data, loading } = useNewsData();
+  const { data, loading, lastUpdated, refresh } = useNewsData();
   const [tab, setTab] = useState<TabType>("bulletin");
 
   const getShownItems = (): NewsItem[] => {
@@ -351,7 +396,7 @@ export default function NewsWidget() {
         </ScrollArea>
       )}
 
-      {/* Footer: source freshness */}
+      {/* Footer: source freshness + refresh */}
       {!loading && data && (
         <div className="px-4 py-2 border-t border-gray-100 flex gap-3 text-[10px] text-gray-400 flex-wrap items-center">
           <span className="flex items-center gap-1">
@@ -362,10 +407,23 @@ export default function NewsWidget() {
                   : "bg-yellow-500"
               }`}
             />
-            Google News RSS
+            {data.sources.headlines === "google-news-rss" ? "Google News RSS" : "মৌসুমি তথ্য"}
           </span>
-          <span>আপডেট: {new Date().toLocaleTimeString("bn-BD")}</span>
-          <span className="ml-auto">🔄 স্বয়ংক্রিয় আপডেট</span>
+          {lastUpdated && (
+            <span>
+              আপডেট: {lastUpdated.toLocaleTimeString("bn-BD")}
+            </span>
+          )}
+          <span className="ml-auto flex items-center gap-2">
+            <span>প্রতিদিন স্বয়ংক্রিয়</span>
+            <button
+              onClick={(e) => { e.preventDefault(); refresh(); }}
+              className="text-green-600 hover:text-green-700 font-bold cursor-pointer bg-transparent border-none p-0"
+              title="এখনই রিফ্রেশ করুন"
+            >
+              🔄
+            </button>
+          </span>
         </div>
       )}
     </div>

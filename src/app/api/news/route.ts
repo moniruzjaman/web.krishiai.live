@@ -43,9 +43,10 @@ interface NewsResponse {
   };
 }
 
-// ── In-memory cache (30 min) ─────────────────────────────────────────────────
+// ── In-memory cache (30 min, auto-invalidates on day change) ──────────────────
 let cachedResponse: NewsResponse | null = null;
 let cachedAt = 0;
+let cachedDate = "";
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 // ── Bangladesh Agricultural Calendar ─────────────────────────────────────────
@@ -204,27 +205,90 @@ async function fetchGoogleNewsRSS(
           }
         }
 
+        // Normalize source names — map domain names to proper publication names
+        const sourceNameMap: Record<string, string> = {
+          "bangla.daily-sun.com": "Daily Sun",
+          "daily-sun.com": "Daily Sun",
+          "Daily Sun": "Daily Sun",
+          "prothomalo.com": "প্রথম আলো",
+          "প্রথম আলো": "প্রথম আলো",
+          "Prothom Alo": "প্রথম আলো",
+          "thedailystar.net": "The Daily Star",
+          "The Daily Star": "The Daily Star",
+          "Daily Star": "The Daily Star",
+          "bdnews24.com": "bdnews24",
+          "kalerkantho.com": "Kaler Kantho",
+          "Kaler Kantho": "Kaler Kantho",
+          "ittefaq.com.bd": "The Ittefaq",
+          "Ittefaq": "The Ittefaq",
+          "samakal.com": "সমকাল",
+          "SAMAKAL": "সমকাল",
+          "সমকাল": "সমকাল",
+          "Samakal": "সমকাল",
+          "jugantor.com": "যুগান্তর",
+          "Jugantor": "যুগান্তর",
+          "bangladesh-pratidin.com": "বাংলাদেশ প্রতিদিন",
+          "Bangladesh Pratidin": "বাংলাদেশ প্রতিদিন",
+          "tbsnews.net": "The Business Standard",
+          "The Business Standard": "The Business Standard",
+          "dhakatribune.com": "Dhaka Tribune",
+          "Dhaka Tribune": "Dhaka Tribune",
+          "newagebd.net": "New Age",
+          "New Age": "New Age",
+          "Jagonews24.com": "Jagoranews24",
+          "banglatribune.com": "Bangla Tribune",
+          "Bangla Tribune": "Bangla Tribune",
+          "bonikbarta.net": "বণিক বার্তা",
+          "Daily Bonik Barta": "বণিক বার্তা",
+          "Amar Desh": "আমার দেশ",
+          "Amar Sangbad": "আমার সংবাদ",
+          "Daily Naya Diganta": "নয়া দিগন্ত",
+          "Shomoyer Alo": "সময়ের আলো",
+          "সময় নিউজ": "সময় নিউজ",
+          "BBC": "BBC বাংলা",
+          "Bangladesh Sangbad Sangstha (BSS)": "BSS",
+          "International Rice Research Institute (IRRI)": "IRRI",
+          "International Labour Organization": "ILO",
+          "Pulitzer Center": "Pulitzer Center",
+          "Nature": "Nature",
+          "CGIAR": "CGIAR",
+          "Mongabay": "Mongabay",
+          "The World Economic Forum": "WEF",
+        };
+
+        const normalizedSource = sourceNameMap[source] || source;
+
         const sourceColors: Record<string, string> = {
-          "Daily Star": "#1d4ed8",
-          "Prothom Alo": "#1b8a3e",
+          "Daily Sun": "#b45309",
+          "প্রথম আলো": "#1b8a3e",
+          "The Daily Star": "#1d4ed8",
           "bdnews24": "#dc2626",
           "Kaler Kantho": "#b45309",
-          "Ittefaq": "#6d28d9",
-          "Samakal": "#0284c7",
-          "Jugantor": "#065f46",
-          "Bangladesh Pratidin": "#9d174d",
+          "The Ittefaq": "#6d28d9",
+          "সমকাল": "#0284c7",
+          "যুগান্তর": "#065f46",
+          "বাংলাদেশ প্রতিদিন": "#9d174d",
           "The Business Standard": "#1d4ed8",
           "Dhaka Tribune": "#6d28d9",
           "New Age": "#dc2626",
+          "BBC বাংলা": "#7c3aed",
+          "BSS": "#065f46",
+          "আমার দেশ": "#b45309",
+          "বণিক বার্তা": "#0284c7",
+          "Jagoranews24": "#dc2626",
+          "Bangla Tribune": "#6d28d9",
+          "IRRI": "#1b8a3e",
+          "Nature": "#1d4ed8",
+          "CGIAR": "#1b8a3e",
         };
 
-        const color = sourceColors[source] || (lang === "bn" ? "#1b8a3e" : "#1d4ed8");
+        const color = sourceColors[normalizedSource] || (lang === "bn" ? "#1b8a3e" : "#1d4ed8");
 
         return {
           title,
           link: it.link,
           pubDate: it.pubDate,
-          source,
+          source: normalizedSource,
           color,
           icon: "📰",
         };
@@ -414,11 +478,15 @@ async function generateDailyBulletin(
 
 ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}উপরের তথ্যের ভিত্তিতে বাংলাদেশের কৃষকদের জন্য আজকের (${ctx.dateStr}) একটি সংক্ষিপ্ত দৈনিক কৃষি বুলেটিন তৈরি করুন।
 
-ফরম্যাট:
-শিরোনাম: (একটি সংক্ষিপ্ত আকর্ষণীয় শিরোনাম)
-মূল তথ্য: (৩-৪ বাক্যে আজকের সবচেয়ে গুরুত্বপূর্ণ কৃষি পরামর্শ)
-সতর্কতা: (চলমান রোগ-পোকার ঝুঁকি এক বাক্যে)
-করণীয়: (আজ কৃষকের ৩টি অগ্রাধিকার কাজ — বুলেট পয়েন্টে)`;
+অত্যন্ত গুরুত্বপূর্ণ: ঠিক এই ফরম্যাটে উত্তর দিন, কোনো markdown বা ** ব্যবহার করবেন না:
+
+শিরোনাম: আকর্ষণীয় শিরোনাম এখানে
+মূল তথ্য: ৩-৪ বাক্যে আজকের সবচেয়ে গুরুত্বপূর্ণ কৃষি পরামর্শ
+সতর্কতা: চলমান রোগ-পোকার ঝুঁকি এক বাক্যে
+করণীয়:
+১. প্রথম অগ্রাধিকার কাজ
+২. দ্বিতীয় অগ্রাধিকার কাজ
+৩. তৃতীয় অগ্রাধিকার কাজ`;
 
     const result = await zai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
@@ -427,33 +495,61 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
     const text = result.choices?.[0]?.message?.content;
     if (!text) return null;
 
-    // Parse structured bulletin
-    const lines = text
+    // Clean markdown formatting from AI response
+    const cleaned = text
+      .replace(/\*\*/g, "")      // Remove bold markers
+      .replace(/\*/g, "")        // Remove italic markers
+      .replace(/__+/g, "")       // Remove underscores
+      .replace(/^#+\s*/gm, "")   // Remove heading markers
+      .replace(/^[""]|[""]$/gm, "") // Remove curly quotes at line boundaries
+      .replace(/^[""]|[""]$/gm, ""); // Remove smart quotes
+
+    // Parse structured bulletin — handles both "Label:" and "Label: Value" formats
+    const lines = cleaned
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
-    const getVal = (prefix: string) => {
-      const l = lines.find((l) => l.startsWith(prefix));
-      return l ? l.replace(prefix, "").trim() : "";
+
+    // Extract value after a label, supporting multi-line content until next label
+    const getSection = (label: string): string => {
+      const startIdx = lines.findIndex((l) => l.startsWith(label));
+      if (startIdx === -1) return "";
+      const firstLine = lines[startIdx].replace(label, "").trim();
+      // Collect continuation lines until we hit another known label or bullet/todo
+      const knownLabels = ["শিরোনাম:", "মূল তথ্য:", "সতর্কতা:", "করণীয়:"];
+      let content = firstLine;
+      for (let i = startIdx + 1; i < lines.length; i++) {
+        if (knownLabels.some((lbl) => lines[i].startsWith(lbl))) break;
+        // Stop at bullet/todo items — they go into todos array
+        if (/^[•·\-১২৩৪৫৬৭৮৯০][\.\)]\s/.test(lines[i])) break;
+        content += " " + lines[i];
+      }
+      // Strip surrounding quotes from the content
+      return content.replace(/^["""]+|["""]+$/g, "").trim();
     };
+
+    // Extract todo items — lines starting with bullet markers or Bengali numbers
     const todoLines = lines
       .filter(
         (l) =>
           l.startsWith("•") ||
           l.startsWith("·") ||
           l.startsWith("-") ||
-          l.match(/^[১২৩][\.\)]/)
+          l.match(/^[১২৩৪৫৬৭৮৯০][\.\)]/)
       )
-      .slice(0, 3);
+      .slice(0, 3)
+      .map((l) => l.replace(/^[•·\-১২৩৪৫৬৭৮৯০][\.\)]\s*/, "").trim())
+      .filter((l) => l.length > 0);
+
+    const title = getSection("শিরোনাম:") || `${ctx.season} — আজকের কৃষি বুলেটিন`;
+    const body = getSection("মূল তথ্য:") || cleaned.slice(0, 300);
+    const warning = getSection("সতর্কতা:");
 
     return {
-      title:
-        getVal("শিরোনাম:") || `${ctx.season} — আজকের কৃষি বুলেটিন`,
-      body: getVal("মূল তথ্য:") || text.slice(0, 200),
-      warning: getVal("সতর্কতা:"),
-      todos: todoLines.map((l) =>
-        l.replace(/^[•·\-১২৩][\.\)]\s*/, "").trim()
-      ),
+      title,
+      body,
+      warning,
+      todos: todoLines,
       season: ctx.season,
       dateStr: ctx.dateStr,
     };
@@ -486,15 +582,18 @@ function corsHeaders(request: NextRequest): Record<string, string> {
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
-  // Check cache
-  if (cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
+  const today = new Date().toISOString().slice(0, 10);
+  const forceRefresh = new URL(request.url).searchParams.get("refresh") === "1";
+  const dayChanged = cachedDate !== today;
+
+  // Check cache (auto-invalidate on day change or after 30 min)
+  if (!forceRefresh && !dayChanged && cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
     return NextResponse.json(cachedResponse, {
       headers: corsHeaders(request),
     });
   }
 
   const ctx = bdAgriContext();
-  const today = new Date().toISOString().slice(0, 10);
 
   // ── Fetch Google News RSS feeds in parallel ───────────────────────────
   const [bnAgri, bnFertilizer, bnRice, enAgri] = await Promise.all([
@@ -562,6 +661,7 @@ export async function GET(request: NextRequest) {
   // Cache the response
   cachedResponse = response;
   cachedAt = Date.now();
+  cachedDate = today;
 
   return NextResponse.json(response, { headers: corsHeaders(request) });
 }

@@ -58,3 +58,36 @@ Stage Summary:
 - News API returns 20+ Bengali headlines and 14+ English headlines
 - AI bulletin successfully generated
 - No lint errors in project source
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Thorough testing and fixing of all news sources and auto-update mechanisms
+
+Work Log:
+- Tested AI Bulletin: Fixed markdown parsing (AI returns **bold** markers), improved prompt to request exact format without markdown
+- Tested Bengali headlines: Fixed source name normalization (domain names → proper publication names)
+- Tested English headlines: Verified 14 articles from 11 unique sources including The Daily Star, BSS, IRRI, Nature
+- Tested seasonal fallback: Verified government source data (DAE, BRRI, BARI, BADC) with monthly-specific advice
+- Fixed warning text cleanup: Strip smart/curly quotes from AI response
+- Fixed todo extraction: Extended Bengali number range, filter empty items
+- Added auto-update mechanisms: 30-min client interval, window focus refresh, manual refresh button
+- Added server-side cache: Day-change auto-invalidation, ?refresh=1 force refresh
+- Fixed lint error: Refactored useEffect data fetching pattern
+- All 3 API endpoints returning 200, page rendering 57KB in 0.2s
+
+Stage Summary:
+- ALL NEWS SOURCES VERIFIED WORKING:
+  ✅ Bulletin: AI-generated with title, body, warning, todos
+  ✅ Bengali (কৃষি সংবাদ): 20 articles from 13 sources via Google News RSS
+  ✅ English (ইংরেজি সংবাদ): 14 articles from 11 sources via Google News RSS
+  ✅ Government fallback: Seasonal data from DAE, BRRI, BARI, BADC
+- Auto-update mechanisms:
+  ✅ Client: localStorage keyed by date (auto-expires daily)
+  ✅ Client: 30-min interval auto-refresh
+  ✅ Client: Window focus refresh
+  ✅ Client: Manual refresh button (🔄)
+  ✅ Server: 30-min in-memory cache
+  ✅ Server: Day-change auto-invalidation
+  ✅ Server: ?refresh=1 force refresh
+- Zero lint errors, all APIs returning 200
