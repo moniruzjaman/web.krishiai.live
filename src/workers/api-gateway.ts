@@ -3,8 +3,8 @@
  *
  * Centralizes all API access through Cloudflare's edge network.
  * Routes requests to upstream Vercel Next.js API routes with:
- * - CORS handling
- * - Rate limiting per origin/client
+ * - CORS handling (inlined for wrangler/esbuild bundling)
+ * - Rate limiting per origin/client (inlined)
  * - Response caching (KV-backed, graceful fallback to in-memory)
  * - Request validation & sanitization
  * - Logging & observability hooks
@@ -197,7 +197,6 @@ function setInMemory(key: string, data: unknown, ttl: number, baseHeaders: Recor
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
-    const ip = url.hostname; // Use real client IP via CF headers in production
     const clientIp = req.headers.get("CF-Connecting-IP") || "unknown";
 
     // Handle CORS preflight
@@ -273,10 +272,15 @@ export default {
 
     // ── Rate limiting ────────────────────────────────────────────────────────
     const rateResult = checkRateLimiter(typeof clientIp === "string" ? clientIp : "unknown", 100, 60);
+    const rateLimitHeaders: Record<string, string> = {
+      "X-RateLimit-Limit": "100",
+      "X-RateLimit-Remaining": rateResult.remaining.toString(),
+      "X-RateLimit-Reset": rateResult.reset.toString(),
+    };
     if (!rateResult.allowed) {
       return new Response(
         JSON.stringify({ ok: false, error: "Rate limit exceeded", retryAfterSec: rateResult.reset }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, "Retry-After": String(rateResult.reset) } }
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, ...rateLimitHeaders, "Retry-After": String(rateResult.reset) } }
       );
     }
 
@@ -338,11 +342,9 @@ export default {
       "Access-Control-Allow-Origin": dynamicOrigin,
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+      ...rateLimitHeaders,
       "X-Upstream-Status": upstreamResp.status.toString(),
       "X-Route": matchedRoute.description,
-      "X-RateLimit-Limit": "100",
-      "X-RateLimit-Remaining": String(rateResult.remaining),
-      "X-RateLimit-Reset": String(rateResult.reset),
     };
 
     // Add cache headers based on route
@@ -351,13 +353,19 @@ export default {
     }
 
     const responseBody = await upstreamResp.text();
+    let parsedData: unknown;
+    try {
+      parsedData = JSON.parse(responseBody);
+    } catch {
+      parsedData = { error: "Invalid upstream response", raw: responseBody.slice(0, 500) };
+    }
     const responseData = {
       ok: upstreamResp.ok,
       status: upstreamResp.status,
       gateway: "cloudflare-workers",
       upstream: matchedRoute.upstream,
       timestamp: new Date().toISOString(),
-      data: JSON.parse(responseBody),
+      data: parsedData,
     };
 
     const finalResponse = new Response(JSON.stringify(responseData), {
