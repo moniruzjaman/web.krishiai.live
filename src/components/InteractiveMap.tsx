@@ -59,18 +59,13 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
   const userMarkerRef = useRef<unknown>(null);
+  // Store center as ref to avoid re-initializing map on every parent re-render
+  const centerRef = useRef(center);
+  centerRef.current = center;
 
-  // Initialize map — reinitialize when center changes
+  // Initialize map — only once on mount
   useEffect(() => {
     if (!mapRef.current) return;
-
-    // Clean up previous instance if it exists
-    if (mapInstanceRef.current) {
-      (mapInstanceRef.current as { remove: () => void }).remove();
-      mapInstanceRef.current = null;
-      tileLayerRef.current = null;
-      userMarkerRef.current = null;
-    }
 
     let cancelled = false;
 
@@ -97,7 +92,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       if (!mapRef.current) return;
 
       const map = L.map(mapRef.current, {
-        center,
+        center: centerRef.current,
         zoom: 10,
         zoomControl: true,
         attributionControl: true,
@@ -112,13 +107,13 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         iconAnchor: [9, 9],
       });
 
-      const userMarker = L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
+      const userMarker = L.marker(centerRef.current, { icon: userIcon, zIndexOffset: 1000 })
         .addTo(map)
         .bindPopup("<b>📍 আপনার অবস্থান</b>");
       userMarkerRef.current = userMarker;
 
       // Accuracy circle around user location
-      L.circle(center, {
+      L.circle(centerRef.current, {
         radius: 500,
         color: "#e53e3e",
         fillColor: "#e53e3e",
@@ -141,18 +136,13 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
           .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
       });
 
-      // Tile layer based on current mapStyle
-      const tileLayer = mapStyle === "satellite"
-        ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            attribution: "Esri World Imagery",
-            maxZoom: 18,
-          })
-        : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-            maxZoom: 18,
-          });
-      tileLayer.addTo(map);
-      tileLayerRef.current = tileLayer;
+      // Tile layer — will be managed by the mapStyle effect
+      const initialTile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        maxZoom: 18,
+      });
+      initialTile.addTo(map);
+      tileLayerRef.current = initialTile;
 
       // Add locate-me control button
       const LocateControl = L.Control.extend({
@@ -165,7 +155,6 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
           btn.onmouseover = () => { btn.style.background = "#f0fdf4"; };
           btn.onmouseout = () => { btn.style.background = "#fff"; };
           btn.onclick = function () {
-            // Try to get current location
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -174,8 +163,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
                   (userMarker as L.Marker).setLatLng([latitude, longitude]);
                 },
                 () => {
-                  // Fallback: just center on current marker
-                  map.setView(center, 13, { animate: true });
+                  map.setView(centerRef.current, 13, { animate: true });
                 },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
               );
@@ -199,7 +187,21 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         userMarkerRef.current = null;
       }
     };
-  }, [center]); // Reinitialize when center changes
+  }, []); // Only initialize once on mount
+
+  // Update center when location changes (pan the map instead of reinitializing)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    import("leaflet").then((L) => {
+      const map = mapInstanceRef.current as L.Map | null;
+      if (!map) return;
+      map.setView(center, map.getZoom(), { animate: true });
+      // Update user marker position
+      if (userMarkerRef.current) {
+        (userMarkerRef.current as L.Marker).setLatLng(center);
+      }
+    });
+  }, [center]);
 
   // Update tile layer when mapStyle changes (without remounting the map)
   useEffect(() => {

@@ -18,11 +18,15 @@ export default function TopNavbar() {
   const [dark, setDark] = useState(false);
   const [lang, setLang] = useState<"bn" | "en">("bn");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Persist dark mode
+  // Persist dark mode — read from localStorage after mount
   useEffect(() => {
-    const stored = localStorage.getItem("krishi_dark");
-    if (stored === "true") setDark(true);
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem("krishi_dark");
+      if (stored === "true") setDark(true);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -185,26 +189,30 @@ export default function TopNavbar() {
 
         {/* Language toggle */}
         <div className="flex rounded-full overflow-hidden border border-gray-200 shrink-0">
-          <span
-            className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors ${
+          <button
+            type="button"
+            className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors border-none bg-transparent ${
               lang === "bn"
                 ? "bg-[#1b8a3e] text-white"
                 : "bg-white text-gray-500"
             }`}
             onClick={toggleLang}
+            aria-label="Switch to Bengali"
           >
             বাং
-          </span>
-          <span
-            className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors ${
+          </button>
+          <button
+            type="button"
+            className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors border-none bg-transparent ${
               lang === "en"
                 ? "bg-[#1b8a3e] text-white"
                 : "bg-white text-gray-500"
             }`}
             onClick={toggleLang}
+            aria-label="Switch to English"
           >
             EN
-          </span>
+          </button>
         </div>
 
         {/* Dark mode toggle */}

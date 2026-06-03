@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useLocation } from "@/context/LocationContext";
 
@@ -32,9 +32,11 @@ export default function MapWidget() {
   const { location, loading: locLoading, requestLocation } = useLocation();
 
   // Use live location if available, fallback to Dhaka
-  const center: [number, number] = location
-    ? [location.lat, location.lon]
-    : [23.8103, 90.4125];
+  // useMemo prevents new array reference on every render which caused map re-initialization
+  const center: [number, number] = useMemo(
+    () => location ? [location.lat, location.lon] : [23.8103, 90.4125],
+    [location]
+  );
 
   const districtLabel = location?.district || "ঢাকা";
 

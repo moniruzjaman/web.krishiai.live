@@ -110,6 +110,7 @@ export default function BottomNav() {
       role="navigation"
       aria-label="Main navigation"
       className="bg-white border-t border-gray-200 flex px-1 pt-2 pb-2 sticky bottom-0 z-50"
+      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
     >
       {NAV_ITEMS.map((item) => {
         const isActive =
@@ -135,7 +136,7 @@ export default function BottomNav() {
               </div>
               <span
                 className={`text-[9px] font-bold mt-1 ${
-                  isActive ? "text-[#1b8a3e]" : "text-[#1b8a3e]"
+                  isActive ? "text-[#1b8a3e]" : "text-gray-400"
                 }`}
               >
                 {item.label}

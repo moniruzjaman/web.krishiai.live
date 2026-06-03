@@ -18,7 +18,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "@/context/LocationContext";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
@@ -154,13 +153,14 @@ export default function WeatherWidget() {
       try {
         const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
+        setErr(false); // Reset error state on successful fetch
         setLastUpdated(new Date());
       } catch {
         setErr(true);
       }
     };
     load();
-  }, [location, loadWeather, w]);
+  }, [location, loadWeather]); // removed `w` from deps to prevent re-render loop
 
   // Auto-refresh every 30 minutes
   useEffect(() => {
@@ -169,17 +169,34 @@ export default function WeatherWidget() {
       try {
         const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
+        setErr(false); // Reset error state on successful auto-refresh
         setLastUpdated(new Date());
-      } catch { /* ignore */ }
+      } catch { /* ignore auto-refresh errors */ }
     }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [location, loadWeather]);
 
+  // Retry handler for error state
+  const handleRetry = useCallback(() => {
+    if (!location) return;
+    setErr(false);
+    prevCoordsRef.current = ""; // Force refetch
+    loadWeather(location.lat, location.lon, location.city || location.district)
+      .then((data) => { setW(data); setLastUpdated(new Date()); })
+      .catch(() => setErr(true));
+  }, [location, loadWeather]);
+
   if (err) {
     return (
       <div className="bg-white rounded-[14px] border border-red-200 p-4 text-center text-sm text-red-500 card-shadow">
-        ⚠️ আবহাওয়া তথ্য লোড হয়নি
+        <div>⚠️ আবহাওয়া তথ্য লোড হয়নি</div>
+        <button
+          onClick={handleRetry}
+          className="mt-2 text-[11px] font-bold bg-red-100 text-red-600 px-3 py-1 rounded-full border-none cursor-pointer hover:bg-red-200 transition-colors"
+        >
+          আবার চেষ্টা করুন
+        </button>
       </div>
     );
   }
@@ -269,7 +286,7 @@ export default function WeatherWidget() {
           {[
             ["💧", "আর্দ্রতা", `${bn(w.humid)}%`],
             ["💨", "বায়ু", `${bn(w.wind)} km/h`],
-            ["🌧️", "বৃষ্টি", `${w.rain.toFixed(1)} mm`],
+            ["🌧️", "বৃষ্টি", `${(w.rain ?? 0).toFixed(1)} mm`],
             ["🌡️", "অনুভব", `${bn(w.feel)}°`],
           ].map(([ic, lbl, val], i) => (
             <div key={i} className="flex flex-col items-center gap-0.5">

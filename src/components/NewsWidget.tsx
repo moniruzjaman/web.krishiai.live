@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -131,7 +131,7 @@ function useNewsData() {
       }
     }
 
-    setLoading(true);
+    setLoading(forceRefresh);
     try {
       const url = forceRefresh ? "/api/news?refresh=1" : "/api/news";
       const r = await fetch(url);
@@ -146,6 +146,12 @@ function useNewsData() {
     }
     setLoading(false);
   };
+
+  // Stable refresh function using useRef to avoid stale closures
+  const fetchNewsRef = useRef(fetchNews);
+  fetchNewsRef.current = fetchNews;
+
+  const refresh = useCallback(() => fetchNewsRef.current(true), []);
 
   useEffect(() => {
     let active = true;
@@ -191,9 +197,9 @@ function useNewsData() {
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
-  }, []);
+  }, [refresh]);
 
-  return { data, loading, lastUpdated, refresh: () => fetchNews(true) };
+  return { data, loading, lastUpdated, refresh };
 }
 
 // ── Gov source status badge helper ───────────────────────────────────────────

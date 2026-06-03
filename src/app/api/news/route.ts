@@ -61,11 +61,11 @@ const MAX_NEWS_AGE_DAYS = 3;
 function isRecent(pubDate: string): boolean {
   try {
     const d = new Date(pubDate);
-    if (isNaN(d.getTime())) return true; // keep if date is unparseable
+    if (isNaN(d.getTime())) return false; // discard if date is unparseable
     const ageMs = Date.now() - d.getTime();
     return ageMs < MAX_NEWS_AGE_DAYS * 24 * 60 * 60 * 1000;
   } catch {
-    return true;
+    return false;
   }
 }
 
