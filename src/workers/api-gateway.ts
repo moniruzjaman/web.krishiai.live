@@ -91,7 +91,7 @@ interface UpstreamRoute {
 }
 
 // ── In-memory cache fallback (per-isolate) ──────────────────────────────────
-const memoryCache = new Map<string, { data: ResponseInit; expires: number }>();
+const memoryCache = new Map<string, { data: unknown; headers: Record<string, string>; expires: number }>();
 const MEMORY_CACHE_TTL = 60_000; // 60s per-isolate cache
 
 // ── Route Configuration ──────────────────────────────────────────────────────
@@ -182,12 +182,13 @@ function getFromMemory(key: string): Response | null {
     memoryCache.delete(key);
     return null;
   }
-  return new Response(JSON.stringify(entry.data), { headers: entry.data.headers });
+  return new Response(JSON.stringify(entry.data), { headers: entry.headers });
 }
 
 function setInMemory(key: string, data: unknown, ttl: number, baseHeaders: Record<string, string>) {
   memoryCache.set(key, {
     data,
+    headers: baseHeaders,
     expires: Date.now() + ttl * 1000,
   });
 }
