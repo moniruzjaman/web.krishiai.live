@@ -38,8 +38,8 @@ export default function ChatPage() {
     }
   }, [messages, isTyping]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isTyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -52,18 +52,40 @@ export default function ChatPage() {
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      // Build message history for API (last 10 messages)
+      const chatHistory = [...messages, userMsg]
+        .filter((m) => m.id !== "1" || m.role !== "assistant")
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: chatHistory }),
+      });
+
+      const data = await res.json();
+
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "আপনার প্রশ্নের জন্য ধন্যবাদ! আমি আপনার কৃষি সংক্রান্ত প্রশ্নের উত্তর দিতে প্রস্তুত। অনুগ্রহ করে আরও বিস্তারিত জানালে আমি আরও ভালো পরামর্শ দিতে পারব। 🌾",
+        content: data.reply || data.error || "আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন। 🌾",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 1500);
+    } catch {
+      const errMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন। 🌐",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    }
+
+    setIsTyping(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,7 +132,7 @@ export default function ChatPage() {
                   : "bg-white text-gray-800 border border-gray-200 rounded-bl-md card-shadow"
               }`}
             >
-              <div className="text-[13px] leading-relaxed">{msg.content}</div>
+              <div className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
               <div
                 className={`text-[9px] mt-1 ${
                   msg.role === "user" ? "text-white/50" : "text-gray-400"
@@ -173,7 +195,7 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className="w-10 h-10 rounded-full bg-[#1b8a3e] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#167035] transition-colors active:scale-95 shrink-0"
           >
             <svg

@@ -14,6 +14,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+// ── CORS Origin Whitelist ────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
+  return ALLOWED_ORIGINS.some((o) => origin === o || origin.startsWith(o));
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
   time: string;
