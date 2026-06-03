@@ -6,7 +6,9 @@
  * - Satellite map layer option (Esri World Imagery)
  * - Category-colored markers with popup info
  * - District crop zone highlights
- * - User location marker
+ * - User location marker with pulse animation
+ * - Locate-me control button
+ * - Auto-center on user location
  */
 
 "use client";
@@ -56,6 +58,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
+  const userMarkerRef = useRef<unknown>(null);
 
   // Initialize map — reinitialize when center changes
   useEffect(() => {
@@ -66,6 +69,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       (mapInstanceRef.current as { remove: () => void }).remove();
       mapInstanceRef.current = null;
       tileLayerRef.current = null;
+      userMarkerRef.current = null;
     }
 
     let cancelled = false;
@@ -100,7 +104,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       });
       mapInstanceRef.current = map;
 
-      // User location marker
+      // User location marker with pulse animation
       const userIcon = L.divIcon({
         className: "",
         html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
@@ -108,9 +112,20 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         iconAnchor: [9, 9],
       });
 
-      L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
+      const userMarker = L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
         .addTo(map)
         .bindPopup("<b>📍 আপনার অবস্থান</b>");
+      userMarkerRef.current = userMarker;
+
+      // Accuracy circle around user location
+      L.circle(center, {
+        radius: 500,
+        color: "#e53e3e",
+        fillColor: "#e53e3e",
+        fillOpacity: 0.08,
+        weight: 1,
+        opacity: 0.3,
+      }).addTo(map);
 
       // Add institution markers
       INSTITUTIONS.forEach((inst) => {
@@ -139,6 +154,38 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       tileLayer.addTo(map);
       tileLayerRef.current = tileLayer;
 
+      // Add locate-me control button
+      const LocateControl = L.Control.extend({
+        options: { position: "topright" },
+        onAdd: function () {
+          const btn = L.DomUtil.create("button", "");
+          btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b4332" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>`;
+          btn.title = "আমার অবস্থান";
+          btn.style.cssText = "width:36px;height:36px;background:#fff;border:2px solid #1b4332;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:all .2s";
+          btn.onmouseover = () => { btn.style.background = "#f0fdf4"; };
+          btn.onmouseout = () => { btn.style.background = "#fff"; };
+          btn.onclick = function () {
+            // Try to get current location
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  map.setView([latitude, longitude], 13, { animate: true });
+                  (userMarker as L.Marker).setLatLng([latitude, longitude]);
+                },
+                () => {
+                  // Fallback: just center on current marker
+                  map.setView(center, 13, { animate: true });
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+              );
+            }
+          };
+          return btn;
+        },
+      });
+      new LocateControl().addTo(map);
+
       // Invalidate size after mount
       setTimeout(() => map.invalidateSize(), 200);
     });
@@ -149,9 +196,10 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         (mapInstanceRef.current as { remove: () => void }).remove();
         mapInstanceRef.current = null;
         tileLayerRef.current = null;
+        userMarkerRef.current = null;
       }
     };
-  }, [center]); // Reinitialize only when center changes
+  }, [center]); // Reinitialize when center changes
 
   // Update tile layer when mapStyle changes (without remounting the map)
   useEffect(() => {

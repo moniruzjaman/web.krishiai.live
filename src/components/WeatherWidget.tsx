@@ -10,13 +10,14 @@
  * - Hourly forecast strip (next 24h with precip probability)
  * - 5-day forecast with rain probability
  * - Sunrise/sunset times
- * - GPS-first with Dhaka fallback
+ * - **Live GPS location via shared LocationContext**
  * - Auto-refresh every 30 minutes
  */
 
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "@/context/LocationContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -125,12 +126,12 @@ const uvLevel = (uv: number) => {
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function WeatherWidget() {
+  const { location, loading: locLoading, permission, requestLocation } = useLocation();
   const [w, setW] = useState<WeatherData | null>(null);
   const [err, setErr] = useState(false);
-  const [locating, setLocating] = useState(true);
   const [showHourly, setShowHourly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const cityRef = useRef<string>("ঢাকা");
+  const prevCoordsRef = useRef<string>("");
 
   const loadWeather = useCallback(async (lat: number, lon: number, city: string) => {
     const r = await fetch(
@@ -140,53 +141,40 @@ export default function WeatherWidget() {
     return r.json();
   }, []);
 
+  // Load weather when location changes
   useEffect(() => {
+    if (!location) return;
+
+    const coordsKey = `${location.lat.toFixed(2)},${location.lon.toFixed(2)}`;
+    // Skip if we already loaded for these coords
+    if (prevCoordsRef.current === coordsKey && w) return;
+    prevCoordsRef.current = coordsKey;
+
     const load = async () => {
       try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation?.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 60000,
-          });
-        });
-        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, "আপনার অবস্থান");
-        cityRef.current = data.city || "ঢাকা";
+        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
         setLastUpdated(new Date());
       } catch {
-        try {
-          const data = await loadWeather(23.8103, 90.4125, "ঢাকা");
-          cityRef.current = data.city || "ঢাকা";
-          setW(data);
-          setLastUpdated(new Date());
-        } catch {
-          setErr(true);
-        }
+        setErr(true);
       }
-      setLocating(false);
     };
     load();
+  }, [location, loadWeather, w]);
 
-    // Auto-refresh every 30 minutes
+  // Auto-refresh every 30 minutes
+  useEffect(() => {
     const interval = setInterval(async () => {
+      if (!location) return;
       try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation?.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 60000,
-          });
-        });
-        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, cityRef.current);
-        cityRef.current = data.city || cityRef.current;
+        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
         setLastUpdated(new Date());
       } catch { /* ignore */ }
     }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [loadWeather]);
+  }, [location, loadWeather]);
 
   if (err) {
     return (
@@ -196,11 +184,11 @@ export default function WeatherWidget() {
     );
   }
 
-  if (!w || locating) {
+  if (!w || locLoading) {
     return (
       <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-4 flex items-center justify-center gap-2 text-white/80 text-sm">
         <span className="inline-block animate-spin-slow">📍</span>
-        অবস্থান নির্ধারণ হচ্ছে…
+        {locLoading ? "অবস্থান নির্ধারণ হচ্ছে…" : "আবহাওয়া লোড হচ্ছে…"}
       </div>
     );
   }
@@ -235,8 +223,11 @@ export default function WeatherWidget() {
         {/* ── TOP: City + Temp + Sun times ──────────────────────────────── */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <div className="text-[11px] text-white/60 font-semibold">
+            <div className="text-[11px] text-white/60 font-semibold flex items-center gap-1.5">
               📍 {w.city}
+              {permission === "granted" && (
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block" title="লাইভ লোকেশন" />
+              )}
             </div>
             <div className="text-[42px] sm:text-[56px] font-bold leading-none mb-1">
               {bn(w.temp)}°C
