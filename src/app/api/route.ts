@@ -16,6 +16,7 @@ export async function GET() {
       "/api/weather": "আবহাওয়া তথ্য — Open-Meteo (hourly, daily, agri indices, alerts)",
       "/api/market": "বাজার মূল্য — DAM live + seasonal (25+ commodities, categories)",
       "/api/news": "কৃষি সংবাদ — Google News RSS + .gov.bd CORS proxy + AI bulletin",
+      "/api/diagnose": "ফসল রোগ নির্ণয় — AI visual waterfall with offline fallbacks",
     },
     features: {
       weather: {

@@ -31,7 +31,8 @@ interface UpstreamRoute {
 }
 
 // ── In-memory cache fallback (per-isolate) ──────────────────────────────────
-const memoryCache = new Map<string, { data: ResponseInit; expires: number }>();
+interface CacheEntry { data: unknown; headers: Record<string, string>; expires: number }
+const memoryCache = new Map<string, CacheEntry>();
 const MEMORY_CACHE_TTL = 60_000; // 60s per-isolate cache
 
 // ── Route Configuration ──────────────────────────────────────────────────────
@@ -122,12 +123,13 @@ function getFromMemory(key: string): Response | null {
     memoryCache.delete(key);
     return null;
   }
-  return new Response(JSON.stringify(entry.data), { headers: entry.data.headers });
+  return new Response(JSON.stringify(entry.data), { headers: entry.headers });
 }
 
 function setInMemory(key: string, data: unknown, ttl: number, baseHeaders: Record<string, string>) {
   memoryCache.set(key, {
     data,
+    headers: baseHeaders,
     expires: Date.now() + ttl * 1000,
   });
 }
@@ -136,12 +138,23 @@ function setInMemory(key: string, data: unknown, ttl: number, baseHeaders: Recor
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
-    const ip = url.hostname; // Use real client IP via CF headers in production
     const clientIp = req.headers.get("CF-Connecting-IP") || "unknown";
+    const origin = req.headers.get("Origin") || null;
 
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
       return handleCORS(req);
+    }
+
+    // ── Enforce CORS Origin whitelist ────────────────────────────────────────
+    if (origin) {
+      const acao = resolveOrigin(origin);
+      if (acao !== origin) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "CORS rejected", origin }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(origin) } }
+        );
+      }
     }
 
     // ── Root path — health info ──────────────────────────────────────────────
@@ -179,7 +192,7 @@ export default {
         {
           headers: {
             "Content-Type": "application/json",
-            ...corsHeaders,
+            ...corsHeaders(origin),
           },
         }
       );
@@ -190,23 +203,7 @@ export default {
     if (!matchedRoute) {
       return new Response(
         JSON.stringify({ ok: false, error: "Not Found", message: `Route ${url.pathname} not configured in API gateway` }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // ── Enforce CORS Origin whitelist ────────────────────────────────────────
-    const allowedOrigins = [
-      "https://krishiai.live",
-      "https://www.krishiai.live",
-      "https://web.krishiai.live",
-    ];
-    const origin = req.headers.get("Origin") || req.headers.get("Referer") || "";
-    const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-    const isAllowed = allowedOrigins.some((o) => origin.startsWith(o));
-    if (!isLocalhost && !isAllowed) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "CORS rejected", origin }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders(origin) } }
       );
     }
 
@@ -214,7 +211,11 @@ export default {
     if (!checkRateLimiter(typeof clientIp === "string" ? clientIp : "unknown", 100, 60_000)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Rate limit exceeded", retryAfterSec: 60 }),
+<<<<<<< Updated upstream
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders, "Retry-After": "60" } }
+=======
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders(origin), ...rateLimitHeaders, "Retry-After": "60" } }
+>>>>>>> Stashed changes
       );
     }
 
@@ -222,7 +223,7 @@ export default {
     if (matchedRoute.auth && !checkAuth(req)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Unauthorized", message: "Provide Authorization: Bearer <token> or X-API-Key header" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(origin) } }
       );
     }
 
@@ -261,14 +262,19 @@ export default {
     } catch {
       return new Response(
         JSON.stringify({ ok: false, error: "Upstream timeout", upstream: matchedRoute.upstream }),
-        { status: 504, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 504, headers: { "Content-Type": "application/json", ...corsHeaders(origin) } }
       );
     }
 
     // ── Build response with CORS & caching headers ───────────────────────────
     const responseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
+<<<<<<< Updated upstream
       ...corsHeaders,
+=======
+      ...corsHeaders(origin),
+      ...rateLimitHeaders,
+>>>>>>> Stashed changes
       "X-Upstream-Status": upstreamResp.status.toString(),
       "X-Route": matchedRoute.description,
     };

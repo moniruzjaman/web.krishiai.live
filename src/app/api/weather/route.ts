@@ -73,6 +73,9 @@ const WMO: Record<number, { bn: string; icon: string; severity: "clear" | "cloud
   99: { bn: "ভারী বজ্রপাত ও শিলাবৃষ্টি", icon: "⛈️", severity: "storm" },
 };
 
+// ── Bengali digit converter ──────────────────────────────────────────────────
+const bn2 = (n: number | string) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
+
 // ── Agricultural Advisory Generator ──────────────────────────────────────────
 function generateAgriAdvisory(
   code: number,
@@ -291,12 +294,13 @@ export async function GET(request: NextRequest) {
     // Build hourly forecast (next 24 hours from now)
     const now = new Date();
     const currentHourIndex = hr.time.findIndex((t: string) => new Date(t) >= now);
+    const end = Math.min(currentHourIndex + 24, hr.time.length, hr.temperature_2m?.length ?? 0, hr.weather_code?.length ?? 0, hr.precipitation_probability?.length ?? 0, hr.wind_speed_10m?.length ?? 0);
     const hourlyForecast: HourlyForecast[] = [];
     if (currentHourIndex >= 0) {
-      for (let i = currentHourIndex; i < Math.min(currentHourIndex + 24, hr.time.length); i++) {
+      for (let i = currentHourIndex; i < end; i++) {
         const t = new Date(hr.time[i]);
         hourlyForecast.push({
-          time: `${t.getHours().toString().padStart(2, "0")}:০০`,
+          time: `${bn2(t.getHours().toString().padStart(2, "0"))}:০০`,
           temp: hr.temperature_2m[i],
           code: hr.weather_code[i],
           precipProb: hr.precipitation_probability[i],
@@ -334,7 +338,6 @@ export async function GET(request: NextRequest) {
       const m = d.getMinutes();
       const period = h >= 12 ? "PM" : "AM";
       const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      const bn2 = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
       return `${bn2(h12)}:${bn2(m.toString().padStart(2, "0"))} ${period}`;
     };
 
