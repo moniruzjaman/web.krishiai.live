@@ -174,3 +174,29 @@ Stage Summary:
 - Cloudflare Gateway: ✅ Fixed (middleware inlined, no more import errors)
 - Git: ✅ Pushed to origin/main (bd43aaa)
 - CI/CD: ✅ Syntax correct (branches: [main, master])
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix Vercel build failure — npm error Invalid Version
+
+Work Log:
+- Investigated the npm ci error: "npm error Invalid Version:" (empty string after colon)
+- Found root cause: @mdxeditor/editor (unused) → @codesandbox/sandpack-react → @codesandbox/sandpack-client with undefined version in package-lock.json
+- Removed unused @mdxeditor/editor dependency from package.json
+- Deleted old package-lock.json and node_modules, regenerated with fresh npm install
+- Verified npm ci --dry-run passes successfully
+- Fixed CI/CD workflow: replaced bun install --frozen-lockfile with npm ci (bun lockfile != npm lockfile)
+- Fixed Cloudflare Worker memory cache: setInMemory wasn't storing headers properly
+- Fixed wrangler deploy command: removed --env production flag (not configured)
+- Updated CI to use Node.js 20.x with npm cache for reliability
+- Verified Next.js build passes with all routes
+- Committed and pushed to GitHub (651b0ad)
+
+Stage Summary:
+- Root cause: @codesandbox/sandpack-client had undefined version in lockfile, causing npm ci to fail with "Invalid Version:"
+- Fix: Removed @mdxeditor/editor (unused), regenerated package-lock.json
+- CI/CD: Switched from bun to npm for consistency with Vercel's npm ci
+- Cloudflare: Fixed memory cache headers storage, fixed wrangler deploy command
+- Build: Verified locally — all 6 routes render correctly
+- Git: Pushed to origin/main (commit 651b0ad)
