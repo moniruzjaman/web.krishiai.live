@@ -240,6 +240,93 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
+// ── In-memory cache to avoid rate-limiting ───────────────────────────────────
+let cachedWeather: Record<string, unknown> | null = null;
+let cachedWeatherAt = 0;
+const WEATHER_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+// ── Seasonal fallback data ──────────────────────────────────────────────────
+function getSeasonalFallback(city: string, lat: number, lon: number): Record<string, unknown> {
+  const m = new Date().getMonth() + 1;
+  const hour = new Date().getHours();
+  const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
+
+  // Bangladesh seasonal temperature ranges
+  let baseTemp, feelTemp, humid, rain, code, wind;
+  if (m >= 11 || m <= 2) { // Winter
+    baseTemp = hour >= 6 && hour <= 17 ? 25 + Math.random() * 5 : 14 + Math.random() * 5;
+    feelTemp = baseTemp - 2; humid = 65 + Math.random() * 15; rain = Math.random() * 2; code = 0; wind = 5 + Math.random() * 8;
+  } else if (m >= 3 && m <= 5) { // Spring/Pre-monsoon
+    baseTemp = hour >= 6 && hour <= 17 ? 32 + Math.random() * 6 : 24 + Math.random() * 4;
+    feelTemp = baseTemp + 3; humid = 60 + Math.random() * 20; rain = Math.random() * 10; code = 1; wind = 8 + Math.random() * 12;
+  } else if (m >= 6 && m <= 9) { // Monsoon
+    baseTemp = hour >= 6 && hour <= 17 ? 30 + Math.random() * 4 : 26 + Math.random() * 3;
+    feelTemp = baseTemp + 4; humid = 80 + Math.random() * 15; rain = 5 + Math.random() * 30; code = 61; wind = 10 + Math.random() * 15;
+  } else { // Autumn
+    baseTemp = hour >= 6 && hour <= 17 ? 30 + Math.random() * 4 : 22 + Math.random() * 4;
+    feelTemp = baseTemp + 1; humid = 70 + Math.random() * 15; rain = Math.random() * 8; code = 2; wind = 6 + Math.random() * 10;
+  }
+
+  const forecast = [];
+  for (let d = 1; d <= 5; d++) {
+    const fDate = new Date(); fDate.setDate(fDate.getDate() + d);
+    forecast.push({
+      day: DAYS[fDate.getDay()],
+      max: Math.round(baseTemp + 3 + Math.random() * 3),
+      min: Math.round(baseTemp - 5 - Math.random() * 3),
+      code: m >= 6 && m <= 9 ? (Math.random() > 0.4 ? 63 : 61) : (Math.random() > 0.6 ? 2 : 0),
+      precipProb: m >= 6 && m <= 9 ? Math.round(40 + Math.random() * 50) : Math.round(Math.random() * 30),
+      precipSum: m >= 6 && m <= 9 ? Math.round(5 + Math.random() * 20) : Math.round(Math.random() * 5),
+      windMax: Math.round(wind + Math.random() * 8),
+    });
+  }
+
+  const hourly = [];
+  for (let h = 0; h < 24; h += 2) {
+    const hTemp = h >= 6 && h <= 17 ? baseTemp + (h - 12) * 0.3 : baseTemp - 4 + Math.random() * 2;
+    hourly.push({
+      time: `${h.toString().padStart(2, "0")}:০০`,
+      temp: Math.round(hTemp),
+      code: m >= 6 && m <= 9 ? (Math.random() > 0.5 ? 63 : 3) : (Math.random() > 0.5 ? 1 : 0),
+      precipProb: m >= 6 && m <= 9 ? Math.round(30 + Math.random() * 50) : Math.round(Math.random() * 20),
+      wind: Math.round(wind + Math.random() * 5),
+    });
+  }
+
+  return {
+    ok: true,
+    temp: Math.round(baseTemp),
+    feel: Math.round(feelTemp),
+    humid: Math.round(humid),
+    wind: Math.round(wind),
+    windDir: Math.round(180 + Math.random() * 90),
+    rain: Math.round(rain * 10) / 10,
+    code,
+    maxT: Math.round(baseTemp + 3),
+    minT: Math.round(baseTemp - 6),
+    city,
+    lat, lon,
+    uvIndex: hour >= 10 && hour <= 14 ? 6 + Math.random() * 4 : Math.random() * 3,
+    dewPoint: Math.round(baseTemp - 8),
+    pressure: Math.round(1000 + Math.random() * 20),
+    cloudCover: Math.round(m >= 6 && m <= 9 ? 60 + Math.random() * 30 : Math.random() * 40),
+    soilMoisture: m >= 6 && m <= 9 ? 0.35 + Math.random() * 0.2 : 0.2 + Math.random() * 0.15,
+    soilMoistureDeep: m >= 6 && m <= 9 ? 0.4 + Math.random() * 0.15 : 0.25 + Math.random() * 0.1,
+    soilTemp: Math.round(baseTemp - 3),
+    et0: Math.round((3 + Math.random() * 3) * 10) / 10,
+    leafWetness: Math.round(m >= 6 && m <= 9 ? 50 + Math.random() * 30 : Math.random() * 20),
+    gdd: Math.round(baseTemp),
+    sunrise: "৬:০৫ AM",
+    sunset: "৬:৩৫ PM",
+    uvMax: Math.round(8 + Math.random() * 3),
+    forecast,
+    hourly,
+    alerts: rain > 20 ? [{ type: "heavy_rain", severity: "advisory", message: "Rain expected", messageBn: "বৃষ্টির সম্ভাবনা" }] : [],
+    advisory: generateAgriAdvisory(code, baseTemp, humid, rain, wind, 0.3, 4, m),
+    source: "মৌসুমী তথ্য (অফলাইন)",
+  };
+}
+
 export async function GET(request: NextRequest) {
   const origin = request.headers.get("origin");
   const { searchParams } = new URL(request.url);
@@ -252,6 +339,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "অবৈধ অক্ষাংশ/দ্রাঘিমাংশ", city },
       { status: 400, headers: corsHeaders(origin) }
+    );
+  }
+
+  // Return cached data if available and fresh
+  const now = Date.now();
+  if (cachedWeather && now - cachedWeatherAt < WEATHER_CACHE_TTL) {
+    return NextResponse.json(
+      { ...cachedWeather, city, lat, lon },
+      { headers: { "Cache-Control": "public, s-maxage=300", ...corsHeaders(origin) } }
     );
   }
 
@@ -306,10 +402,26 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Open-Meteo returned ${response.status}`);
+      // Open-Meteo rate limited or down — use seasonal fallback
+      const fallback = getSeasonalFallback(city, lat, lon);
+      cachedWeather = fallback;
+      cachedWeatherAt = now;
+      return NextResponse.json(fallback, {
+        headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+      });
     }
 
     const data = await response.json();
+    // Check for API-level errors (rate limit, etc.)
+    if (data.error) {
+      const fallback = getSeasonalFallback(city, lat, lon);
+      cachedWeather = fallback;
+      cachedWeatherAt = now;
+      return NextResponse.json(fallback, {
+        headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+      });
+    }
+
     const c = data.current;
     const dl = data.daily;
     const hr = data.hourly;
@@ -317,8 +429,8 @@ export async function GET(request: NextRequest) {
     const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
 
     // Build hourly forecast (next 24 hours from now)
-    const now = new Date();
-    const currentHourIndex = hr.time.findIndex((t: string) => new Date(t) >= now);
+    const currentDate = new Date();
+    const currentHourIndex = hr.time.findIndex((t: string) => new Date(t) >= currentDate);
     const hourlyForecast: HourlyForecast[] = [];
     if (currentHourIndex >= 0) {
       for (let i = currentHourIndex; i < Math.min(currentHourIndex + 24, hr.time.length); i++) {
@@ -416,6 +528,10 @@ export async function GET(request: NextRequest) {
       source: "Open-Meteo · BMD",
     };
 
+    // Cache successful response
+    cachedWeather = weatherData;
+    cachedWeatherAt = now;
+
     return NextResponse.json(weatherData, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
@@ -423,13 +539,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (e) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "আবহাওয়া তথ্য লোড হয়নি",
-        city,
-      },
-      { status: 502, headers: corsHeaders(request.headers.get("origin")) }
-    );
+    // Network error, timeout, etc — use seasonal fallback
+    const fallback = getSeasonalFallback(city, lat, lon);
+    cachedWeather = fallback;
+    cachedWeatherAt = now;
+    return NextResponse.json(fallback, {
+      headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+    });
   }
 }

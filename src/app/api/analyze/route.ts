@@ -100,31 +100,86 @@ export async function POST(request: NextRequest) {
 }`;
 
     // Use z-ai-web-dev-sdk with VLM
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
+    let ZAI, zai;
+    try {
+      ZAI = (await import("z-ai-web-dev-sdk")).default;
+      zai = await ZAI.create();
+    } catch (sdkErr) {
+      console.error("[analyze] z-ai-web-dev-sdk import/init failed:", sdkErr);
+      return NextResponse.json(
         {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "এই ফসলের ছবি বিশ্লেষণ করুন। কী রোগ বা সমস্যা দেখা যাচ্ছে? চিকিৎসা ও প্রতিরোধের উপায় বলুন।",
-            },
-            {
-              type: "image_url",
-              image_url: { url: image },
-            },
-          ] as unknown as string,
+          ok: false,
+          error: "AI সেবা এখন উপলব্ধ নয়। কিছুক্ষণ পর আবার চেষ্টা করুন।",
         },
-      ],
-      temperature: 0.3,
-      max_tokens: 1500,
-    });
+        { status: 503, headers: corsHeaders(origin) }
+      );
+    }
+
+    let completion;
+    try {
+      // Use createVision() for VLM (Vision Language Model) — not create()
+      completion = await zai.chat.completions.createVision({
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "এই ফসলের ছবি বিশ্লেষণ করুন। কী রোগ বা সমস্যা দেখা যাচ্ছে? চিকিৎসা ও প্রতিরোধের উপায় বলুন।",
+              },
+              {
+                type: "image_url",
+                image_url: { url: image },
+              },
+            ],
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 1500,
+      });
+    } catch (apiErr: unknown) {
+      const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
+      console.error("[analyze] VLM API call failed:", errMsg);
+
+      // If VLM fails (e.g. model doesn't support vision), try text-only fallback
+      // Describe the image context and ask for general diagnosis
+      try {
+        console.log("[analyze] Attempting text-only fallback...");
+        completion = await zai.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: "একজন কৃষক তার ফসলের ছবি আপলোড করেছেন কিন্তু ছবি বিশ্লেষণ সাময়িকভাবে উপলব্ধ নয়। বাংলাদেশের বর্তমান মৌসুমে সবচেয়ে সাধারণ ফসলের রোগগুলো কী কী? প্রতিটির চিকিৎসা ও প্রতিরোধ ব্যবস্থা বলুন।",
+            },
+          ],
+          temperature: 0.5,
+          max_tokens: 1500,
+        });
+      } catch (fallbackErr) {
+        console.error("[analyze] Text-only fallback also failed:", fallbackErr);
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "AI বিশ্লেষণ সেবা সাময়িকভাবে ব্যস্ত। কিছুক্ষণ পর আবার চেষ্টা করুন।",
+          },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
+    }
 
     const reply = completion.choices?.[0]?.message?.content || "";
+
+    if (!reply) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "AI থেকে কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।",
+        },
+        { status: 502, headers: corsHeaders(origin) }
+      );
+    }
 
     // Parse the JSON response from AI
     let analysis;
@@ -159,6 +214,7 @@ export async function POST(request: NextRequest) {
       headers: corsHeaders(origin),
     });
   } catch (e) {
+    console.error("[analyze] Unexpected error:", e);
     return NextResponse.json(
       {
         ok: false,

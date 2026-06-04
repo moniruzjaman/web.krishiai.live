@@ -415,7 +415,19 @@ export default function WeatherWidget() {
 
         {/* ── FOOTER ────────────────────────────────────────────────────── */}
         <div className="flex justify-between items-center text-[9px] text-white/30 mt-2">
-          <span>{w.source}</span>
+          <span className="flex items-center gap-1.5">
+            {w.source?.includes("অফলাইন") || w.source?.includes("মৌসুমী") ? (
+              <>
+                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+                <span className="text-amber-300/70">{w.source}</span>
+              </>
+            ) : (
+              <>
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                <span>{w.source}</span>
+              </>
+            )}
+          </span>
           {lastUpdated && (
             <span>আপডেট: {lastUpdated.toLocaleTimeString("bn-BD")}</span>
           )}
