@@ -107,7 +107,7 @@ export default function IrrigationPage() {
   const totalWaterM3 = crop ? (crop.totalWater * areaNum * 10) : 0;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="relative px-4 pt-5 pb-7" style={{ background: "linear-gradient(135deg,#0e7490,#155e75)" }}>
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
@@ -125,7 +125,7 @@ export default function IrrigationPage() {
 
       <div className="px-4 pt-5 pb-24">
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
           {[
             { key: "schedule", label: "📅 সেচ সময়সূচি" },
             { key: "calculator", label: "🧮 পানি ক্যালকুলেটর" },
@@ -137,7 +137,7 @@ export default function IrrigationPage() {
               className={`flex-1 text-[11px] font-bold py-2 px-1.5 rounded-lg transition-all cursor-pointer border-none ${
                 activeTab === tab.key
                   ? "bg-white text-cyan-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
               {tab.label}
@@ -149,7 +149,7 @@ export default function IrrigationPage() {
         {activeTab === "schedule" && (
           <div className="space-y-4">
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">ফসল নির্বাচন করুন</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">ফসল নির্বাচন করুন</div>
               <div className="grid grid-cols-4 gap-1.5">
                 {CROP_WATER.map((c) => (
                   <button
@@ -158,11 +158,11 @@ export default function IrrigationPage() {
                     className={`p-2 rounded-lg border-2 text-center transition-all cursor-pointer ${
                       selectedCrop === c.id
                         ? "border-cyan-500 bg-cyan-50"
-                        : "border-gray-200 bg-white hover:border-cyan-300"
+                        : "border-gray-200 dark:border-gray-700 bg-white hover:border-cyan-300"
                     }`}
                   >
                     <div className="text-lg">{c.icon}</div>
-                    <div className="text-[9px] font-bold text-gray-800">{c.name}</div>
+                    <div className="text-[9px] font-bold text-gray-800 dark:text-gray-200">{c.name}</div>
                   </button>
                 ))}
               </div>
@@ -193,28 +193,28 @@ export default function IrrigationPage() {
                 )}
 
                 <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4">
-                  <div className="text-[14px] font-bold text-gray-900 mb-3">
+                  <div className="text-[14px] font-bold text-gray-900 dark:text-gray-100 mb-3">
                     {crop.icon} {crop.name} — সেচ সময়সূচি
                   </div>
                   <div className="space-y-2.5">
                     {crop.stages.map((stage, i) => (
-                      <div key={i} className="bg-white rounded-xl p-3 border border-cyan-100">
+                      <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-cyan-100">
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2">
                             <span className="w-6 h-6 bg-cyan-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
-                            <span className="text-[12px] font-bold text-gray-900">{stage.name}</span>
+                            <span className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{stage.name}</span>
                           </div>
-                          <span className="text-[10px] text-gray-500">{bn(stage.days)} দিন</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{bn(stage.days)} দিন</span>
                         </div>
                         <div className="flex items-center gap-3 ml-8">
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] text-cyan-600">💧</span>
-                            <span className="text-[10px] text-gray-700">{stage.water} mm/দিন</span>
+                            <span className="text-[10px] text-gray-700 dark:text-gray-300">{stage.water} mm/দিন</span>
                           </div>
-                          <div className="flex-1 text-[10px] text-gray-600">{stage.method}</div>
+                          <div className="flex-1 text-[10px] text-gray-600 dark:text-gray-400">{stage.method}</div>
                         </div>
                         <div className="ml-8 mt-1.5">
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"
                               style={{ width: `${(stage.water / 10) * 100}%` }}
@@ -225,7 +225,7 @@ export default function IrrigationPage() {
                     ))}
                   </div>
                   <div className="mt-3 flex justify-between items-center text-[11px]">
-                    <span className="text-gray-500">মোট মৌসুম: {bn(crop.totalDays)} দিন</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">মোট মৌসুম: {bn(crop.totalDays)} দিন</span>
                     <span className="text-cyan-700 font-bold">মোট পানি: {bn(crop.totalWater)} mm</span>
                   </div>
                 </div>
@@ -233,9 +233,9 @@ export default function IrrigationPage() {
             )}
 
             {!selectedCrop && (
-              <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 text-center">
                 <div className="text-2xl mb-2">💧</div>
-                <div className="text-[12px] text-gray-500">ফসল নির্বাচন করুন সেচ সময়সূচি জানতে</div>
+                <div className="text-[12px] text-gray-500 dark:text-gray-400 dark:text-gray-500">ফসল নির্বাচন করুন সেচ সময়সূচি জানতে</div>
               </div>
             )}
           </div>
@@ -245,11 +245,11 @@ export default function IrrigationPage() {
         {activeTab === "calculator" && (
           <div className="space-y-4">
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">ফসল নির্বাচন করুন</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">ফসল নির্বাচন করুন</div>
               <select
                 value={selectedCrop || ""}
                 onChange={(e) => setSelectedCrop(e.target.value || null)}
-                className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-cyan-400"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400"
               >
                 <option value="">নির্বাচন করুন</option>
                 {CROP_WATER.map((c) => (
@@ -259,38 +259,38 @@ export default function IrrigationPage() {
             </div>
 
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">জমির পরিমাণ (হেক্টর)</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">জমির পরিমাণ (হেক্টর)</div>
               <input
                 type="number"
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
                 min="0.1"
                 step="0.5"
-                className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-cyan-400"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-gray-100 outline-none focus:border-cyan-400"
               />
             </div>
 
             {crop && (
               <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl border border-cyan-200 p-4">
-                <div className="text-[14px] font-extrabold text-gray-900 mb-3">
+                <div className="text-[14px] font-extrabold text-gray-900 dark:text-gray-100 mb-3">
                   {crop.icon} {crop.name} — পানির প্রয়োজন
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white rounded-xl p-3 border border-cyan-100 text-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-cyan-100 text-center">
                     <div className="text-[20px] font-extrabold text-cyan-700">{bn(crop.totalWater)}</div>
-                    <div className="text-[9px] text-gray-500">মিমি/হেক্টর/মৌসুম</div>
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">মিমি/হেক্টর/মৌসুম</div>
                   </div>
-                  <div className="bg-white rounded-xl p-3 border border-cyan-100 text-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-cyan-100 text-center">
                     <div className="text-[20px] font-extrabold text-blue-700">{bn(totalWaterM3.toFixed(0))}</div>
-                    <div className="text-[9px] text-gray-500">ঘনমিটার ({bn(areaNum)} হেক্টর)</div>
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">ঘনমিটার ({bn(areaNum)} হেক্টর)</div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-cyan-100">
-                  <div className="text-[11px] font-bold text-gray-700 mb-1">পাম্প চালানোর সময় অনুমান</div>
-                  <div className="text-[10px] text-gray-600">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-cyan-100">
+                  <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">পাম্প চালানোর সময় অনুমান</div>
+                  <div className="text-[10px] text-gray-600 dark:text-gray-400">
                     ১ সিএফটি/সেকেন্ড পাম্প = প্রায় {bn(Math.round(totalWaterM3 / 100))} ঘণ্টা ({bn(areaNum)} হেক্টরের জন্য)
                   </div>
-                  <div className="text-[9px] text-gray-400 mt-1">* পাম্পের ক্ষমতা অনুযায়ী সময় ভিন্ন হবে</div>
+                  <div className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">* পাম্পের ক্ষমতা অনুযায়ী সময় ভিন্ন হবে</div>
                 </div>
               </div>
             )}
@@ -306,17 +306,17 @@ export default function IrrigationPage() {
             </div>
 
             {TECHNIQUES.map((t, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-3.5">
+              <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">{t.icon}</span>
                   <div className="flex-1">
-                    <div className="text-[13px] font-bold text-gray-900">{t.title}</div>
+                    <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">{t.title}</div>
                   </div>
                   <span className="text-[11px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                     {t.savings} সাশ্রয়
                   </span>
                 </div>
-                <div className="text-[11px] text-gray-600 leading-relaxed">{t.desc}</div>
+                <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">{t.desc}</div>
               </div>
             ))}
 
@@ -347,8 +347,8 @@ export default function IrrigationPage() {
         >
           <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center text-white text-lg">🤖</div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-gray-900">AI থেকে সেচ পরামর্শ নিন</div>
-            <div className="text-[11px] text-gray-500">আপনার জমির সেচ সম্পর্কে প্রশ্ন করুন</div>
+            <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">AI থেকে সেচ পরামর্শ নিন</div>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আপনার জমির সেচ সম্পর্কে প্রশ্ন করুন</div>
           </div>
           <span className="text-[11px] font-semibold text-cyan-600">→</span>
         </a>

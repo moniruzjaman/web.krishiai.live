@@ -144,17 +144,17 @@ export default function AIChatWidget() {
   const lastAiMessage = [...messages].reverse().find((m) => m.role === "assistant");
 
   return (
-    <div className={`bg-white rounded-[14px] border border-green-200 overflow-hidden card-shadow transition-all duration-300 ${isExpanded ? "ring-2 ring-green-300/50" : ""}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-[14px] border border-green-200 dark:border-green-800 overflow-hidden card-shadow transition-all duration-300 ${isExpanded ? "ring-2 ring-green-300/50 dark:ring-green-600/50" : ""}`}>
       {/* Header — always visible */}
       <button
         onClick={handleExpand}
-        className="w-full flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50 cursor-pointer text-left hover:from-green-100 hover:to-emerald-100 transition-all"
+        className="w-full flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 cursor-pointer text-left hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/50 dark:hover:to-emerald-900/50 transition-all"
       >
         <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm">
           🤖
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold text-gray-900">কৃষি AI সহকারী</div>
+          <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">কৃষি AI সহকারী</div>
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse-dot" />
             <span className="text-[10px] text-green-700">অনলাইন · প্রশ্ন করুন</span>
@@ -169,11 +169,11 @@ export default function AIChatWidget() {
       {!isExpanded && (
         <div className="px-4 py-3">
           {lastAiMessage ? (
-            <div className="text-[12px] text-gray-700 leading-relaxed line-clamp-2">
+            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
               {lastAiMessage.content}
             </div>
           ) : (
-            <div className="text-[12px] text-gray-500">
+            <div className="text-[12px] text-gray-500 dark:text-gray-400">
               কৃষি সংক্রান্ত যেকোনো প্রশ্ন করুন — ফসলের রোগ, সারের মাত্রা, আবহাওয়া বা বাজার মূল্য
             </div>
           )}
@@ -187,7 +187,7 @@ export default function AIChatWidget() {
                   setIsExpanded(true);
                   setTimeout(() => sendMessage(s), 300);
                 }}
-                className="whitespace-nowrap text-[10px] font-medium bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors"
+                className="whitespace-nowrap text-[10px] font-medium bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
               >
                 {s}
               </button>
@@ -216,7 +216,7 @@ export default function AIChatWidget() {
                     <button
                       key={i}
                       onClick={() => sendMessage(s)}
-                      className="whitespace-nowrap text-[10px] font-medium bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors"
+                      className="whitespace-nowrap text-[10px] font-medium bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                     >
                       {s}
                     </button>
@@ -234,7 +234,7 @@ export default function AIChatWidget() {
                   className={`max-w-[85%] rounded-2xl px-3 py-2 ${
                     msg.role === "user"
                       ? "bg-[#1b8a3e] text-white rounded-br-md"
-                      : "bg-gray-100 text-gray-800 rounded-bl-md"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-md"
                   }`}
                 >
                   <div className="text-[12px] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
@@ -244,7 +244,7 @@ export default function AIChatWidget() {
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-md px-3 py-2">
                   <div className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
                     <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
@@ -256,14 +256,14 @@ export default function AIChatWidget() {
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="flex gap-2 px-3 py-2.5 border-t border-gray-100 bg-gray-50/50">
+          <form onSubmit={handleSubmit} className="flex gap-2 px-3 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="আপনার প্রশ্ন লিখুন..."
-              className="flex-1 bg-white rounded-full px-3.5 py-2 text-[12px] outline-none border border-gray-200 focus:border-green-400 focus:ring-1 focus:ring-green-400/30 transition-all"
+              className="flex-1 bg-white dark:bg-gray-700 rounded-full px-3.5 py-2 text-[12px] outline-none border border-gray-200 dark:border-gray-600 focus:border-green-400 focus:ring-1 focus:ring-green-400/30 transition-all"
             />
             <button
               type="submit"
@@ -277,7 +277,7 @@ export default function AIChatWidget() {
             </button>
             <a
               href="/chat"
-              className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0 no-underline"
+              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shrink-0 no-underline"
               title="সম্পূর্ণ চ্যাট"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

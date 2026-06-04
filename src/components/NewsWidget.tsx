@@ -149,7 +149,7 @@ function useNewsData() {
 
   // Stable refresh function using useRef to avoid stale closures
   const fetchNewsRef = useRef(fetchNews);
-  fetchNewsRef.current = fetchNews;
+  useEffect(() => { fetchNewsRef.current = fetchNews; });
 
   const refresh = useCallback(() => fetchNewsRef.current(true), []);
 
@@ -232,11 +232,11 @@ export default function NewsWidget() {
   const shown = getShownItems();
 
   return (
-    <div className="bg-white rounded-[14px] border border-gray-200 overflow-hidden card-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-700 overflow-hidden card-shadow">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-50/80">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80">
         <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse-dot flex-shrink-0" />
-        <span className="text-[13px] font-bold text-gray-900">কৃষি তথ্য</span>
+        <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100">কৃষি তথ্য</span>
         {data?.season && (
           <Badge
             variant="secondary"
@@ -303,7 +303,7 @@ export default function NewsWidget() {
         data?.bulletin ? (
           <div className="p-4 animate-slide-in">
             {/* Date badge */}
-            <div className="text-[11px] text-gray-400 mb-2">
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
               📅{" "}
               {data.bulletin.dateStr ||
                 new Date().toLocaleDateString("bn-BD", {
@@ -314,12 +314,12 @@ export default function NewsWidget() {
             </div>
 
             {/* Title */}
-            <div className="text-[15px] font-extrabold text-gray-900 leading-relaxed mb-3">
+            <div className="text-[15px] font-extrabold text-gray-900 dark:text-gray-100 leading-relaxed mb-3">
               {data.bulletin.title}
             </div>
 
             {/* Body */}
-            <div className="text-[13px] text-gray-700 leading-loose mb-3">
+            <div className="text-[13px] text-gray-700 dark:text-gray-300 leading-loose mb-3">
               {data.bulletin.body}
             </div>
 
@@ -443,7 +443,7 @@ export default function NewsWidget() {
                     </div>
                     {/* Title */}
                     <div className="flex items-start gap-1.5">
-                      <span className="text-[12.5px] text-gray-900 leading-relaxed font-medium flex-1">
+                      <span className="text-[12.5px] text-gray-900 dark:text-gray-100 leading-relaxed font-medium flex-1">
                         {it.title}
                       </span>
                       <ExternalLink className="w-3 h-3 text-gray-300 flex-shrink-0 mt-1" />
@@ -494,7 +494,7 @@ export default function NewsWidget() {
                 </div>
                 {/* Title */}
                 <div className="flex items-start gap-1.5">
-                  <span className="text-[12.5px] text-gray-900 leading-relaxed font-medium flex-1">
+                  <span className="text-[12.5px] text-gray-900 dark:text-gray-100 leading-relaxed font-medium flex-1">
                     {it.title}
                   </span>
                   <ExternalLink className="w-3 h-3 text-gray-300 flex-shrink-0 mt-1" />
@@ -507,7 +507,7 @@ export default function NewsWidget() {
 
       {/* Footer: source freshness + refresh */}
       {!loading && data && (
-        <div className="px-4 py-2 border-t border-gray-100 flex gap-3 text-[10px] text-gray-400 flex-wrap items-center">
+        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex gap-3 text-[10px] text-gray-400 flex-wrap items-center">
           <span className="flex items-center gap-1">
             <span
               className={`w-1.5 h-1.5 rounded-full ${

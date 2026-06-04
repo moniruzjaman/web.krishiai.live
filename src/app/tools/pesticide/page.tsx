@@ -94,7 +94,7 @@ export default function PesticidePage() {
   const compatResult = checkCompatibility();
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="relative px-4 pt-5 pb-7" style={{ background: "linear-gradient(135deg,#b91c1c,#991b1b)" }}>
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
@@ -105,7 +105,7 @@ export default function PesticidePage() {
 
       <div className="px-4 pt-5 pb-24">
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-none bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-none bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
           {[
             { key: "identify", label: "🔍 কীট/রোগ" },
             { key: "compatibility", label: "⚗️ মিক্সিং" },
@@ -118,7 +118,7 @@ export default function PesticidePage() {
               className={`flex-1 text-[11px] font-bold py-2 px-2 rounded-lg transition-all cursor-pointer border-none whitespace-nowrap ${
                 activeTab === tab.key
                   ? "bg-white text-red-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
               {tab.label}
@@ -129,7 +129,7 @@ export default function PesticidePage() {
         {/* ── IDENTIFY TAB ─────────────────────────────────────────────── */}
         {activeTab === "identify" && (
           <div className="space-y-4">
-            <div className="text-[12px] font-bold text-gray-700 mb-2">কীট/রোগ নির্বাচন করুন</div>
+            <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">কীট/রোগ নির্বাচন করুন</div>
             <div className="grid grid-cols-2 gap-2">
               {PESTS.map((p) => (
                 <button
@@ -138,14 +138,14 @@ export default function PesticidePage() {
                   className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
                     selectedPest === p.id
                       ? "border-red-500 bg-red-50"
-                      : "border-gray-200 bg-white hover:border-red-300"
+                      : "border-gray-200 dark:border-gray-700 bg-white hover:border-red-300"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-lg">{p.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-bold text-gray-900 truncate">{p.name}</div>
-                      <div className="text-[9px] text-gray-500">{p.en}</div>
+                      <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100 truncate">{p.name}</div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{p.en}</div>
                     </div>
                   </div>
                   <div className="flex gap-1 flex-wrap">
@@ -166,8 +166,8 @@ export default function PesticidePage() {
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-2xl">{pest.icon}</span>
                   <div>
-                    <div className="text-[14px] font-bold text-gray-900">{pest.name}</div>
-                    <div className="text-[11px] text-gray-500">{pest.en}</div>
+                    <div className="text-[14px] font-bold text-gray-900 dark:text-gray-100">{pest.name}</div>
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{pest.en}</div>
                   </div>
                   <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${pest.severity === "high" ? "bg-red-200 text-red-800" : "bg-amber-200 text-amber-800"}`}>
                     {pest.severity === "high" ? "মারাত্মক" : "মাঝারি"}
@@ -175,7 +175,7 @@ export default function PesticidePage() {
                 </div>
 
                 <div className="mb-3">
-                  <div className="text-[11px] font-bold text-gray-700 mb-1">আক্রান্ত ফসল</div>
+                  <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">আক্রান্ত ফসল</div>
                   <div className="flex gap-1.5 flex-wrap">
                     {pest.crops.map((c, i) => (
                       <span key={i} className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{c}</span>
@@ -184,14 +184,14 @@ export default function PesticidePage() {
                 </div>
 
                 <div>
-                  <div className="text-[11px] font-bold text-gray-700 mb-1">প্রস্তাবিত কীটনাশক (IRAC গ্রুপ)</div>
+                  <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">প্রস্তাবিত কীটনাশক (IRAC গ্রুপ)</div>
                   <div className="space-y-1.5">
                     {pest.pesticideGroups.map((g, i) => {
                       const group = IRAC_GROUPS[g];
                       return (
-                        <div key={i} className="bg-white rounded-lg p-2.5 border border-red-100">
-                          <div className="text-[11px] font-bold text-gray-900">গ্রুপ {g}: {group?.name || g}</div>
-                          <div className="text-[10px] text-gray-600 mt-0.5">
+                        <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-red-100">
+                          <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">গ্রুপ {g}: {group?.name || g}</div>
+                          <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">
                             উদাহরণ: {group?.examples.join(", ")}
                           </div>
                           <div className="text-[9px] text-blue-600 mt-0.5">
@@ -205,17 +205,17 @@ export default function PesticidePage() {
 
                 {/* Matching products */}
                 <div className="mt-3">
-                  <div className="text-[11px] font-bold text-gray-700 mb-1.5">বাজারে পাওয়া পণ্য</div>
+                  <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1.5">বাজারে পাওয়া পণ্য</div>
                   <div className="space-y-1">
                     {PRODUCTS.filter(p => pest.pesticideGroups.includes(p.group)).map((p, i) => (
                       <div key={i} className="flex items-center gap-2 bg-white rounded-lg p-2 border border-red-100">
                         <div className="flex-1">
-                          <div className="text-[10px] font-bold text-gray-900">{p.name}</div>
-                          <div className="text-[9px] text-gray-500">{p.active} · গ্রুপ {p.group}</div>
+                          <div className="text-[10px] font-bold text-gray-900 dark:text-gray-100">{p.name}</div>
+                          <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{p.active} · গ্রুপ {p.group}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-[10px] font-bold text-gray-900">{p.dose}</div>
-                          <div className="text-[9px] text-gray-500">{p.type}</div>
+                          <div className="text-[10px] font-bold text-gray-900 dark:text-gray-100">{p.dose}</div>
+                          <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{p.type}</div>
                         </div>
                       </div>
                     ))}
@@ -238,11 +238,11 @@ export default function PesticidePage() {
 
             {/* Product 1 */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">প্রথম কীটনাশক</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">প্রথম কীটনাশক</div>
               <select
                 value={selectedProduct1 || ""}
                 onChange={(e) => setSelectedProduct1(e.target.value || null)}
-                className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-red-400"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-red-400"
               >
                 <option value="">নির্বাচন করুন</option>
                 {PRODUCTS.map((p, i) => (
@@ -253,11 +253,11 @@ export default function PesticidePage() {
 
             {/* Product 2 */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">দ্বিতীয় কীটনাশক</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">দ্বিতীয় কীটনাশক</div>
               <select
                 value={selectedProduct2 || ""}
                 onChange={(e) => setSelectedProduct2(e.target.value || null)}
-                className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-red-400"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-red-400"
               >
                 <option value="">নির্বাচন করুন</option>
                 {PRODUCTS.map((p, i) => (
@@ -271,22 +271,22 @@ export default function PesticidePage() {
               <div className={`rounded-2xl p-4 border-2 ${compatResult.compatible ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">{compatResult.compatible ? "✅" : "❌"}</span>
-                  <div className="text-[14px] font-bold text-gray-900">
+                  <div className="text-[14px] font-bold text-gray-900 dark:text-gray-100">
                     {compatResult.compatible ? "মিশ্রণ সম্ভব" : "মিশ্রণ নিরাপদ নয়!"}
                   </div>
                 </div>
-                <div className="text-[12px] text-gray-700">{compatResult.reason}</div>
+                <div className="text-[12px] text-gray-700 dark:text-gray-300">{compatResult.reason}</div>
 
                 {prod1 && prod2 && (
                   <div className="mt-3 flex gap-2">
-                    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100">
-                      <div className="text-[10px] font-bold text-gray-900">{prod1.name}</div>
-                      <div className="text-[9px] text-gray-500">গ্রুপ {prod1.group} · {prod1.type}</div>
+                    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100 dark:border-gray-700">
+                      <div className="text-[10px] font-bold text-gray-900 dark:text-gray-100">{prod1.name}</div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">গ্রুপ {prod1.group} · {prod1.type}</div>
                     </div>
-                    <div className="flex items-center text-[12px] text-gray-400">+</div>
-                    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100">
-                      <div className="text-[10px] font-bold text-gray-900">{prod2.name}</div>
-                      <div className="text-[9px] text-gray-500">গ্রুপ {prod2.group} · {prod2.type}</div>
+                    <div className="flex items-center text-[12px] text-gray-400 dark:text-gray-500">+</div>
+                    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100 dark:border-gray-700">
+                      <div className="text-[10px] font-bold text-gray-900 dark:text-gray-100">{prod2.name}</div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">গ্রুপ {prod2.group} · {prod2.type}</div>
                     </div>
                   </div>
                 )}
@@ -294,7 +294,7 @@ export default function PesticidePage() {
             )}
 
             {!compatResult && selectedProduct1 && selectedProduct2 && (
-              <div className="text-center text-[12px] text-gray-400">পরীক্ষা হচ্ছে...</div>
+              <div className="text-center text-[12px] text-gray-400 dark:text-gray-500">পরীক্ষা হচ্ছে...</div>
             )}
           </div>
         )}
@@ -311,17 +311,17 @@ export default function PesticidePage() {
 
             {/* IRAC Group cards */}
             {Object.entries(IRAC_GROUPS).map(([key, group]) => (
-              <div key={key} className="bg-white border border-gray-200 rounded-xl p-3.5">
+              <div key={key} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="text-[13px] font-bold text-gray-900">গ্রুপ {key}</span>
-                    <span className="text-[11px] text-gray-500 ml-2">{group.name}</span>
+                    <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100">গ্রুপ {key}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 ml-2">{group.name}</span>
                   </div>
-                  <span className="text-[9px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  <span className="text-[9px] font-bold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
                     {key.startsWith("M") ? "মাল্টি-সাইট" : "সিঙ্গেল-সাইট"}
                   </span>
                 </div>
-                <div className="text-[10px] text-gray-600 mb-1.5">
+                <div className="text-[10px] text-gray-600 dark:text-gray-400 mb-1.5">
                   উদাহরণ: {group.examples.join(", ")}
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -347,16 +347,16 @@ export default function PesticidePage() {
               { icon: "🏥", title: "প্রাথমিক চিকিৎসা", items: ["চোখে লাগলে পরিষ্কার পানিতে ১৫ মিনিট ধুয়ে নিন", "গায়ে লাগলে সাবান পানিতে ধুয়ে ফেলুন", "গিলে ফেললে বমি করাবেন না, দ্রুত ডাক্তার দেখান"] },
               { icon: "📦", title: "সংরক্ষণ", items: ["শিশুদের নাগালের বাইরে রাখুন", "খাদ্যপণ্য থেকে দূরে সংরক্ষণ করুন", "ব্যবহৃত পাত্র পুনরায় ব্যবহার করবেন না"] },
             ].map((section, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-3.5">
+              <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">{section.icon}</span>
-                  <span className="text-[13px] font-bold text-gray-900">{section.title}</span>
+                  <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100">{section.title}</span>
                 </div>
                 <div className="space-y-1.5">
                   {section.items.map((item, j) => (
                     <div key={j} className="flex items-start gap-2">
                       <span className="text-[10px] text-green-600 mt-0.5">✓</span>
-                      <span className="text-[11px] text-gray-700">{item}</span>
+                      <span className="text-[11px] text-gray-700 dark:text-gray-300">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -382,8 +382,8 @@ export default function PesticidePage() {
         >
           <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white text-lg">🤖</div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-gray-900">AI থেকে কীটনাশক সম্পর্কে জানুন</div>
-            <div className="text-[11px] text-gray-500">আপনার ফসলের কীটপতঙ্গ সম্পর্কে প্রশ্ন করুন</div>
+            <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">AI থেকে কীটনাশক সম্পর্কে জানুন</div>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আপনার ফসলের কীটপতঙ্গ সম্পর্কে প্রশ্ন করুন</div>
           </div>
           <span className="text-[11px] font-semibold text-red-600">→</span>
         </a>

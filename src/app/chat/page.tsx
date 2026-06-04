@@ -173,7 +173,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
+    <div className="bg-gray-50 dark:bg-gray-800 min-h-screen flex flex-col">
       {/* Chat header */}
       <div
         className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10"
@@ -218,13 +218,13 @@ export default function ChatPage() {
               className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                 msg.role === "user"
                   ? "bg-[#1b8a3e] text-white rounded-br-md"
-                  : "bg-white text-gray-800 border border-gray-200 rounded-bl-md card-shadow"
+                  : "bg-white text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-md card-shadow"
               }`}
             >
               <div className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</div>
               <div
                 className={`text-[9px] mt-1 ${
-                  msg.role === "user" ? "text-white/50" : "text-gray-400"
+                  msg.role === "user" ? "text-white/50" : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 {formatTime(msg.timestamp)}
@@ -235,7 +235,7 @@ export default function ChatPage() {
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200 card-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200 dark:border-gray-700 card-shadow">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                 <span
@@ -260,7 +260,7 @@ export default function ChatPage() {
               <button
                 key={i}
                 onClick={() => sendMessage(s)}
-                className="whitespace-nowrap text-[11px] font-medium bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-full hover:bg-green-50 hover:border-green-300 transition-colors"
+                className="whitespace-nowrap text-[11px] font-medium bg-white border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full hover:bg-green-50 hover:border-green-300 transition-colors"
               >
                 {s}
               </button>
@@ -270,14 +270,14 @@ export default function ChatPage() {
       )}
 
       {/* Input area */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3 pb-20">
+      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 pb-20">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="আপনার প্রশ্ন লিখুন..."
-            className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1b8a3e]/30 transition-all"
+            className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#1b8a3e]/30 transition-all"
           />
           <button
             type="submit"

@@ -198,7 +198,7 @@ export default function CropLibraryPage() {
     String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="relative px-4 pt-5 pb-7" style={{ background: "linear-gradient(135deg,#166534,#14532d)" }}>
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
@@ -215,7 +215,7 @@ export default function CropLibraryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="🔍 ফসলের নাম বা এলাকা দিয়ে খুঁজুন..."
-            className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400/30"
+            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400/30"
           />
         </div>
 
@@ -228,7 +228,7 @@ export default function CropLibraryPage() {
               className={`whitespace-nowrap text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
                 seasonFilter === s
                   ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-green-300"
+                  : "bg-white text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-green-300"
               }`}
             >
               {s === "সব" ? "📊" : s === "রবি" ? "❄️" : "🌧️"} {s}
@@ -237,7 +237,7 @@ export default function CropLibraryPage() {
         </div>
 
         {/* Crop count */}
-        <div className="text-[10px] text-gray-400 mb-3">{bn(filtered.length)} টি ফসল পাওয়া গেছে</div>
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-3">{bn(filtered.length)} টি ফসল পাওয়া গেছে</div>
 
         {/* Crop cards */}
         <div className="space-y-2.5">
@@ -247,7 +247,7 @@ export default function CropLibraryPage() {
               <div
                 key={i}
                 className={`rounded-xl border-2 transition-all overflow-hidden ${
-                  isExpanded ? "border-green-400 bg-green-50/30" : "border-gray-200 bg-white hover:border-green-300"
+                  isExpanded ? "border-green-400 bg-green-50/30" : "border-gray-200 dark:border-gray-700 bg-white hover:border-green-300"
                 }`}
               >
                 {/* Collapsed view */}
@@ -257,18 +257,18 @@ export default function CropLibraryPage() {
                 >
                   <div className="text-2xl">{crop.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-gray-900">{crop.name}</div>
+                    <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">{crop.name}</div>
                     <div className="flex gap-1.5 mt-0.5 flex-wrap">
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                         crop.season === "রবি" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
                       }`}>
                         {crop.season}
                       </span>
-                      <span className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">📍 {crop.region}</span>
+                      <span className="text-[9px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">📍 {crop.region}</span>
                       <span className="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">⏱️ {crop.duration}</span>
                     </div>
                   </div>
-                  <span className={`text-[11px] font-semibold transition-transform ${isExpanded ? "text-green-600 rotate-90" : "text-gray-400"}`}>
+                  <span className={`text-[11px] font-semibold transition-transform ${isExpanded ? "text-green-600 rotate-90" : "text-gray-400 dark:text-gray-500"}`}>
                     ▶
                   </span>
                 </button>
@@ -278,7 +278,7 @@ export default function CropLibraryPage() {
                   <div className="px-4 pb-4 space-y-3">
                     {/* Varieties */}
                     <div>
-                      <div className="text-[11px] font-bold text-gray-700 mb-1">🌱 উন্নত জাত</div>
+                      <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">🌱 উন্নত জাত</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {crop.variety.map((v, j) => (
                           <span key={j} className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{v}</span>
@@ -288,21 +288,21 @@ export default function CropLibraryPage() {
 
                     {/* Key stats */}
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-white rounded-lg p-2.5 border border-green-100">
-                        <div className="text-[9px] text-gray-500">ফলন</div>
-                        <div className="text-[12px] font-bold text-gray-900">{crop.yieldPer}</div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-green-100">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">ফলন</div>
+                        <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{crop.yieldPer}</div>
                       </div>
-                      <div className="bg-white rounded-lg p-2.5 border border-green-100">
-                        <div className="text-[9px] text-gray-500">বীজের হার</div>
-                        <div className="text-[12px] font-bold text-gray-900">{crop.seedRate}</div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-green-100">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">বীজের হার</div>
+                        <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{crop.seedRate}</div>
                       </div>
-                      <div className="bg-white rounded-lg p-2.5 border border-green-100">
-                        <div className="text-[9px] text-gray-500">দূরত্ব</div>
-                        <div className="text-[12px] font-bold text-gray-900">{crop.spacing}</div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-green-100">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">দূরত্ব</div>
+                        <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{crop.spacing}</div>
                       </div>
-                      <div className="bg-white rounded-lg p-2.5 border border-green-100">
-                        <div className="text-[9px] text-gray-500">মেয়াদ</div>
-                        <div className="text-[12px] font-bold text-gray-900">{crop.duration}</div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-green-100">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">মেয়াদ</div>
+                        <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{crop.duration}</div>
                       </div>
                     </div>
 
@@ -314,7 +314,7 @@ export default function CropLibraryPage() {
 
                     {/* Diseases */}
                     <div>
-                      <div className="text-[11px] font-bold text-gray-700 mb-1">🍄 প্রধান রোগ</div>
+                      <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">🍄 প্রধান রোগ</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {crop.diseases.map((d, j) => (
                           <span key={j} className="text-[9px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">{d}</span>
@@ -324,7 +324,7 @@ export default function CropLibraryPage() {
 
                     {/* Pests */}
                     <div>
-                      <div className="text-[11px] font-bold text-gray-700 mb-1">🪲 প্রধান কীটপতঙ্গ</div>
+                      <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">🪲 প্রধান কীটপতঙ্গ</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {crop.pests.map((p, j) => (
                           <span key={j} className="text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">{p}</span>
@@ -367,7 +367,7 @@ export default function CropLibraryPage() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-10 text-gray-400 text-sm">
+          <div className="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
             কোনো ফসল পাওয়া যায়নি
           </div>
         )}

@@ -94,7 +94,7 @@ export default function TopNavbar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-[260px] bg-white z-[100] shadow-xl p-5 transition-transform duration-200 ease-in-out ${
+        className={`fixed top-0 left-0 bottom-0 w-[260px] bg-white dark:bg-gray-900 z-[100] shadow-xl p-5 transition-transform duration-200 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -102,7 +102,7 @@ export default function TopNavbar() {
           <span className="text-lg font-bold text-[#1b8a3e]">কৃষি AI</span>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="bg-none border-none text-xl cursor-pointer text-gray-700"
+            className="bg-none border-none text-xl cursor-pointer text-gray-700 dark:text-gray-300"
             aria-label="Close menu"
           >
             ✕
@@ -121,8 +121,8 @@ export default function TopNavbar() {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-2.5 px-3.5 py-3 rounded-[10px] text-sm font-medium no-underline transition-colors duration-150 ${
                   isActive
-                    ? "bg-[#f0fdf4] text-[#1b8a3e] font-bold"
-                    : "text-gray-700 hover:bg-[#f0fdf4]"
+                    ? "bg-[#f0fdf4] dark:bg-green-900/30 text-[#1b8a3e] dark:text-green-400 font-bold"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-[#f0fdf4] dark:hover:bg-gray-800"
                 }`}
               >
                 <span>{link.icon}</span> {link.label}
@@ -133,16 +133,16 @@ export default function TopNavbar() {
       </aside>
 
       {/* Navbar */}
-      <header className="bg-white px-3.5 py-2.5 flex items-center gap-2.5 border-b border-gray-200 sticky top-0 z-50 sm:px-6 sm:gap-3.5">
+      <header className="bg-white dark:bg-gray-900 px-3.5 py-2.5 flex items-center gap-2.5 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 sm:px-6 sm:gap-3.5">
         {/* Hamburger */}
         <button
           className="flex flex-col justify-center gap-[5px] cursor-pointer w-[22px] bg-none border-none p-0 shrink-0"
           aria-label="Open menu"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          <span className="h-[2px] bg-gray-800 rounded w-full block" />
-          <span className="h-[2px] bg-gray-800 rounded w-full block" />
-          <span className="h-[2px] bg-gray-800 rounded w-full block" />
+          <span className="h-[2px] bg-gray-800 dark:bg-gray-200 rounded w-full block" />
+          <span className="h-[2px] bg-gray-800 dark:bg-gray-200 rounded w-full block" />
+          <span className="h-[2px] bg-gray-800 dark:bg-gray-200 rounded w-full block" />
         </button>
 
         {/* Logo */}
@@ -166,7 +166,7 @@ export default function TopNavbar() {
 
         {/* Share */}
         <button
-          className="w-[30px] h-[30px] flex items-center justify-center cursor-pointer bg-none border-none text-gray-600 p-0"
+          className="w-[30px] h-[30px] flex items-center justify-center cursor-pointer bg-none border-none text-gray-600 dark:text-gray-400 p-0"
           aria-label="Share"
           onClick={handleShare}
         >
@@ -188,13 +188,13 @@ export default function TopNavbar() {
         </button>
 
         {/* Language toggle */}
-        <div className="flex rounded-full overflow-hidden border border-gray-200 shrink-0">
+        <div className="flex rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
           <button
             type="button"
             className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors border-none bg-transparent ${
               lang === "bn"
                 ? "bg-[#1b8a3e] text-white"
-                : "bg-white text-gray-500"
+                : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400"
             }`}
             onClick={toggleLang}
             aria-label="Switch to Bengali"
@@ -206,7 +206,7 @@ export default function TopNavbar() {
             className={`px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors border-none bg-transparent ${
               lang === "en"
                 ? "bg-[#1b8a3e] text-white"
-                : "bg-white text-gray-500"
+                : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400"
             }`}
             onClick={toggleLang}
             aria-label="Switch to English"
@@ -217,7 +217,7 @@ export default function TopNavbar() {
 
         {/* Dark mode toggle */}
         <button
-          className="w-[30px] h-[30px] flex items-center justify-center cursor-pointer bg-none border-none text-gray-600 p-0"
+          className="w-[30px] h-[30px] flex items-center justify-center cursor-pointer bg-none border-none text-gray-600 dark:text-gray-400 p-0"
           onClick={() => setDark(!dark)}
           aria-label={dark ? "Light mode" : "Dark mode"}
         >
@@ -227,7 +227,7 @@ export default function TopNavbar() {
         {/* Avatar */}
         <div className="w-[34px] h-[34px] bg-[#1b8a3e] rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 relative cursor-pointer">
           ক
-          <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] bg-white rounded-full flex items-center justify-center">
+          <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] bg-white dark:bg-gray-900 rounded-full flex items-center justify-center">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
               <path
                 d="M17 8C8 10 5.9 16.17 3.82 19.83c.17-.05.33-.12.5-.17C6 19 7.5 18.5 9 18.5c3.5 0 5.5-2 8-4.5S21 8 21 8c-1.5 1-3.5 1.5-5.5 1.5C14 9.5 15.5 8 17 8z"

@@ -90,7 +90,7 @@ export default function YieldPage() {
     String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="relative px-4 pt-5 pb-7" style={{ background: "linear-gradient(135deg,#6d28d9,#5b21b6)" }}>
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
@@ -101,7 +101,7 @@ export default function YieldPage() {
 
       <div className="px-4 pt-5 pb-24">
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
           {[
             { key: "estimate", label: "📊 ফলন অনুমান" },
             { key: "calendar", label: "📅 মৌসুম ক্যালেন্ডার" },
@@ -113,7 +113,7 @@ export default function YieldPage() {
               className={`flex-1 text-[11px] font-bold py-2 px-1.5 rounded-lg transition-all cursor-pointer border-none ${
                 activeTab === tab.key
                   ? "bg-white text-purple-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
               {tab.label}
@@ -126,7 +126,7 @@ export default function YieldPage() {
           <div className="space-y-4">
             {/* Crop selector */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">১. ফসল নির্বাচন করুন</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">১. ফসল নির্বাচন করুন</div>
               <div className="grid grid-cols-5 gap-1.5">
                 {YIELD_DATA.map((c) => (
                   <button
@@ -135,11 +135,11 @@ export default function YieldPage() {
                     className={`p-2 rounded-lg border-2 text-center transition-all cursor-pointer ${
                       selectedCrop === c.id
                         ? "border-purple-500 bg-purple-50"
-                        : "border-gray-200 bg-white hover:border-purple-300"
+                        : "border-gray-200 dark:border-gray-700 bg-white hover:border-purple-300"
                     }`}
                   >
                     <div className="text-lg">{c.icon}</div>
-                    <div className="text-[9px] font-bold text-gray-800">{c.name}</div>
+                    <div className="text-[9px] font-bold text-gray-800 dark:text-gray-200">{c.name}</div>
                   </button>
                 ))}
               </div>
@@ -149,7 +149,7 @@ export default function YieldPage() {
               <>
                 {/* Area input */}
                 <div>
-                  <div className="text-[12px] font-bold text-gray-700 mb-2">২. জমির পরিমাণ</div>
+                  <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">২. জমির পরিমাণ</div>
                   <div className="flex items-center gap-3">
                     <input
                       type="number"
@@ -157,16 +157,16 @@ export default function YieldPage() {
                       onChange={(e) => setArea(e.target.value)}
                       min="0.1"
                       step="0.5"
-                      className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/30"
+                      className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-gray-100 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/30"
                     />
-                    <span className="text-[12px] font-bold text-gray-500">হেক্টর</span>
+                    <span className="text-[12px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500">হেক্টর</span>
                   </div>
-                  <div className="text-[10px] text-gray-400 mt-1">১ হেক্টর = ৭.৫ বিঘা = ২৪৭ শতক</div>
+                  <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">১ হেক্টর = ৭.৫ বিঘা = ২৪৭ শতক</div>
                 </div>
 
                 {/* Variety quality */}
                 <div>
-                  <div className="text-[12px] font-bold text-gray-700 mb-2">৩. জাতের মান</div>
+                  <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">৩. জাতের মান</div>
                   <div className="flex gap-2">
                     {[
                       { key: "optimal", label: "উন্নত জাত", icon: "⭐", desc: "+২০% ফলন" },
@@ -179,11 +179,11 @@ export default function YieldPage() {
                         className={`flex-1 p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
                           variety === v.key
                             ? "border-purple-500 bg-purple-50"
-                            : "border-gray-200 bg-white hover:border-purple-300"
+                            : "border-gray-200 dark:border-gray-700 bg-white hover:border-purple-300"
                         }`}
                       >
-                        <div className="text-[11px] font-bold text-gray-900">{v.icon} {v.label}</div>
-                        <div className="text-[9px] text-gray-500">{v.desc}</div>
+                        <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{v.icon} {v.label}</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{v.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -198,7 +198,7 @@ export default function YieldPage() {
 
                 {/* Weather condition */}
                 <div>
-                  <div className="text-[12px] font-bold text-gray-700 mb-2">৪. আবহাওয়ার অবস্থা</div>
+                  <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">৪. আবহাওয়ার অবস্থা</div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {(Object.entries(WEATHER_IMPACT) as [string, { label: string; mult: number; color: string; bg: string }][]).map(([key, w]) => (
                       <button
@@ -207,11 +207,11 @@ export default function YieldPage() {
                         className={`p-2 rounded-lg border-2 text-center transition-all cursor-pointer ${
                           weather === key
                             ? "border-purple-500 bg-purple-50"
-                            : "border-gray-200 bg-white hover:border-purple-300"
+                            : "border-gray-200 dark:border-gray-700 bg-white hover:border-purple-300"
                         }`}
                       >
                         <div className={`text-[11px] font-bold ${w.color}`}>{w.label}</div>
-                        <div className="text-[9px] text-gray-500">{w.mult > 1 ? `+${((w.mult - 1) * 100).toFixed(0)}%` : w.mult < 1 ? `${((w.mult - 1) * 100).toFixed(0)}%` : "—"}</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{w.mult > 1 ? `+${((w.mult - 1) * 100).toFixed(0)}%` : w.mult < 1 ? `${((w.mult - 1) * 100).toFixed(0)}%` : "—"}</div>
                       </button>
                     ))}
                   </div>
@@ -220,28 +220,28 @@ export default function YieldPage() {
                 {/* Results */}
                 {estimate && (
                   <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 p-4">
-                    <div className="text-[14px] font-extrabold text-gray-900 mb-3">
+                    <div className="text-[14px] font-extrabold text-gray-900 dark:text-gray-100 mb-3">
                       {crop.icon} {crop.name} — ফলন অনুমান
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                      <div className="bg-white rounded-xl p-3 border border-purple-100 text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-purple-100 text-center">
                         <div className="text-[20px] font-extrabold text-purple-700">{bn(estimate.yieldPerHa)}</div>
-                        <div className="text-[9px] text-gray-500">টন/হেক্টর</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">টন/হেক্টর</div>
                       </div>
-                      <div className="bg-white rounded-xl p-3 border border-purple-100 text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-purple-100 text-center">
                         <div className="text-[20px] font-extrabold text-green-700">{bn(estimate.totalYield)}</div>
-                        <div className="text-[9px] text-gray-500">মোট টন ({bn(areaNum)} হেক্টর)</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">মোট টন ({bn(areaNum)} হেক্টর)</div>
                       </div>
-                      <div className="bg-white rounded-xl p-3 border border-purple-100 text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-purple-100 text-center">
                         <div className="text-[16px] font-extrabold text-amber-700">৳{estimate.revenue}</div>
-                        <div className="text-[9px] text-gray-500">আনুমানিক আয়</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আনুমানিক আয়</div>
                       </div>
                     </div>
 
                     {/* Risk factors */}
-                    <div className="bg-white rounded-xl p-3 border border-purple-100">
-                      <div className="text-[11px] font-bold text-gray-700 mb-1.5">⚠️ ঝুঁকির কারণ</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-purple-100">
+                      <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1.5">⚠️ ঝুঁকির কারণ</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {crop.riskFactors.map((r, i) => (
                           <span key={i} className="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{r}</span>
@@ -249,7 +249,7 @@ export default function YieldPage() {
                       </div>
                     </div>
 
-                    <div className="text-[9px] text-gray-400 mt-2 text-center">
+                    <div className="text-[9px] text-gray-400 dark:text-gray-500 mt-2 text-center">
                       * এই অনুমান গড় ফলন ও বর্তমান বাজার মূল্যের উপর ভিত্তি করে। প্রকৃত ফলন ভিন্ন হতে পারে।
                     </div>
                   </div>
@@ -258,9 +258,9 @@ export default function YieldPage() {
             )}
 
             {!selectedCrop && (
-              <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 text-center">
                 <div className="text-2xl mb-2">📊</div>
-                <div className="text-[12px] text-gray-500">ফসল নির্বাচন করুন ফলন অনুমান জানতে</div>
+                <div className="text-[12px] text-gray-500 dark:text-gray-400 dark:text-gray-500">ফসল নির্বাচন করুন ফলন অনুমান জানতে</div>
               </div>
             )}
           </div>
@@ -280,11 +280,11 @@ export default function YieldPage() {
                 className={`rounded-xl p-3 border transition-all ${
                   i === currentMonth
                     ? "bg-purple-50 border-purple-300 ring-2 ring-purple-300/50"
-                    : "bg-white border-gray-200"
+                    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[13px] font-bold text-gray-900">{m.month}</span>
+                  <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100">{m.month}</span>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                     m.season === "রবি" ? "bg-blue-100 text-blue-700" :
                     m.season.includes("খরিফ") ? "bg-green-100 text-green-700" :
@@ -296,7 +296,7 @@ export default function YieldPage() {
                     <span className="text-[9px] font-bold bg-purple-600 text-white px-2 py-0.5 rounded-full">এখন</span>
                   )}
                 </div>
-                <div className="text-[11px] text-gray-600">{m.tasks}</div>
+                <div className="text-[11px] text-gray-600 dark:text-gray-400">{m.tasks}</div>
               </div>
             ))}
           </div>
@@ -315,21 +315,21 @@ export default function YieldPage() {
             {YIELD_DATA.map((c, i) => {
               const revenue = c.avgYield * 1000 * c.pricePerKg;
               return (
-                <div key={i} className="bg-white border border-gray-200 rounded-xl p-3">
+                <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
                   <div className="flex items-center gap-2.5 mb-2">
                     <span className="text-lg">{c.icon}</span>
                     <div className="flex-1">
-                      <div className="text-[12px] font-bold text-gray-900">{c.name}</div>
-                      <div className="text-[9px] text-gray-500">{c.season} মৌসুম · গড় {c.avgYield} {c.unit}</div>
+                      <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{c.name}</div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{c.season} মৌসুম · গড় {c.avgYield} {c.unit}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-[14px] font-extrabold text-green-700">৳{bn(revenue.toLocaleString())}</div>
-                      <div className="text-[9px] text-gray-400">প্রতি হেক্টর</div>
+                      <div className="text-[9px] text-gray-400 dark:text-gray-500">প্রতি হেক্টর</div>
                     </div>
                   </div>
 
                   {/* Mini bar chart */}
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
                       style={{ width: `${Math.min((revenue / 500000) * 100, 100)}%` }}
@@ -354,8 +354,8 @@ export default function YieldPage() {
             >
               <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white text-lg">🤖</div>
               <div className="flex-1">
-                <div className="text-[13px] font-bold text-gray-900">AI থেকে ফলন সম্পর্কে জানুন</div>
-                <div className="text-[11px] text-gray-500">আপনার ফসলের ফলন সম্পর্কে বিস্তারিত জানুন</div>
+                <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">AI থেকে ফলন সম্পর্কে জানুন</div>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আপনার ফসলের ফলন সম্পর্কে বিস্তারিত জানুন</div>
               </div>
               <span className="text-[11px] font-semibold text-purple-600">→</span>
             </a>

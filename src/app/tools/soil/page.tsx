@@ -99,7 +99,7 @@ export default function SoilPage() {
   const fertResult = calculateFertilizer();
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="relative px-4 pt-5 pb-7" style={{ background: "linear-gradient(135deg,#9d174d,#831843)" }}>
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
@@ -113,7 +113,7 @@ export default function SoilPage() {
 
       <div className="px-4 pt-5 pb-24">
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
           {[
             { key: "calculator", label: "🧮 সার ক্যালকুলেটর" },
             { key: "analysis", label: "🔍 মাটি বিশ্লেষণ" },
@@ -125,7 +125,7 @@ export default function SoilPage() {
               className={`flex-1 text-[11px] font-bold py-2 px-2 rounded-lg transition-all cursor-pointer border-none ${
                 activeTab === tab.key
                   ? "bg-white text-pink-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
               {tab.label}
@@ -138,7 +138,7 @@ export default function SoilPage() {
           <div className="space-y-4">
             {/* Soil type selector */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">১. মাটির ধরন নির্বাচন করুন</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">১. মাটির ধরন নির্বাচন করুন</div>
               <div className="grid grid-cols-3 gap-2">
                 {SOIL_TYPES.map((s) => (
                   <button
@@ -147,12 +147,12 @@ export default function SoilPage() {
                     className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
                       (selectedSoil || detectedSoil || "loam") === s.id
                         ? "border-pink-500 bg-pink-50"
-                        : "border-gray-200 bg-white hover:border-pink-300"
+                        : "border-gray-200 dark:border-gray-700 bg-white hover:border-pink-300"
                     }`}
                   >
                     <div className="text-lg">{s.icon}</div>
-                    <div className="text-[11px] font-bold text-gray-900">{s.name}</div>
-                    <div className="text-[9px] text-gray-500">{s.en}</div>
+                    <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{s.name}</div>
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{s.en}</div>
                   </button>
                 ))}
               </div>
@@ -160,7 +160,7 @@ export default function SoilPage() {
 
             {/* Crop selector */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">২. ফসল নির্বাচন করুন</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">২. ফসল নির্বাচন করুন</div>
               <div className="grid grid-cols-4 gap-1.5">
                 {CROPS.map((c) => (
                   <button
@@ -169,12 +169,12 @@ export default function SoilPage() {
                     className={`p-2 rounded-lg border-2 text-center transition-all cursor-pointer ${
                       selectedCrop === c.id
                         ? "border-pink-500 bg-pink-50"
-                        : "border-gray-200 bg-white hover:border-pink-300"
+                        : "border-gray-200 dark:border-gray-700 bg-white hover:border-pink-300"
                     }`}
                   >
                     <div className="text-lg">{c.icon}</div>
-                    <div className="text-[9px] font-bold text-gray-800">{c.name}</div>
-                    <div className="text-[8px] text-gray-400">{c.season}</div>
+                    <div className="text-[9px] font-bold text-gray-800 dark:text-gray-200">{c.name}</div>
+                    <div className="text-[8px] text-gray-400 dark:text-gray-500">{c.season}</div>
                   </button>
                 ))}
               </div>
@@ -182,7 +182,7 @@ export default function SoilPage() {
 
             {/* Area input */}
             <div>
-              <div className="text-[12px] font-bold text-gray-700 mb-2">৩. জমির পরিমাণ (বিঘায়)</div>
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">৩. জমির পরিমাণ (বিঘায়)</div>
               <div className="flex items-center gap-3">
                 <input
                   type="number"
@@ -190,20 +190,20 @@ export default function SoilPage() {
                   onChange={(e) => setArea(e.target.value)}
                   min="0.1"
                   step="0.5"
-                  className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30"
+                  className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-gray-100 outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30"
                 />
-                <span className="text-[12px] font-bold text-gray-500">বিঘা</span>
+                <span className="text-[12px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500">বিঘা</span>
               </div>
-              <div className="text-[10px] text-gray-400 mt-1">১ বিঘা = ৩৩ শতক = ১,৩৩৭ বর্গমিটার</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">১ বিঘা = ৩৩ শতক = ১,৩৩৭ বর্গমিটার</div>
             </div>
 
             {/* Results */}
             {fertResult && crop && (
               <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl border border-pink-200 p-4">
-                <div className="text-[13px] font-extrabold text-gray-900 mb-1">
+                <div className="text-[13px] font-extrabold text-gray-900 dark:text-gray-100 mb-1">
                   {crop.icon} {crop.name} — {areaNum} বিঘার জন্য সারের মাত্রা
                 </div>
-                <div className="text-[10px] text-gray-500 mb-3">
+                <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">
                   {soil?.name} মাটি · SRDI সুপারিশকৃত
                 </div>
 
@@ -215,15 +215,15 @@ export default function SoilPage() {
                     { name: "জিপসাম", val: fertResult.gypsum, unit: "কেজি", info: FERTILIZER_INFO[3] },
                     { name: "জিংক সালফেট", val: fertResult.zinc, unit: "কেজি", info: FERTILIZER_INFO[4] },
                   ].map((f, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-2.5 border border-gray-100">
+                    <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-2.5 border border-gray-100 dark:border-gray-700">
                       <span className="text-base">{f.info.icon}</span>
                       <div className="flex-1">
-                        <div className="text-[11px] font-bold text-gray-900">{f.name}</div>
-                        <div className="text-[9px] text-gray-500">{f.info.en}</div>
+                        <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{f.name}</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{f.info.en}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-[14px] font-extrabold" style={{ color: f.info.color }}>{f.val}</div>
-                        <div className="text-[9px] text-gray-400">{f.unit}</div>
+                        <div className="text-[9px] text-gray-400 dark:text-gray-500">{f.unit}</div>
                       </div>
                     </div>
                   ))}
@@ -244,9 +244,9 @@ export default function SoilPage() {
             )}
 
             {!selectedCrop && (
-              <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 text-center">
                 <div className="text-2xl mb-2">👆</div>
-                <div className="text-[12px] text-gray-500">ফসল নির্বাচন করুন সারের মাত্রা জানতে</div>
+                <div className="text-[12px] text-gray-500 dark:text-gray-400 dark:text-gray-500">ফসল নির্বাচন করুন সারের মাত্রা জানতে</div>
               </div>
             )}
           </div>
@@ -256,7 +256,7 @@ export default function SoilPage() {
         {activeTab === "analysis" && (
           <div className="space-y-4">
             <div className="bg-pink-50 border border-pink-200 rounded-2xl p-4">
-              <div className="text-[13px] font-bold text-gray-900 mb-2">🔍 মাটি বিশ্লেষণ পদ্ধতি</div>
+              <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100 mb-2">🔍 মাটি বিশ্লেষণ পদ্ধতি</div>
               <div className="space-y-2.5">
                 {[
                   { step: "১", title: "নমুনা সংগ্রহ", desc: "জমির বিভিন্ন স্থান থেকে 'V' আকৃতিতে খনন করে ০-১৫ সেমি ও ১৫-৩০ সেমি গভীরতায় মাটি সংগ্রহ করুন।" },
@@ -269,8 +269,8 @@ export default function SoilPage() {
                       {item.step}
                     </span>
                     <div>
-                      <div className="text-[12px] font-bold text-gray-900">{item.title}</div>
-                      <div className="text-[11px] text-gray-600 leading-relaxed">{item.desc}</div>
+                      <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{item.title}</div>
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">{item.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -278,15 +278,15 @@ export default function SoilPage() {
             </div>
 
             {/* Soil type compatibility */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
-              <div className="text-[13px] font-bold text-gray-900 mb-3">🌾 মাটি অনুযায়ী উপযুক্ত ফসল</div>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+              <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100 mb-3">🌾 মাটি অনুযায়ী উপযুক্ত ফসল</div>
               <div className="space-y-2">
                 {SOIL_TYPES.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
+                  <div key={s.id} className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl">
                     <span className="text-base">{s.icon}</span>
                     <div className="flex-1">
-                      <div className="text-[11px] font-bold text-gray-900">{s.name} <span className="text-gray-400 font-normal">({s.en})</span></div>
-                      <div className="text-[9px] text-gray-500">pH: {s.ph}</div>
+                      <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{s.name} <span className="text-gray-400 dark:text-gray-500 font-normal">({s.en})</span></div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">pH: {s.ph}</div>
                     </div>
                     <div className="flex gap-1 flex-wrap justify-end">
                       {s.crops.map((c, i) => (
@@ -301,8 +301,8 @@ export default function SoilPage() {
             </div>
 
             {/* pH Scale */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
-              <div className="text-[13px] font-bold text-gray-900 mb-3">📊 pH স্কেল ও ফসলের উপযুক্ততা</div>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+              <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100 mb-3">📊 pH স্কেল ও ফসলের উপযুক্ততা</div>
               <div className="space-y-1.5">
                 {[
                   { range: "৪.০–৫.৫", label: "অত্যাম্লিক", color: "bg-red-500", crops: "চা, আনারস, আলু" },
@@ -313,9 +313,9 @@ export default function SoilPage() {
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2.5">
                     <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                    <div className="text-[10px] font-mono font-bold text-gray-700 w-16">{item.range}</div>
-                    <div className="text-[10px] text-gray-600 w-24">{item.label}</div>
-                    <div className="text-[10px] text-gray-500 flex-1">{item.crops}</div>
+                    <div className="text-[10px] font-mono font-bold text-gray-700 dark:text-gray-300 w-16">{item.range}</div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400 w-24">{item.label}</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 flex-1">{item.crops}</div>
                   </div>
                 ))}
               </div>
@@ -328,20 +328,20 @@ export default function SoilPage() {
           <div className="space-y-3">
             {/* Fertilizer guide */}
             {FERTILIZER_INFO.map((f, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-3.5">
+              <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-base">{f.icon}</span>
-                  <div className="text-[13px] font-bold text-gray-900">{f.name}</div>
-                  <span className="text-[9px] text-gray-400 font-mono">{f.en}</span>
+                  <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">{f.name}</div>
+                  <span className="text-[9px] text-gray-400 dark:text-gray-500 font-mono">{f.en}</span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-start gap-2">
-                    <span className="text-[10px] text-gray-500 flex-shrink-0">⏱️ সময়:</span>
-                    <span className="text-[11px] text-gray-700">{f.timing}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 flex-shrink-0">⏱️ সময়:</span>
+                    <span className="text-[11px] text-gray-700 dark:text-gray-300">{f.timing}</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-[10px] text-gray-500 flex-shrink-0">📋 পদ্ধতি:</span>
-                    <span className="text-[11px] text-gray-700">{f.method}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 flex-shrink-0">📋 পদ্ধতি:</span>
+                    <span className="text-[11px] text-gray-700 dark:text-gray-300">{f.method}</span>
                   </div>
                 </div>
               </div>
@@ -373,8 +373,8 @@ export default function SoilPage() {
             >
               <div className="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center text-white text-lg">🤖</div>
               <div className="flex-1">
-                <div className="text-[13px] font-bold text-gray-900">AI থেকে মাটি সম্পর্কে জানুন</div>
-                <div className="text-[11px] text-gray-500">আপনার জমির মাটি সম্পর্কে প্রশ্ন করুন</div>
+                <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">AI থেকে মাটি সম্পর্কে জানুন</div>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আপনার জমির মাটি সম্পর্কে প্রশ্ন করুন</div>
               </div>
               <span className="text-[11px] font-semibold text-pink-600">→</span>
             </a>

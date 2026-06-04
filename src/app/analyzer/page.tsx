@@ -36,7 +36,7 @@ const severityConfig: Record<string, { bg: string; border: string; text: string;
   "কম": { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", icon: "✅" },
   "মাঝারি": { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", icon: "⚠️" },
   "বেশি": { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", icon: "🚨" },
-  "অজানা": { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700", icon: "❓" },
+  "অজানা": { bg: "bg-gray-50 dark:bg-gray-800", border: "border-gray-200 dark:border-gray-700", text: "text-gray-700 dark:text-gray-300", icon: "❓" },
   "কোনো": { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", icon: "✅" },
 };
 
@@ -125,7 +125,7 @@ export default function AnalyzerPage() {
   const urg = result ? (urgencyConfig[result.urgency] || urgencyConfig["সাধারণ"]) : null;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div
         className="relative px-4 pt-5 pb-7"
@@ -194,7 +194,7 @@ export default function AnalyzerPage() {
               <p className="text-sm font-bold text-[#1b4332] mb-1">
                 ফসলের ছবি আপলোড করুন
               </p>
-              <p className="text-[11px] text-gray-500 mb-4 text-center">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4 text-center">
                 রোগ বা ক্ষতির ছবি তুলে AI দিয়ে বিশ্লেষণ করুন
               </p>
             </div>
@@ -225,7 +225,7 @@ export default function AnalyzerPage() {
           <button
             onClick={() => galleryInputRef.current?.click()}
             disabled={analyzing}
-            className="flex-1 bg-white border border-gray-300 text-gray-700 font-bold text-sm rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-white border border-gray-300 text-gray-700 dark:text-gray-300 font-bold text-sm rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50 dark:bg-gray-800 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               width="18"
@@ -278,7 +278,7 @@ export default function AnalyzerPage() {
               </button>
               <button
                 onClick={handleClear}
-                className="bg-white border border-red-200 text-red-600 text-[11px] font-bold rounded-full px-4 py-1.5 cursor-pointer hover:bg-red-50 transition-colors"
+                className="bg-white dark:bg-gray-800 border border-red-200 text-red-600 text-[11px] font-bold rounded-full px-4 py-1.5 cursor-pointer hover:bg-red-50 transition-colors"
               >
                 নতুন ছবি
               </button>
@@ -293,7 +293,7 @@ export default function AnalyzerPage() {
             <div className={`rounded-2xl border p-4 ${sev?.bg} ${sev?.border}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{sev?.icon}</span>
-                <span className="text-sm font-bold text-gray-900">বিশ্লেষণ সম্পন্ন</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">বিশ্লেষণ সম্পন্ন</span>
                 {urg && (
                   <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${urg.bg}`}>
                     {urg.text}
@@ -303,13 +303,13 @@ export default function AnalyzerPage() {
 
               {/* Disease name */}
               <div className="mb-3">
-                <div className="text-[10px] font-bold text-gray-500 tracking-wider mb-0.5">
+                <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-wider mb-0.5">
                   সম্ভাব্য রোগ
                 </div>
-                <div className="text-base font-bold text-gray-900">
+                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
                   {result.disease_bn}
                 </div>
-                <div className="text-[11px] text-gray-500 mt-0.5">
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                   {result.disease_en}
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function AnalyzerPage() {
               {/* Confidence & Severity grid */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="bg-white/60 rounded-xl p-3">
-                  <div className="text-[10px] font-bold text-gray-500 mb-1">আত্মবিশ্বাস</div>
+                  <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">আত্মবিশ্বাস</div>
                   <div className="text-xl font-extrabold text-[#1b4332]">{bn(result.confidence)}%</div>
                   <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                     <div
@@ -327,7 +327,7 @@ export default function AnalyzerPage() {
                   </div>
                 </div>
                 <div className="bg-white/60 rounded-xl p-3">
-                  <div className="text-[10px] font-bold text-gray-500 mb-1">তীব্রতা</div>
+                  <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">তীব্রতা</div>
                   <div className={`text-xl font-extrabold ${sev?.text}`}>
                     {result.severity}
                   </div>
@@ -337,9 +337,9 @@ export default function AnalyzerPage() {
 
             {/* Description */}
             {result.description && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <div className="text-[11px] font-bold text-gray-500 mb-1.5">বিবরণ</div>
-                <p className="text-[13px] text-gray-700 leading-relaxed">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+                <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1.5">বিবরণ</div>
+                <p className="text-[13px] text-gray-700 dark:text-gray-300 leading-relaxed">
                   {result.description}
                 </p>
               </div>
@@ -379,8 +379,8 @@ export default function AnalyzerPage() {
 
             {/* Affected crops */}
             {result.affected_crops && result.affected_crops.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <div className="text-[11px] font-bold text-gray-500 mb-2">আক্রান্ত ফসল</div>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+                <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">আক্রান্ত ফসল</div>
                 <div className="flex gap-2 flex-wrap">
                   {result.affected_crops.map((c, i) => (
                     <span key={i} className="text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full">
@@ -392,16 +392,16 @@ export default function AnalyzerPage() {
             )}
 
             {/* DAE hotline */}
-            <div className="bg-gray-50 rounded-2xl p-4 text-center">
-              <div className="text-[11px] text-gray-500 mb-1">আরও সাহায্যের জন্য</div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 text-center">
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">আরও সাহায্যের জন্য</div>
               <div className="text-sm font-bold text-[#1b4332]">DAE হটলাইন: ১৬১২৩</div>
-              <div className="text-[10px] text-gray-400 mt-0.5">কৃষি সম্প্রসারণ অধিদপ্তর</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">কৃষি সম্প্রসারণ অধিদপ্তর</div>
             </div>
 
             {/* Clear / New analysis button */}
             <button
               onClick={handleClear}
-              className="w-full bg-white border border-gray-300 text-gray-700 font-bold text-sm rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors active:scale-95"
+              className="w-full bg-white border border-gray-300 text-gray-700 dark:text-gray-300 font-bold text-sm rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50 dark:bg-gray-800 transition-colors active:scale-95"
             >
               নতুন ছবি বিশ্লেষণ করুন
             </button>
@@ -409,8 +409,8 @@ export default function AnalyzerPage() {
         )}
 
         {/* Tips */}
-        <div className="bg-gray-50 rounded-2xl p-4">
-          <div className="text-sm font-bold text-gray-900 mb-3">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+          <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">
             ছবি তোলার টিপস
           </div>
           <div className="space-y-2">
@@ -423,7 +423,7 @@ export default function AnalyzerPage() {
             ].map((tip, i) => (
               <div key={i} className="flex items-start gap-2">
                 <span className="text-green-600 mt-0.5">✓</span>
-                <span className="text-[12px] text-gray-600">{tip}</span>
+                <span className="text-[12px] text-gray-600 dark:text-gray-400">{tip}</span>
               </div>
             ))}
           </div>

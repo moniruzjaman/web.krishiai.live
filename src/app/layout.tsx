@@ -52,7 +52,7 @@ export default function RootLayout({
       >
         <LocationProvider>
           {/* Mobile shell — max-width centered, sticky nav */}
-          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white relative">
+          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
             <TopNavbar />
             <main className="flex-1 pb-16">
               {children}
