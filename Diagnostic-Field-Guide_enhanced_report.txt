@@ -1,0 +1,1118 @@
+Enhanced PDF Element Extraction Report
+============================================================
+PDF: I:/pageindex/pageindex/Diagnostic-Field-Guide.pdf
+Filename: Diagnostic-Field-Guide
+Tables Extracted: 9
+Images Extracted: 278
+Image Categories:
+  - Pest: 34
+  - Disease: 54
+  - Deficiency: 23
+
+Tables:
+------------------------------
+Source Label: Diagnostic-Field-Guide_pg15_table_1_rows5cols2
+Page: 15, Index: 1
+Size: 5 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg15_table_1_rows5cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg16_table_1_rows15cols2
+Page: 16, Index: 1
+Size: 15 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg16_table_1_rows15cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg32_table_1_rows1cols2
+Page: 32, Index: 1
+Size: 1 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg32_table_1_rows1cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg66_table_1_rows1cols2
+Page: 66, Index: 1
+Size: 1 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg66_table_1_rows1cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg71_table_1_rows1cols2
+Page: 71, Index: 1
+Size: 1 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg71_table_1_rows1cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg74_table_1_rows5cols2
+Page: 74, Index: 1
+Size: 5 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg74_table_1_rows5cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg81_table_1_rows15cols2
+Page: 81, Index: 1
+Size: 15 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg81_table_1_rows15cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 595.2760009765625, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg83_table_1_rows39cols2
+Page: 83, Index: 1
+Size: 39 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg83_table_1_rows39cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 1190.550048828125, 'y1': 841.8900146484375}
+
+Source Label: Diagnostic-Field-Guide_pg84_table_1_rows39cols2
+Page: 84, Index: 1
+Size: 39 rows × 2 columns
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\tables\Diagnostic-Field-Guide_pg84_table_1_rows39cols2.json
+Bounds: {'x0': 0.0, 'y0': 0.0, 'x1': 1190.550048828125, 'y1': 841.8900146484375}
+
+Image Categories:
+------------------------------
+
+Pest Images (34):
+--------------------
+Source Label: Diagnostic-Field-Guide_pg15_image_1_pest_or_mite_xref159
+Page: 15, Index: 1
+Dimensions: 571 × 313
+Crop: 
+Issue Type: pest
+Specific Name: or mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg15_image_1_pest_or_mite_xref159_18b15e45.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg15_image_1_pest_or_mite_xref159_18b15e45.png
+
+Source Label: Diagnostic-Field-Guide_pg15_image_2_pest_or_mite_xref161
+Page: 15, Index: 2
+Dimensions: 262 × 242
+Crop: 
+Issue Type: pest
+Specific Name: or mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg15_image_2_pest_or_mite_xref161_ecd95c76.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg15_image_2_pest_or_mite_xref161_ecd95c76.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_4_pest_xref182
+Page: 20, Index: 4
+Dimensions: 295 × 363
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_4_pest_xref182_b2aca57e.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_4_pest_xref182_b2aca57e.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_6_pest_xref186
+Page: 20, Index: 6
+Dimensions: 295 × 430
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_6_pest_xref186_bb1d8a08.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_6_pest_xref186_bb1d8a08.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_9_pest_planbeetle_xref192
+Page: 20, Index: 9
+Dimensions: 291 × 513
+Crop: 
+Issue Type: pest
+Specific Name: plan
+beetle
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_9_pest_planbeetle_xref192_db88b76b.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_9_pest_planbeetle_xref192_db88b76b.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_10_pest_plant_bug_xref194
+Page: 20, Index: 10
+Dimensions: 297 × 424
+Crop: 
+Issue Type: pest
+Specific Name: plant bug
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_10_pest_plant_bug_xref194_f5d4c7c0.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_10_pest_plant_bug_xref194_f5d4c7c0.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_11_pest_hoppermite_xref196
+Page: 20, Index: 11
+Dimensions: 275 × 348
+Crop: 
+Issue Type: pest
+Specific Name: hopper
+mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_11_pest_hoppermite_xref196_85017908.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_11_pest_hoppermite_xref196_85017908.png
+
+Source Label: Diagnostic-Field-Guide_pg20_image_12_pest_xref198
+Page: 20, Index: 12
+Dimensions: 297 × 454
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg20_image_12_pest_xref198_161b8d3f.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg20_image_12_pest_xref198_161b8d3f.png
+
+Source Label: Diagnostic-Field-Guide_pg30_image_3_tobacco_pest_stink_bug_xref326
+Page: 30, Index: 3
+Dimensions: 187 × 200
+Crop: tobacco
+Issue Type: pest
+Specific Name: stink bug
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg30_image_3_tobacco_pest_stink_bug_xref326_9a6c0146.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg30_image_3_tobacco_pest_stink_bug_xref326_9a6c0146.png
+
+Source Label: Diagnostic-Field-Guide_pg34_image_1_pest_xref370
+Page: 34, Index: 1
+Dimensions: 292 × 267
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg34_image_1_pest_xref370_f541f240.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg34_image_1_pest_xref370_f541f240.png
+
+Source Label: Diagnostic-Field-Guide_pg34_image_2_pest_xref372
+Page: 34, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg34_image_2_pest_xref372_6b18d6ed.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg34_image_2_pest_xref372_6b18d6ed.png
+
+Source Label: Diagnostic-Field-Guide_pg34_image_3_pest_xref374
+Page: 34, Index: 3
+Dimensions: 292 × 263
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg34_image_3_pest_xref374_083bf703.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg34_image_3_pest_xref374_083bf703.png
+
+Source Label: Diagnostic-Field-Guide_pg37_image_1_pest_xref397
+Page: 37, Index: 1
+Dimensions: 266 × 289
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg37_image_1_pest_xref397_5e163e41.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg37_image_1_pest_xref397_5e163e41.png
+
+Source Label: Diagnostic-Field-Guide_pg37_image_2_pest_plant_bug_xref399
+Page: 37, Index: 2
+Dimensions: 266 × 289
+Crop: 
+Issue Type: pest
+Specific Name: plant bug
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg37_image_2_pest_plant_bug_xref399_a41aa04c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg37_image_2_pest_plant_bug_xref399_a41aa04c.png
+
+Source Label: Diagnostic-Field-Guide_pg44_image_1_pest_symptommite_xref487
+Page: 44, Index: 1
+Dimensions: 289 × 267
+Crop: 
+Issue Type: pest
+Specific Name: symptom
+mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg44_image_1_pest_symptommite_xref487_2c893bbd.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg44_image_1_pest_symptommite_xref487_2c893bbd.png
+
+Source Label: Diagnostic-Field-Guide_pg46_image_1_pest_symptommite_xref501
+Page: 46, Index: 1
+Dimensions: 190 × 197
+Crop: 
+Issue Type: pest
+Specific Name: symptom
+mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg46_image_1_pest_symptommite_xref501_ff431b70.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg46_image_1_pest_symptommite_xref501_ff431b70.png
+
+Source Label: Diagnostic-Field-Guide_pg46_image_2_pest_palm_mite_xref503
+Page: 46, Index: 2
+Dimensions: 190 × 197
+Crop: 
+Issue Type: pest
+Specific Name: palm mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg46_image_2_pest_palm_mite_xref503_093f2470.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg46_image_2_pest_palm_mite_xref503_093f2470.png
+
+Source Label: Diagnostic-Field-Guide_pg46_image_3_pest_cabimite_xref505
+Page: 46, Index: 3
+Dimensions: 190 × 197
+Crop: 
+Issue Type: pest
+Specific Name: cabi
+mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg46_image_3_pest_cabimite_xref505_92842d03.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg46_image_3_pest_cabimite_xref505_92842d03.png
+
+Source Label: Diagnostic-Field-Guide_pg58_image_1_pepper_pest_xref615
+Page: 58, Index: 1
+Dimensions: 292 × 263
+Crop: pepper
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg58_image_1_pepper_pest_xref615_61a32aaf.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg58_image_1_pepper_pest_xref615_61a32aaf.png
+
+Source Label: Diagnostic-Field-Guide_pg58_image_2_pest_xref617
+Page: 58, Index: 2
+Dimensions: 289 × 266
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg58_image_2_pest_xref617_81a6744a.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg58_image_2_pest_xref617_81a6744a.png
+
+Source Label: Diagnostic-Field-Guide_pg59_image_1_pest_and_mite_xref621
+Page: 59, Index: 1
+Dimensions: 292 × 265
+Crop: 
+Issue Type: pest
+Specific Name: and mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg59_image_1_pest_and_mite_xref621_95823718.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg59_image_1_pest_and_mite_xref621_95823718.png
+
+Source Label: Diagnostic-Field-Guide_pg59_image_3_pest_a_mite_xref625
+Page: 59, Index: 3
+Dimensions: 289 × 266
+Crop: 
+Issue Type: pest
+Specific Name: a mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg59_image_3_pest_a_mite_xref625_5c20a8de.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg59_image_3_pest_a_mite_xref625_5c20a8de.png
+
+Source Label: Diagnostic-Field-Guide_pg105_image_2_pest_or_mite_xref923
+Page: 105, Index: 2
+Dimensions: 184 × 182
+Crop: 
+Issue Type: pest
+Specific Name: or mite
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg105_image_2_pest_or_mite_xref923_3cf2c308.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg105_image_2_pest_or_mite_xref923_3cf2c308.png
+
+Source Label: Diagnostic-Field-Guide_pg108_image_3_pest_xref964
+Page: 108, Index: 3
+Dimensions: 184 × 175
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg108_image_3_pest_xref964_d7267892.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg108_image_3_pest_xref964_d7267892.png
+
+Source Label: Diagnostic-Field-Guide_pg108_image_6_pest_xref970
+Page: 108, Index: 6
+Dimensions: 185 × 175
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg108_image_6_pest_xref970_33045449.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg108_image_6_pest_xref970_33045449.png
+
+Source Label: Diagnostic-Field-Guide_pg110_image_1_pest_xref991
+Page: 110, Index: 1
+Dimensions: 289 × 266
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg110_image_1_pest_xref991_1bf4871b.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg110_image_1_pest_xref991_1bf4871b.png
+
+Source Label: Diagnostic-Field-Guide_pg110_image_2_pest_xref992
+Page: 110, Index: 2
+Dimensions: 266 × 289
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg110_image_2_pest_xref992_e50a1774.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg110_image_2_pest_xref992_e50a1774.png
+
+Source Label: Diagnostic-Field-Guide_pg110_image_3_tomato_pest_xref994
+Page: 110, Index: 3
+Dimensions: 292 × 266
+Crop: tomato
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg110_image_3_tomato_pest_xref994_3912166f.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg110_image_3_tomato_pest_xref994_3912166f.png
+
+Source Label: Diagnostic-Field-Guide_pg110_image_4_pest_xref996
+Page: 110, Index: 4
+Dimensions: 292 × 263
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg110_image_4_pest_xref996_50c9fdcf.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg110_image_4_pest_xref996_50c9fdcf.png
+
+Source Label: Diagnostic-Field-Guide_pg111_image_3_pest_xref1004
+Page: 111, Index: 3
+Dimensions: 292 × 237
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg111_image_3_pest_xref1004_a10a7d63.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg111_image_3_pest_xref1004_a10a7d63.png
+
+Source Label: Diagnostic-Field-Guide_pg111_image_4_pest_xref1006
+Page: 111, Index: 4
+Dimensions: 292 × 238
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg111_image_4_pest_xref1006_b1736417.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg111_image_4_pest_xref1006_b1736417.png
+
+Source Label: Diagnostic-Field-Guide_pg111_image_5_pest_xref1008
+Page: 111, Index: 5
+Dimensions: 292 × 237
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg111_image_5_pest_xref1008_9c67af19.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg111_image_5_pest_xref1008_9c67af19.png
+
+Source Label: Diagnostic-Field-Guide_pg111_image_6_pest_xref1010
+Page: 111, Index: 6
+Dimensions: 292 × 237
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg111_image_6_pest_xref1010_7db46fda.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg111_image_6_pest_xref1010_7db46fda.png
+
+Source Label: Diagnostic-Field-Guide_pg118_image_1_pest_xref1070
+Page: 118, Index: 1
+Dimensions: 830 × 1173
+Crop: 
+Issue Type: pest
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg118_image_1_pest_xref1070_a2928122.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\pest\Diagnostic-Field-Guide_pg118_image_1_pest_xref1070_a2928122.png
+
+
+Disease Images (54):
+--------------------
+Source Label: Diagnostic-Field-Guide_pg23_image_21_disease_and_spot_xref252
+Page: 23, Index: 21
+Dimensions: 157 × 193
+Crop: 
+Issue Type: disease
+Specific Name: and spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_21_disease_and_spot_xref252_35891d25.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg23_image_21_disease_and_spot_xref252_35891d25.png
+
+Source Label: Diagnostic-Field-Guide_pg25_image_1_disease_fungwilt_xref280
+Page: 25, Index: 1
+Dimensions: 263 × 289
+Crop: 
+Issue Type: disease
+Specific Name: fung
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg25_image_1_disease_fungwilt_xref280_6396d5ac.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg25_image_1_disease_fungwilt_xref280_6396d5ac.png
+
+Source Label: Diagnostic-Field-Guide_pg25_image_2_disease_verticillium_wilt_xref281
+Page: 25, Index: 2
+Dimensions: 292 × 266
+Crop: 
+Issue Type: disease
+Specific Name: verticillium wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg25_image_2_disease_verticillium_wilt_xref281_bb7c8f0a.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg25_image_2_disease_verticillium_wilt_xref281_bb7c8f0a.png
+
+Source Label: Diagnostic-Field-Guide_pg26_image_1_bean_disease_watewilt_xref286
+Page: 26, Index: 1
+Dimensions: 292 × 265
+Crop: bean
+Issue Type: disease
+Specific Name: wate
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg26_image_1_bean_disease_watewilt_xref286_a0f9f8f0.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg26_image_1_bean_disease_watewilt_xref286_a0f9f8f0.png
+
+Source Label: Diagnostic-Field-Guide_pg26_image_4_pepper_disease_and_wilt_xref292
+Page: 26, Index: 4
+Dimensions: 289 × 266
+Crop: pepper
+Issue Type: disease
+Specific Name: and wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg26_image_4_pepper_disease_and_wilt_xref292_1233a6d6.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg26_image_4_pepper_disease_and_wilt_xref292_1233a6d6.png
+
+Source Label: Diagnostic-Field-Guide_pg27_image_1_potato_disease_bactwilt_xref296
+Page: 27, Index: 1
+Dimensions: 292 × 266
+Crop: potato
+Issue Type: disease
+Specific Name: bact
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg27_image_1_potato_disease_bactwilt_xref296_492cfcbe.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg27_image_1_potato_disease_bactwilt_xref296_492cfcbe.png
+
+Source Label: Diagnostic-Field-Guide_pg27_image_2_pepper_disease_leaf_spot_xref298
+Page: 27, Index: 2
+Dimensions: 378 × 393
+Crop: pepper
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg27_image_2_pepper_disease_leaf_spot_xref298_94f2b3f5.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg27_image_2_pepper_disease_leaf_spot_xref298_94f2b3f5.png
+
+Source Label: Diagnostic-Field-Guide_pg27_image_3_potato_disease_this_wilt_xref300
+Page: 27, Index: 3
+Dimensions: 292 × 263
+Crop: potato
+Issue Type: disease
+Specific Name: this wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg27_image_3_potato_disease_this_wilt_xref300_d1aaa20c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg27_image_3_potato_disease_this_wilt_xref300_d1aaa20c.png
+
+Source Label: Diagnostic-Field-Guide_pg27_image_4_pepper_disease_bacterial_wilt_xref302
+Page: 27, Index: 4
+Dimensions: 292 × 263
+Crop: pepper
+Issue Type: disease
+Specific Name: bacterial wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg27_image_4_pepper_disease_bacterial_wilt_xref302_28de6d7a.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg27_image_4_pepper_disease_bacterial_wilt_xref302_28de6d7a.png
+
+Source Label: Diagnostic-Field-Guide_pg29_image_1_tomato_disease_viruwilt_xref314
+Page: 29, Index: 1
+Dimensions: 292 × 265
+Crop: tomato
+Issue Type: disease
+Specific Name: viru
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg29_image_1_tomato_disease_viruwilt_xref314_11f3172c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg29_image_1_tomato_disease_viruwilt_xref314_11f3172c.png
+
+Source Label: Diagnostic-Field-Guide_pg29_image_2_tomato_disease_spotted_wilt_xref316
+Page: 29, Index: 2
+Dimensions: 292 × 263
+Crop: tomato
+Issue Type: disease
+Specific Name: spotted wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg29_image_2_tomato_disease_spotted_wilt_xref316_60fa1739.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg29_image_2_tomato_disease_spotted_wilt_xref316_60fa1739.png
+
+Source Label: Diagnostic-Field-Guide_pg30_image_1_corn_disease_insecwilt_xref322
+Page: 30, Index: 1
+Dimensions: 190 × 197
+Crop: corn
+Issue Type: disease
+Specific Name: insec
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg30_image_1_corn_disease_insecwilt_xref322_18d7a44c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg30_image_1_corn_disease_insecwilt_xref322_18d7a44c.png
+
+Source Label: Diagnostic-Field-Guide_pg31_image_1_wheat_disease_nutrwilt_xref330
+Page: 31, Index: 1
+Dimensions: 289 × 266
+Crop: wheat
+Issue Type: disease
+Specific Name: nutr
+wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg31_image_1_wheat_disease_nutrwilt_xref330_fc320d57.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg31_image_1_wheat_disease_nutrwilt_xref330_fc320d57.png
+
+Source Label: Diagnostic-Field-Guide_pg32_image_1_disease_leaf_spot_xref336
+Page: 32, Index: 1
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg32_image_1_disease_leaf_spot_xref336_33d0c922.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg32_image_1_disease_leaf_spot_xref336_33d0c922.png
+
+Source Label: Diagnostic-Field-Guide_pg32_image_3_disease_leaf_spot_xref340
+Page: 32, Index: 3
+Dimensions: 292 × 199
+Crop: 
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg32_image_3_disease_leaf_spot_xref340_561358ae.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg32_image_3_disease_leaf_spot_xref340_561358ae.png
+
+Source Label: Diagnostic-Field-Guide_pg35_image_1_tomato_disease_leaf_spot_xref380
+Page: 35, Index: 1
+Dimensions: 265 × 292
+Crop: tomato
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg35_image_1_tomato_disease_leaf_spot_xref380_a0834169.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg35_image_1_tomato_disease_leaf_spot_xref380_a0834169.png
+
+Source Label: Diagnostic-Field-Guide_pg35_image_2_pepper_disease_leaf_spot_xref382
+Page: 35, Index: 2
+Dimensions: 292 × 266
+Crop: pepper
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg35_image_2_pepper_disease_leaf_spot_xref382_e206cc73.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg35_image_2_pepper_disease_leaf_spot_xref382_e206cc73.png
+
+Source Label: Diagnostic-Field-Guide_pg36_image_1_bean_disease_leaf_spot_xref388
+Page: 36, Index: 1
+Dimensions: 292 × 238
+Crop: bean
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg36_image_1_bean_disease_leaf_spot_xref388_2bb92e06.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg36_image_1_bean_disease_leaf_spot_xref388_2bb92e06.png
+
+Source Label: Diagnostic-Field-Guide_pg36_image_3_citrus_disease_leaf_spot_xref391
+Page: 36, Index: 3
+Dimensions: 292 × 240
+Crop: citrus
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg36_image_3_citrus_disease_leaf_spot_xref391_a73ea543.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg36_image_3_citrus_disease_leaf_spot_xref391_a73ea543.png
+
+Source Label: Diagnostic-Field-Guide_pg36_image_4_tomato_disease_spotted_wilt_xref393
+Page: 36, Index: 4
+Dimensions: 292 × 240
+Crop: tomato
+Issue Type: disease
+Specific Name: spotted wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg36_image_4_tomato_disease_spotted_wilt_xref393_9f260dec.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg36_image_4_tomato_disease_spotted_wilt_xref393_9f260dec.png
+
+Source Label: Diagnostic-Field-Guide_pg38_image_1_disease_leaf_spot_xref405
+Page: 38, Index: 1
+Dimensions: 190 × 197
+Crop: 
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg38_image_1_disease_leaf_spot_xref405_02984092.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg38_image_1_disease_leaf_spot_xref405_02984092.png
+
+Source Label: Diagnostic-Field-Guide_pg38_image_2_wheat_disease_grey_spot_xref407
+Page: 38, Index: 2
+Dimensions: 190 × 197
+Crop: wheat
+Issue Type: disease
+Specific Name: grey spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg38_image_2_wheat_disease_grey_spot_xref407_d22d66ab.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg38_image_2_wheat_disease_grey_spot_xref407_d22d66ab.png
+
+Source Label: Diagnostic-Field-Guide_pg38_image_3_tomato_disease_y_spot_xref409
+Page: 38, Index: 3
+Dimensions: 190 × 133
+Crop: tomato
+Issue Type: disease
+Specific Name: y spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg38_image_3_tomato_disease_y_spot_xref409_28575c39.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg38_image_3_tomato_disease_y_spot_xref409_28575c39.png
+
+Source Label: Diagnostic-Field-Guide_pg39_image_1_pepper_disease_leaf_spot_xref412
+Page: 39, Index: 1
+Dimensions: 190 × 197
+Crop: pepper
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg39_image_1_pepper_disease_leaf_spot_xref412_171fdc4f.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg39_image_1_pepper_disease_leaf_spot_xref412_171fdc4f.png
+
+Source Label: Diagnostic-Field-Guide_pg42_image_1_disease_bactcanker_xref453
+Page: 42, Index: 1
+Dimensions: 289 × 266
+Crop: 
+Issue Type: disease
+Specific Name: bact
+canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg42_image_1_disease_bactcanker_xref453_62b70cf1.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg42_image_1_disease_bactcanker_xref453_62b70cf1.png
+
+Source Label: Diagnostic-Field-Guide_pg42_image_3_disease_bacterial_canker_xref456
+Page: 42, Index: 3
+Dimensions: 292 × 267
+Crop: 
+Issue Type: disease
+Specific Name: bacterial canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg42_image_3_disease_bacterial_canker_xref456_ba36586e.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg42_image_3_disease_bacterial_canker_xref456_ba36586e.png
+
+Source Label: Diagnostic-Field-Guide_pg43_image_2_disease_xref472
+Page: 43, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg43_image_2_disease_xref472_405458cb.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg43_image_2_disease_xref472_405458cb.png
+
+Source Label: Diagnostic-Field-Guide_pg51_image_2_tobacco_disease_downy_mildew_xref551
+Page: 51, Index: 2
+Dimensions: 292 × 265
+Crop: tobacco
+Issue Type: disease
+Specific Name: downy mildew
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg51_image_2_tobacco_disease_downy_mildew_xref551_2ba94d67.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg51_image_2_tobacco_disease_downy_mildew_xref551_2ba94d67.png
+
+Source Label: Diagnostic-Field-Guide_pg52_image_1_tomato_disease_xref558
+Page: 52, Index: 1
+Dimensions: 292 × 265
+Crop: tomato
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg52_image_1_tomato_disease_xref558_40b3d332.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg52_image_1_tomato_disease_xref558_40b3d332.png
+
+Source Label: Diagnostic-Field-Guide_pg52_image_2_lettuce_disease_xref560
+Page: 52, Index: 2
+Dimensions: 292 × 265
+Crop: lettuce
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg52_image_2_lettuce_disease_xref560_457c3ddd.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg52_image_2_lettuce_disease_xref560_457c3ddd.png
+
+Source Label: Diagnostic-Field-Guide_pg55_image_1_potato_disease_xref583
+Page: 55, Index: 1
+Dimensions: 292 × 263
+Crop: potato
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg55_image_1_potato_disease_xref583_b2068eb8.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg55_image_1_potato_disease_xref583_b2068eb8.png
+
+Source Label: Diagnostic-Field-Guide_pg55_image_2_disease_xref585
+Page: 55, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg55_image_2_disease_xref585_e06145f5.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg55_image_2_disease_xref585_e06145f5.png
+
+Source Label: Diagnostic-Field-Guide_pg57_image_1_disease_xref602
+Page: 57, Index: 1
+Dimensions: 289 × 266
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg57_image_1_disease_xref602_32dc8a5e.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg57_image_1_disease_xref602_32dc8a5e.png
+
+Source Label: Diagnostic-Field-Guide_pg60_image_1_disease_xref633
+Page: 60, Index: 1
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg60_image_1_disease_xref633_db45b6f6.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg60_image_1_disease_xref633_db45b6f6.png
+
+Source Label: Diagnostic-Field-Guide_pg60_image_2_disease_xref635
+Page: 60, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg60_image_2_disease_xref635_eed60246.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg60_image_2_disease_xref635_eed60246.png
+
+Source Label: Diagnostic-Field-Guide_pg61_image_1_disease_xref646
+Page: 61, Index: 1
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg61_image_1_disease_xref646_95920e40.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg61_image_1_disease_xref646_95920e40.png
+
+Source Label: Diagnostic-Field-Guide_pg61_image_2_disease_xref648
+Page: 61, Index: 2
+Dimensions: 289 × 266
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg61_image_2_disease_xref648_3d12b93d.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg61_image_2_disease_xref648_3d12b93d.png
+
+Source Label: Diagnostic-Field-Guide_pg61_image_3_disease_xref650
+Page: 61, Index: 3
+Dimensions: 292 × 265
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg61_image_3_disease_xref650_61bf90d9.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg61_image_3_disease_xref650_61bf90d9.png
+
+Source Label: Diagnostic-Field-Guide_pg62_image_1_disease_xref656
+Page: 62, Index: 1
+Dimensions: 436 × 392
+Crop: 
+Issue Type: disease
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg62_image_1_disease_xref656_467b6968.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg62_image_1_disease_xref656_467b6968.png
+
+Source Label: Diagnostic-Field-Guide_pg93_image_2_disease_cannot_wilt_xref777
+Page: 93, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: cannot wilt
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg93_image_2_disease_cannot_wilt_xref777_478ea060.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg93_image_2_disease_cannot_wilt_xref777_478ea060.png
+
+Source Label: Diagnostic-Field-Guide_pg99_image_1_disease_leaf_spot_xref841
+Page: 99, Index: 1
+Dimensions: 292 × 225
+Crop: 
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg99_image_1_disease_leaf_spot_xref841_0a4c9db7.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg99_image_1_disease_leaf_spot_xref841_0a4c9db7.png
+
+Source Label: Diagnostic-Field-Guide_pg99_image_6_disease_leaf_spot_xref851
+Page: 99, Index: 6
+Dimensions: 292 × 225
+Crop: 
+Issue Type: disease
+Specific Name: leaf spot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg99_image_6_disease_leaf_spot_xref851_b2d29eec.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg99_image_6_disease_leaf_spot_xref851_b2d29eec.png
+
+Source Label: Diagnostic-Field-Guide_pg101_image_1_disease_a_rot_xref871
+Page: 101, Index: 1
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: a rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg101_image_1_disease_a_rot_xref871_059f8fd5.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg101_image_1_disease_a_rot_xref871_059f8fd5.png
+
+Source Label: Diagnostic-Field-Guide_pg101_image_3_disease_a_rot_xref875
+Page: 101, Index: 3
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: a rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg101_image_3_disease_a_rot_xref875_b935b088.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg101_image_3_disease_a_rot_xref875_b935b088.png
+
+Source Label: Diagnostic-Field-Guide_pg109_image_1_disease_classic_canker_xref980
+Page: 109, Index: 1
+Dimensions: 289 × 266
+Crop: 
+Issue Type: disease
+Specific Name: classic canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg109_image_1_disease_classic_canker_xref980_95d8020c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg109_image_1_disease_classic_canker_xref980_95d8020c.png
+
+Source Label: Diagnostic-Field-Guide_pg109_image_2_blueberry_disease_early_canker_xref982
+Page: 109, Index: 2
+Dimensions: 292 × 265
+Crop: blueberry
+Issue Type: disease
+Specific Name: early canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg109_image_2_blueberry_disease_early_canker_xref982_c20c8636.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg109_image_2_blueberry_disease_early_canker_xref982_c20c8636.png
+
+Source Label: Diagnostic-Field-Guide_pg109_image_3_disease_classic_canker_xref984
+Page: 109, Index: 3
+Dimensions: 266 × 289
+Crop: 
+Issue Type: disease
+Specific Name: classic canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg109_image_3_disease_classic_canker_xref984_73dd9113.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg109_image_3_disease_classic_canker_xref984_73dd9113.png
+
+Source Label: Diagnostic-Field-Guide_pg109_image_4_blueberry_disease_early_canker_xref985
+Page: 109, Index: 4
+Dimensions: 292 × 265
+Crop: blueberry
+Issue Type: disease
+Specific Name: early canker
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg109_image_4_blueberry_disease_early_canker_xref985_69f9e75a.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg109_image_4_blueberry_disease_early_canker_xref985_69f9e75a.png
+
+Source Label: Diagnostic-Field-Guide_pg112_image_2_disease_true_rot_xref1017
+Page: 112, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: disease
+Specific Name: true rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg112_image_2_disease_true_rot_xref1017_a7eb27fa.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg112_image_2_disease_true_rot_xref1017_a7eb27fa.png
+
+Source Label: Diagnostic-Field-Guide_pg112_image_4_disease_classic_rot_xref1020
+Page: 112, Index: 4
+Dimensions: 289 × 266
+Crop: 
+Issue Type: disease
+Specific Name: classic rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg112_image_4_disease_classic_rot_xref1020_a5d2df9c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg112_image_4_disease_classic_rot_xref1020_a5d2df9c.png
+
+Source Label: Diagnostic-Field-Guide_pg113_image_4_disease_as_rot_xref1030
+Page: 113, Index: 4
+Dimensions: 289 × 228
+Crop: 
+Issue Type: disease
+Specific Name: as rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg113_image_4_disease_as_rot_xref1030_5a5fadd5.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg113_image_4_disease_as_rot_xref1030_5a5fadd5.png
+
+Source Label: Diagnostic-Field-Guide_pg113_image_6_disease_as_rot_xref1034
+Page: 113, Index: 6
+Dimensions: 289 × 228
+Crop: 
+Issue Type: disease
+Specific Name: as rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg113_image_6_disease_as_rot_xref1034_84408fc5.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg113_image_6_disease_as_rot_xref1034_84408fc5.png
+
+Source Label: Diagnostic-Field-Guide_pg114_image_4_disease_to_rot_xref1045
+Page: 114, Index: 4
+Dimensions: 289 × 228
+Crop: 
+Issue Type: disease
+Specific Name: to rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg114_image_4_disease_to_rot_xref1045_8d48c79c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg114_image_4_disease_to_rot_xref1045_8d48c79c.png
+
+Source Label: Diagnostic-Field-Guide_pg114_image_6_disease_to_rot_xref1049
+Page: 114, Index: 6
+Dimensions: 292 × 228
+Crop: 
+Issue Type: disease
+Specific Name: to rot
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg114_image_6_disease_to_rot_xref1049_755281ee.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\disease\Diagnostic-Field-Guide_pg114_image_6_disease_to_rot_xref1049_755281ee.png
+
+
+Deficiency Images (23):
+--------------------
+Source Label: Diagnostic-Field-Guide_pg23_image_1_deficiency_xref213
+Page: 23, Index: 1
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_1_deficiency_xref213_db132e22.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_1_deficiency_xref213_db132e22.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_13_deficiency_xref236
+Page: 23, Index: 13
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_13_deficiency_xref236_a6b47bea.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_13_deficiency_xref236_a6b47bea.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_20_deficiency_xref250
+Page: 23, Index: 20
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_20_deficiency_xref250_60ca7092.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_20_deficiency_xref250_60ca7092.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_22_deficiency_of_iron_deficiency_xref254
+Page: 23, Index: 22
+Dimensions: 156 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: of iron deficiency
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_22_deficiency_of_iron_deficiency_xref254_0577998c.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_22_deficiency_of_iron_deficiency_xref254_0577998c.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_23_deficiency_xref256
+Page: 23, Index: 23
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_23_deficiency_xref256_3be094fb.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_23_deficiency_xref256_3be094fb.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_27_deficiency_xref264
+Page: 23, Index: 27
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_27_deficiency_xref264_eddbf0cd.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_27_deficiency_xref264_eddbf0cd.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_28_deficiency_xref266
+Page: 23, Index: 28
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_28_deficiency_xref266_ffc0d054.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_28_deficiency_xref266_ffc0d054.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_29_deficiency_xref268
+Page: 23, Index: 29
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_29_deficiency_xref268_a82539ae.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_29_deficiency_xref268_a82539ae.png
+
+Source Label: Diagnostic-Field-Guide_pg23_image_30_deficiency_xref270
+Page: 23, Index: 30
+Dimensions: 157 × 193
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg23_image_30_deficiency_xref270_756164c9.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg23_image_30_deficiency_xref270_756164c9.png
+
+Source Label: Diagnostic-Field-Guide_pg44_image_2_deficiency_xref489
+Page: 44, Index: 2
+Dimensions: 190 × 197
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg44_image_2_deficiency_xref489_0cabae65.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg44_image_2_deficiency_xref489_0cabae65.png
+
+Source Label: Diagnostic-Field-Guide_pg44_image_3_deficiency_xref491
+Page: 44, Index: 3
+Dimensions: 190 × 197
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg44_image_3_deficiency_xref491_4931941b.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg44_image_3_deficiency_xref491_4931941b.png
+
+Source Label: Diagnostic-Field-Guide_pg47_image_1_deficiency_xref509
+Page: 47, Index: 1
+Dimensions: 292 × 263
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg47_image_1_deficiency_xref509_d9481253.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg47_image_1_deficiency_xref509_d9481253.png
+
+Source Label: Diagnostic-Field-Guide_pg47_image_2_deficiency_xref511
+Page: 47, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg47_image_2_deficiency_xref511_66d3c916.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg47_image_2_deficiency_xref511_66d3c916.png
+
+Source Label: Diagnostic-Field-Guide_pg47_image_3_wheat_deficiency_xref513
+Page: 47, Index: 3
+Dimensions: 292 × 263
+Crop: wheat
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg47_image_3_wheat_deficiency_xref513_9ab54289.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg47_image_3_wheat_deficiency_xref513_9ab54289.png
+
+Source Label: Diagnostic-Field-Guide_pg47_image_4_bean_deficiency_xref515
+Page: 47, Index: 4
+Dimensions: 292 × 263
+Crop: bean
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg47_image_4_bean_deficiency_xref515_6e918e30.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg47_image_4_bean_deficiency_xref515_6e918e30.png
+
+Source Label: Diagnostic-Field-Guide_pg48_image_1_wheat_deficiency_deficiiron_deficiency_xref521
+Page: 48, Index: 1
+Dimensions: 292 × 263
+Crop: wheat
+Issue Type: deficiency
+Specific Name: defici
+iron deficiency
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg48_image_1_wheat_deficiency_deficiiron_deficiency_xref521_08cddf88.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg48_image_1_wheat_deficiency_deficiiron_deficiency_xref521_08cddf88.png
+
+Source Label: Diagnostic-Field-Guide_pg48_image_2_potato_deficiency_xref523
+Page: 48, Index: 2
+Dimensions: 292 × 263
+Crop: potato
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg48_image_2_potato_deficiency_xref523_db5e3c45.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg48_image_2_potato_deficiency_xref523_db5e3c45.png
+
+Source Label: Diagnostic-Field-Guide_pg48_image_3_wheat_deficiency_iron_deficiency_xref525
+Page: 48, Index: 3
+Dimensions: 292 × 263
+Crop: wheat
+Issue Type: deficiency
+Specific Name: iron deficiency
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg48_image_3_wheat_deficiency_iron_deficiency_xref525_6ab04cdf.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg48_image_3_wheat_deficiency_iron_deficiency_xref525_6ab04cdf.png
+
+Source Label: Diagnostic-Field-Guide_pg48_image_4_potato_deficiency_xref527
+Page: 48, Index: 4
+Dimensions: 289 × 266
+Crop: potato
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg48_image_4_potato_deficiency_xref527_ae1bb5e9.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg48_image_4_potato_deficiency_xref527_ae1bb5e9.png
+
+Source Label: Diagnostic-Field-Guide_pg49_image_1_deficiency_xref531
+Page: 49, Index: 1
+Dimensions: 289 × 266
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg49_image_1_deficiency_xref531_55909191.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg49_image_1_deficiency_xref531_55909191.png
+
+Source Label: Diagnostic-Field-Guide_pg49_image_2_deficiency_xref533
+Page: 49, Index: 2
+Dimensions: 292 × 263
+Crop: 
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg49_image_2_deficiency_xref533_f77d8b5f.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg49_image_2_deficiency_xref533_f77d8b5f.png
+
+Source Label: Diagnostic-Field-Guide_pg49_image_3_sugarcane_deficiency_xref535
+Page: 49, Index: 3
+Dimensions: 180 × 263
+Crop: sugarcane
+Issue Type: deficiency
+Specific Name: 
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg49_image_3_sugarcane_deficiency_xref535_34b8a7ac.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg49_image_3_sugarcane_deficiency_xref535_34b8a7ac.png
+
+Source Label: Diagnostic-Field-Guide_pg49_image_4_potato_deficiency_kumarnitrogen_deficiency_xref537
+Page: 49, Index: 4
+Dimensions: 292 × 263
+Crop: potato
+Issue Type: deficiency
+Specific Name: kumar
+nitrogen deficiency
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg49_image_4_potato_deficiency_kumarnitrogen_deficiency_xref537_7f7839a6.png
+Category Path: I:/pageindex/extract/enhanced_extracted_elements\categories\deficiency\Diagnostic-Field-Guide_pg49_image_4_potato_deficiency_kumarnitrogen_deficiency_xref537_7f7839a6.png
+
+Uncategorized Images (167):
+------------------------------
+Source Label: Diagnostic-Field-Guide_pg1_image_1_xref1363
+Page: 1, Index: 1
+Dimensions: 831 × 1173
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg1_image_1_xref1363_7a70a2a6.png
+
+Source Label: Diagnostic-Field-Guide_pg2_image_1_xref9
+Page: 2, Index: 1
+Dimensions: 235 × 260
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg2_image_1_xref9_41798143.png
+
+Source Label: Diagnostic-Field-Guide_pg4_image_1_xref20
+Page: 4, Index: 1
+Dimensions: 110 × 39
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg4_image_1_xref20_c66859f1.png
+
+Source Label: Diagnostic-Field-Guide_pg6_image_1_xref113
+Page: 6, Index: 1
+Dimensions: 110 × 54
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg6_image_1_xref113_ef6dd49b.png
+
+Source Label: Diagnostic-Field-Guide_pg6_image_2_xref115
+Page: 6, Index: 2
+Dimensions: 72 × 48
+Data Path: I:/pageindex/extract/enhanced_extracted_elements\images\Diagnostic-Field-Guide_pg6_image_2_xref115_ffe8b4c8.png
+
