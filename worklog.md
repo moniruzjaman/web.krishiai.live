@@ -278,3 +278,28 @@ Stage Summary:
 - 0 "Coming Soon" pages remaining on home page ecosystem tools
 - Branch: production-v2 (pushed to origin), main (pushed to origin)
 - Build: PASSING (Next.js 16.1.3, all 21 routes)
+
+---
+Task ID: 1
+Agent: Super Z (main)
+Task: Fix weather widget, crop analyzer, and add crop calendar + smart decision pages
+
+Work Log:
+- Diagnosed WeatherWidget: added location request button when no location is available (instead of just showing loading forever)
+- Fixed Crop Analyzer API: replaced non-existent `zai.chat.completions.createVision()` with `zai.chat.completions.create()` using multimodal content (image_url type in messages)
+- Cloned cabi-diagnosis reference repo from https://github.com/moniruzjaman/cabi-diagnosis
+- Created shared data modules: src/lib/cropCalendar.ts, src/lib/cropPriceService.ts, src/lib/weatherService.ts
+- Created Crop Calendar page at /tools/crop-calendar with 10 Bangladesh crops, seasonal grid, risk alerts
+- Created Smart Decision page at /tools/smart-decision with combined weather+price+calendar scoring
+- Created /api/smart-decision API route for comprehensive analysis
+- Updated home page TOOLS array with crop calendar and smart decision entries
+- Updated tools page with new tool cards
+- Build passes with 24 routes including 2 new pages
+- Pushed to main (f2e9591) and production-v2 (3988589) branches
+
+Stage Summary:
+- Weather Widget now shows a "লোকেশন চালু করুন" button when location permission not granted
+- Crop Analyzer uses correct multimodal chat API instead of non-existent createVision()
+- Crop Calendar page: visual 12-month × 10-crop calendar with season colors, risk alerts, expandable detail cards
+- Smart Decision page: 5-tab interface with crop recommendations, weather scoring, price trends, irrigation needs, crop comparison
+- All data ported from cabi-diagnosis reference repo
