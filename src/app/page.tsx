@@ -17,6 +17,7 @@ import WeatherWidget from "@/components/WeatherWidget";
 import MapWidget from "@/components/MapWidget";
 import MarketWidget from "@/components/MarketWidget";
 import NewsWidget from "@/components/NewsWidget";
+import AIChatWidget from "@/components/AIChatWidget";
 
 // ── Tools data (enhanced with descriptions and features) ──────────────────────
 const TOOLS = [
@@ -39,6 +40,7 @@ const TOOLS = [
     desc: "স্যাটেলাইট থেকে ফসলের স্বাস্থ্য, NDVI ম্যাপিং ও বৃদ্ধি পর্যবেক্ষণ",
     features: ["NDVI ম্যাপিং", "ফসল স্বাস্থ্য", "বৃদ্ধি ট্র্যাকিং"],
     url: "/tools/satellite",
+    comingSoon: true,
   },
   {
     icon: "🌾",
@@ -57,7 +59,7 @@ const TOOLS = [
     catColor: "#9d174d",
     bg: "#fce7f3",
     desc: "মাটির গুণমান পরীক্ষা, পুষ্টি বিশ্লেষণ ও সারের সুনির্দিষ্ট মাত্রা নির্ধারণ",
-    features: ["মাটি পরীক্ষা", "সার মাত্রা", "পুষ্টি বিশ্লেষণ"],
+    features: ["সার ক্যালকুলেটর", "pH বিশ্লেষণ", "মাটি নির্ণয়"],
     url: "/tools/soil",
   },
   {
@@ -66,8 +68,8 @@ const TOOLS = [
     cat: "YIELD FORECAST",
     catColor: "#6d28d9",
     bg: "#ede9fe",
-    desc: "AI মডেল ভিত্তিক ফসলের ফলন পূর্বাভাস, বাজার মূল্য প্রক্ষেপণ ও ঝুঁকি মূল্যায়ন",
-    features: ["ফলন পূর্বাভাস", "মূল্য প্রক্ষেপণ", "ঝুঁকি মূল্যায়ন"],
+    desc: "ফসল ভিত্তিক ফলন অনুমান, আয় হিসাব, মৌসুম ক্যালেন্ডার ও ঝুঁকি মূল্যায়ন",
+    features: ["ফলন অনুমান", "আয় হিসাব", "মৌসুম ক্যালেন্ডার"],
     url: "/tools/yield",
   },
   {
@@ -76,8 +78,8 @@ const TOOLS = [
     cat: "PESTICIDE EXPERT",
     catColor: "#b45309",
     bg: "#fef3c7",
-    desc: "নিরাপদ ও কার্যকর কীটনাশক নির্বাচন, প্রয়োগ মাত্রা ও সতর্কতা নির্দেশিকা",
-    features: ["নিরাপদ নির্বাচন", "প্রয়োগ মাত্রা", "সতর্কতা"],
+    desc: "কীটনাশক নির্বাচন, মিক্সিং চেকার, IRAC রোটেশন ও সতর্কতা নির্দেশিকা",
+    features: ["মিক্সিং চেকার", "IRAC রোটেশন", "সতর্কতা"],
     url: "/tools/pesticide",
   },
   {
@@ -106,8 +108,8 @@ const TOOLS = [
     cat: "IRRIGATION",
     catColor: "#0e7490",
     bg: "#ecfeff",
-    desc: "আবহাওয়া ও মাটির আর্দ্রতা ভিত্তিক স্মার্ট সেচ পরামর্শ ও পানি ব্যবস্থাপনা",
-    features: ["সেচ পরামর্শ", "পানি ব্যবস্থাপনা", "আর্দ্রতা পর্যবেক্ষণ"],
+    desc: "আবহাওয়া ভিত্তিক সেচ সময়সূচি, পানি ক্যালকুলেটর ও পানি সাশ্রয়ী প্রযুক্তি",
+    features: ["সেচ সময়সূচি", "পানি ক্যালকুলেটর", "পানি সাশ্রয়"],
     url: "/tools/irrigation",
   },
   {
@@ -267,8 +269,16 @@ export default function HomePage() {
           <div className="mb-3 text-[12px] font-semibold text-gray-600">
             📰 কৃষি সংবাদ — .gov.bd পোর্টাল সহ
           </div>
-          <div className="mb-2">
+          <div className="mb-5">
             <NewsWidget />
+          </div>
+
+          {/* 6. AI Chat Widget */}
+          <div className="mb-3 text-[12px] font-semibold text-gray-600">
+            🤖 AI কৃষি সহকারী
+          </div>
+          <div className="mb-2">
+            <AIChatWidget />
           </div>
         </div>
       </section>
@@ -348,8 +358,11 @@ export default function HomePage() {
             {TOOLS.map((t, i) => (
               <a
                 key={i}
-                href={t.url}
-                className="flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-3.5 hover:border-green-300 hover:bg-green-50/30 transition-all cursor-pointer card-shadow group no-underline"
+                href={(t as Record<string, unknown>).comingSoon ? undefined : t.url}
+                className={`flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-3.5 hover:border-green-300 hover:bg-green-50/30 transition-all card-shadow group no-underline ${
+                  (t as Record<string, unknown>).comingSoon ? "opacity-60 cursor-default" : "cursor-pointer"
+                }`}
+                onClick={(e) => (t as Record<string, unknown>).comingSoon && e.preventDefault()}
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
@@ -381,8 +394,14 @@ export default function HomePage() {
                     ))}
                   </div>
                 </div>
-                <div className="text-[11px] font-semibold text-gray-400 group-hover:text-green-600 transition-colors flex-shrink-0 mt-1">
-                  বিস্তারিত →
+                <div className="flex flex-col items-end flex-shrink-0 mt-1">
+                  {(t as Record<string, unknown>).comingSoon ? (
+                    <span className="text-[9px] font-bold bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">শীঘ্রই</span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-gray-400 group-hover:text-green-600 transition-colors">
+                      বিস্তারিত →
+                    </span>
+                  )}
                 </div>
               </a>
             ))}
