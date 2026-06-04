@@ -74,7 +74,7 @@ async function fetchDAMLivePrices(): Promise<MarketPrice[] | null> {
           try {
             const data = JSON.parse(text);
             if (Array.isArray(data) && data.length > 0) {
-              console.log("[market] Live DAM data fetched successfully");
+              // Live DAM data fetched successfully
               // Transform DAM API response to our format
               return data.slice(0, 20).map((item: Record<string, string>) => ({
                 name: item.nameBn || item.commodityNameBn || item.name || "অজানা",
@@ -103,8 +103,8 @@ async function fetchDAMLivePrices(): Promise<MarketPrice[] | null> {
 function getSeasonalPrices(): MarketPrice[] {
   const m = new Date().getMonth() + 1;
 
-  // Comprehensive price database with categories and weekly change
-  const base: MarketPrice[] = [
+  // Comprehensive price database with categories and weekly change (deep clone to prevent mutation)
+  const base: MarketPrice[] = JSON.parse(JSON.stringify([
     // শস্য (Grains)
     { name: "মোটা চাল", en: "Coarse Rice", price: "৫৩–৫৫", unit: "kg", trend: "up", change: "+২.১%", icon: "🌾", category: "শস্য", lastWeek: "৫১–৫৩" },
     { name: "মিনিকেট চাল", en: "Miniket Rice", price: "৭২–৭৮", unit: "kg", trend: "up", change: "+১.৮%", icon: "🍚", category: "শস্য", lastWeek: "৭০–৭৬" },
@@ -140,7 +140,7 @@ function getSeasonalPrices(): MarketPrice[] {
     { name: "সরিষা", en: "Mustard Seed", price: "৯০–১১০", unit: "kg", trend: "up", change: "+৩.৮%", icon: "🟤", category: "অন্যান্য", lastWeek: "৮৫–১০৫" },
     { name: "তুলা", en: "Cotton", price: "১২০০–১৫০০", unit: "মণ", trend: "flat", change: "+০.২%", icon: "☁️", category: "অন্যান্য", lastWeek: "১২০০–১৪৯০" },
     { name: "আখ", en: "Sugarcane", price: "৮০–১২০", unit: "মণ", trend: "down", change: "-২%", icon: "🎋", category: "অন্যান্য", lastWeek: "৮৫–১২৫" },
-  ];
+  ])) as MarketPrice[];
 
   // Seasonal adjustments
   if (m >= 11 || m <= 2) {

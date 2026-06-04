@@ -141,7 +141,6 @@ ${seasonContext}`;
       headers: corsHeaders(origin),
     });
   } catch (e) {
-    console.error("[chat] Error:", e);
     return NextResponse.json(
       {
         ok: false,

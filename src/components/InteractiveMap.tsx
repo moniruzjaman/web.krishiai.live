@@ -18,6 +18,8 @@ import { useEffect, useRef } from "react";
 interface MapProps {
   center: [number, number];
   mapStyle?: "street" | "satellite";
+  accuracy?: number;
+  onLocateMe?: () => void;
 }
 
 // ── BD Agricultural Institutions (across all divisions) ──────────────────────
@@ -54,7 +56,7 @@ const INSTITUTIONS = [
   { pos: [24.7471, 90.4232] as [number, number], name: "BAU — বাংলাদেশ কৃষি বিশ্ববিদ্যালয়", short: "BAU", color: "#16a34a", category: "extension" },
 ];
 
-export default function InteractiveMap({ center, mapStyle = "street" }: MapProps) {
+export default function InteractiveMap({ center, mapStyle = "street", accuracy = 500, onLocateMe }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
@@ -112,9 +114,9 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
         .bindPopup("<b>📍 আপনার অবস্থান</b>");
       userMarkerRef.current = userMarker;
 
-      // Accuracy circle around user location
-      L.circle(centerRef.current, {
-        radius: 500,
+      // Accuracy circle around user location (use actual GPS accuracy)
+      const accuracyCircle = L.circle(centerRef.current, {
+        radius: Math.max(accuracy, 50), // minimum 50m for visibility
         color: "#e53e3e",
         fillColor: "#e53e3e",
         fillOpacity: 0.08,
@@ -155,7 +157,10 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
           btn.onmouseover = () => { btn.style.background = "#f0fdf4"; };
           btn.onmouseout = () => { btn.style.background = "#fff"; };
           btn.onclick = function () {
-            if (navigator.geolocation) {
+            // Use LocationContext's requestLocation instead of raw geolocation
+            if (onLocateMe) {
+              onLocateMe();
+            } else if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
                   const { latitude, longitude } = pos.coords;

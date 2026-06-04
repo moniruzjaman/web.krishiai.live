@@ -28,7 +28,7 @@ const TOOLS = [
     bg: "#fef9c3",
     desc: "AI-চালিত ফসল রোগ শনাক্তকরণ, চিকিৎসা পরামর্শ ও প্রতিরোধ ব্যবস্থা",
     features: ["রোগ শনাক্ত", "চিকিৎসা পরামর্শ", "প্রতিরোধ ব্যবস্থা"],
-    url: "#",
+    url: "/analyzer",
   },
   {
     icon: "🛰️",
@@ -38,7 +38,7 @@ const TOOLS = [
     bg: "#dbeafe",
     desc: "স্যাটেলাইট থেকে ফসলের স্বাস্থ্য, NDVI ম্যাপিং ও বৃদ্ধি পর্যবেক্ষণ",
     features: ["NDVI ম্যাপিং", "ফসল স্বাস্থ্য", "বৃদ্ধি ট্র্যাকিং"],
-    url: "#",
+    url: "/tools/satellite",
   },
   {
     icon: "🌾",
@@ -48,7 +48,7 @@ const TOOLS = [
     bg: "#dcfce7",
     desc: "২০০+ ফসলের বিস্তারিত চাষ পদ্ধতি, রোগ প্রতিকার ও যত্ন নির্দেশিকা",
     features: ["২০০+ ফসল", "চাষ পদ্ধতি", "রোগ প্রতিকার"],
-    url: "#",
+    url: "/tools/crop-library",
   },
   {
     icon: "🏺",
@@ -58,7 +58,7 @@ const TOOLS = [
     bg: "#fce7f3",
     desc: "মাটির গুণমান পরীক্ষা, পুষ্টি বিশ্লেষণ ও সারের সুনির্দিষ্ট মাত্রা নির্ধারণ",
     features: ["মাটি পরীক্ষা", "সার মাত্রা", "পুষ্টি বিশ্লেষণ"],
-    url: "#",
+    url: "/tools/soil",
   },
   {
     icon: "📈",
@@ -68,7 +68,7 @@ const TOOLS = [
     bg: "#ede9fe",
     desc: "AI মডেল ভিত্তিক ফসলের ফলন পূর্বাভাস, বাজার মূল্য প্রক্ষেপণ ও ঝুঁকি মূল্যায়ন",
     features: ["ফলন পূর্বাভাস", "মূল্য প্রক্ষেপণ", "ঝুঁকি মূল্যায়ন"],
-    url: "#",
+    url: "/tools/yield",
   },
   {
     icon: "🧪",
@@ -78,7 +78,7 @@ const TOOLS = [
     bg: "#fef3c7",
     desc: "নিরাপদ ও কার্যকর কীটনাশক নির্বাচন, প্রয়োগ মাত্রা ও সতর্কতা নির্দেশিকা",
     features: ["নিরাপদ নির্বাচন", "প্রয়োগ মাত্রা", "সতর্কতা"],
-    url: "#",
+    url: "/tools/pesticide",
   },
   {
     icon: "🎓",
@@ -88,7 +88,7 @@ const TOOLS = [
     bg: "#ffedd5",
     desc: "ভিডিও টিউটোরিয়াল, প্রশিক্ষণ মডিউল, কুইজ ও কৃষি জ্ঞান ভাণ্ডার",
     features: ["ভিডিও টিউটোরিয়াল", "প্রশিক্ষণ", "কুইজ"],
-    url: "#",
+    url: "/learn",
   },
   {
     icon: "🏛️",
@@ -98,7 +98,7 @@ const TOOLS = [
     bg: "#ecfdf5",
     desc: "সরকারি কৃষি প্রকল্প, সার-বীজ ভর্তুকি, প্রণোদনা ও ঋণ সুবিধার তথ্য",
     features: ["সার ভর্তুকি", "প্রণোদনা", "কৃষি ঋণ"],
-    url: "#",
+    url: "https://dae.gov.bd",
   },
   {
     icon: "💧",
@@ -108,7 +108,7 @@ const TOOLS = [
     bg: "#ecfeff",
     desc: "আবহাওয়া ও মাটির আর্দ্রতা ভিত্তিক স্মার্ট সেচ পরামর্শ ও পানি ব্যবস্থাপনা",
     features: ["সেচ পরামর্শ", "পানি ব্যবস্থাপনা", "আর্দ্রতা পর্যবেক্ষণ"],
-    url: "#",
+    url: "/tools/irrigation",
   },
   {
     icon: "🛡️",
@@ -118,7 +118,7 @@ const TOOLS = [
     bg: "#f5f3ff",
     desc: "ফসল বীমা, কৃষি ঋণ, সরকারি প্রণোদনা ও আর্থিক সুরক্ষা সংক্রান্ত নির্দেশিকা",
     features: ["ফসল বীমা", "কৃষি ঋণ", "আর্থিক সুরক্ষা"],
-    url: "#",
+    url: "https://moa.gov.bd",
   },
 ];
 
@@ -174,12 +174,12 @@ export default function HomePage() {
 
           {/* CTA buttons */}
           <div className="flex gap-3 mb-6">
-            <button className="bg-green-500 hover:bg-green-400 text-white font-bold text-sm rounded-full px-6 py-3 transition-colors shadow-lg shadow-green-500/25 active:scale-95">
+            <a href="#tools" className="bg-green-500 hover:bg-green-400 text-white font-bold text-sm rounded-full px-6 py-3 transition-colors shadow-lg shadow-green-500/25 active:scale-95 no-underline">
               আমাদের সেবা
-            </button>
-            <button className="bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-full px-6 py-3 border border-white/20 transition-colors active:scale-95">
+            </a>
+            <a href="#testimonial" className="bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-full px-6 py-3 border border-white/20 transition-colors active:scale-95 no-underline">
               সাফল্যের গল্প
-            </button>
+            </a>
           </div>
 
           {/* Trust signals */}
@@ -273,6 +273,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <div id="testimonial" />
       {/* ═══ TESTIMONIAL ═══════════════════════════════════════════════════════ */}
       <section className="px-4 py-8 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
@@ -321,6 +322,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ ECOSYSTEM TOOLS ═══════════════════════════════════════════════════ */}
+      <div id="tools" />
       <section className="px-4 py-8 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

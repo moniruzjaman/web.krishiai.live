@@ -1,12 +1,25 @@
+/**
+ * ChatPage.tsx — AI-powered Agricultural Chat with persistence
+ *
+ * Features:
+ * - Real AI chat via /api/chat (z-ai-web-dev-sdk)
+ * - Message persistence in localStorage
+ * - Clear chat button
+ * - Bengali-first responses
+ * - Suggestion chips for first-time users
+ * - Proper hydration-safe timestamps
+ */
+
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
+// ── Types ────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
+  timestamp: number; // Store as epoch for serialization
 }
 
 const SUGGESTIONS = [
@@ -16,36 +29,83 @@ const SUGGESTIONS = [
   "আবহাওয়া পূর্বাভাস",
 ];
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: "1",
-    role: "assistant",
-    content:
-      "নমস্কার! 🌾 আমি কৃষি AI সহকারী। আপনার কৃষি সংক্রান্ত যেকোনো প্রশ্ন করুন — ফসলের রোগ, সারের মাত্রা, আবহাওয়া পূর্বাভাস বা বাজার মূল্য সম্পর্কে জানতে চাইলে আমি সাহায্য করতে পারি।",
-    timestamp: new Date(),
-  },
-];
+const STORAGE_KEY = "krishi_chat_messages";
 
+const WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "নমস্কার! আমি কৃষি AI সহকারী। আপনার কৃষি সংক্রান্ত যেকোনো প্রশ্ন করুন — ফসলের রোগ, সারের মাত্রা, আবহাওয়া পূর্বাভাস বা বাজার মূল্য সম্পর্যে জানতে চাইলে আমি সাহায্য করতে পারি।",
+  timestamp: 0, // Will be set on load
+};
+
+// ── Storage helpers ──────────────────────────────────────────────────────────
+function loadMessages(): Message[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: Message[]) {
+  try {
+    if (typeof window === "undefined") return;
+    // Keep last 50 messages to prevent storage overflow
+    const toSave = msgs.slice(-50);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch {
+    // Storage full, ignore
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Load persisted messages on mount (client-only to avoid hydration mismatch)
+  useEffect(() => {
+    const stored = loadMessages();
+    if (stored.length > 0) {
+      setMessages(stored);
+    } else {
+      // Set welcome timestamp to now
+      setMessages([{ ...WELCOME_MESSAGE, timestamp: Date.now() }]);
+    }
+    setLoaded(true);
+  }, []);
+
+  // Save messages when they change (after initial load)
+  useEffect(() => {
+    if (loaded && messages.length > 0) {
+      saveMessages(messages);
+    }
+  }, [messages, loaded]);
+
+  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isTyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
       content: text.trim(),
-      timestamp: new Date(),
+      timestamp: Date.now(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -55,7 +115,7 @@ export default function ChatPage() {
     try {
       // Build message history for API (last 10 messages)
       const chatHistory = [...messages, userMsg]
-        .filter((m) => m.id !== "1" || m.role !== "assistant")
+        .filter((m) => m.id !== "welcome" || m.role !== "assistant")
         .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }));
 
@@ -70,8 +130,8 @@ export default function ChatPage() {
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.reply || data.error || "আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন। 🌾",
-        timestamp: new Date(),
+        content: data.reply || data.error || "আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন।",
+        timestamp: Date.now(),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -79,18 +139,37 @@ export default function ChatPage() {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন। 🌐",
-        timestamp: new Date(),
+        content: "নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errMsg]);
     }
 
     setIsTyping(false);
-  };
+  }, [messages, isTyping]);
+
+  const clearChat = useCallback(() => {
+    const fresh: Message[] = [{ ...WELCOME_MESSAGE, timestamp: Date.now() }];
+    setMessages(fresh);
+    saveMessages(fresh);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
+  };
+
+  // Format timestamp for display
+  const formatTime = (ts: number) => {
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleTimeString("bn-BD", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
   };
 
   return (
@@ -112,6 +191,16 @@ export default function ChatPage() {
             <span className="text-[10px] text-white/70">অনলাইন</span>
           </div>
         </div>
+        {/* Clear chat button */}
+        {messages.length > 1 && (
+          <button
+            onClick={clearChat}
+            className="text-white/60 hover:text-white text-[10px] font-semibold bg-white/10 border border-white/20 rounded-full px-3 py-1.5 cursor-pointer transition-colors"
+            title="চ্যাট মুছুন"
+          >
+            🗑️ মুছুন
+          </button>
+        )}
       </div>
 
       {/* Messages area */}
@@ -138,10 +227,7 @@ export default function ChatPage() {
                   msg.role === "user" ? "text-white/50" : "text-gray-400"
                 }`}
               >
-                {msg.timestamp.toLocaleTimeString("bn-BD", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatTime(msg.timestamp)}
               </div>
             </div>
           </div>

@@ -416,8 +416,6 @@ export async function GET(request: NextRequest) {
       source: "Open-Meteo · BMD",
     };
 
-    const origin2 = request.headers.get("origin");
-
     return NextResponse.json(weatherData, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
@@ -425,7 +423,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (e) {
-    console.error("[weather] Error:", e);
     return NextResponse.json(
       {
         ok: false,

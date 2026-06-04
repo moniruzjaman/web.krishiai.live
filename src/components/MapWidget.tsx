@@ -104,7 +104,7 @@ export default function MapWidget() {
 
       {/* Map frame */}
       <div className="w-full h-[260px] sm:h-[320px] lg:h-[380px] relative">
-        <InteractiveMap center={center} mapStyle={mapStyle} />
+        <InteractiveMap center={center} mapStyle={mapStyle} accuracy={location?.accuracy || 500} onLocateMe={handleLocateMe} />
       </div>
 
       {/* Legend */}

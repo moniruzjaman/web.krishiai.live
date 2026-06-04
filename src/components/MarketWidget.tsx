@@ -1,11 +1,13 @@
 /**
- * MarketWidget.tsx — Best-in-Class Commodity Price Tracker
+ * MarketWidget.tsx — Enhanced Commodity Price Tracker
  *
  * Features:
  * - Category filter tabs (সব, শস্য, সবজি, মসলা, ডাল, অন্যান্য)
  * - Price change percentage with color-coded badges
- * - Last week comparison
- * - DAM live data with CORS proxy fallback
+ * - Last week comparison display
+ * - Error/retry UI for failed fetches
+ * - Source indicator (live vs fallback)
+ * - Bengali units (প্রতি কেজি, প্রতি মণ)
  * - Auto-refresh every hour
  * - Responsive grid layout with scroll
  */
@@ -61,16 +63,27 @@ const CATEGORIES = [
   { key: "অন্যান্য", label: "অন্যান্য", icon: "📦" },
 ];
 
+// ── Bengali unit helper ─────────────────────────────────────────────────────
+const unitLabel = (u: string) => {
+  if (u === "kg") return "প্রতি কেজি";
+  if (u === "মণ") return "প্রতি মণ";
+  if (u === "পিস") return "প্রতি পিস";
+  return u;
+};
+
 // ── Component ────────────────────────────────────────────────────────────────
 export default function MarketWidget() {
   const [prices, setPrices] = useState<MarketPrice[]>([]);
   const [dateStr, setDateStr] = useState("");
   const [source, setSource] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [category, setCategory] = useState("সব");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
 
   const fetchMarket = useCallback(async () => {
+    setError(false);
     try {
       const r = await fetch("/api/market");
       const d: MarketResponse = await r.json();
@@ -78,12 +91,17 @@ export default function MarketWidget() {
         setPrices(d.prices);
         setDateStr(d.dateStr);
         setSource(d.source);
+        setIsFallback(d.source.includes("মৌসুমী") || d.source.includes("মৌসুমি"));
         setLastUpdated(new Date());
       } else {
         setPrices(FALLBACK_PRICES);
+        setIsFallback(true);
+        setError(true);
       }
     } catch {
       setPrices(FALLBACK_PRICES);
+      setIsFallback(true);
+      setError(true);
     }
     setLoading(false);
   }, []);
@@ -114,14 +132,37 @@ export default function MarketWidget() {
     );
   }
 
+  // Error state with retry
+  if (error && prices.length === 0) {
+    return (
+      <div className="bg-white rounded-[14px] border border-red-200 p-4 text-center card-shadow">
+        <div className="text-lg mb-2">⚠️</div>
+        <div className="text-sm text-red-600 font-semibold mb-2">
+          বাজার মূল্য লোড হয়নি
+        </div>
+        <button
+          onClick={fetchMarket}
+          className="text-[11px] font-bold bg-red-100 text-red-600 px-4 py-1.5 rounded-full border-none cursor-pointer hover:bg-red-200 transition-colors"
+        >
+          আবার চেষ্টা করুন
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-[14px] border border-gray-200 overflow-hidden card-shadow">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-gray-50/80">
         <div>
           <div className="text-[13px] font-bold text-gray-900">💰 বাজার মূল্য</div>
-          <div className="text-[9px] text-gray-500 mt-0.5">
-            {source || "কৃষি বিপণন অধিদপ্তর (DAM) · ঢাকা"}
+          <div className="text-[9px] text-gray-500 mt-0.5 flex items-center gap-1.5">
+            <span>{source || "কৃষি বিপণন অধিদপ্তর (DAM) · ঢাকা"}</span>
+            {isFallback && (
+              <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">
+                মৌসুমী তথ্য
+              </span>
+            )}
           </div>
         </div>
         <a
@@ -172,7 +213,7 @@ export default function MarketWidget() {
               </div>
               <div className="text-[8px] text-gray-400 text-center">{p.en}</div>
               <div className="text-[13px] font-bold text-[#1b4332]">৳{p.price}</div>
-              <div className="text-[8px] text-gray-400">per {p.unit}</div>
+              <div className="text-[8px] text-gray-400">{unitLabel(p.unit)}</div>
               {/* Trend + Change */}
               <div
                 className={`text-[9px] font-bold px-2 py-0.5 rounded-full text-center ${
@@ -189,6 +230,12 @@ export default function MarketWidget() {
                   ? `↓ ${p.change}`
                   : `→ স্থিতিশীল`}
               </div>
+              {/* Last week comparison */}
+              {p.lastWeek && (
+                <div className="text-[7px] text-gray-400 text-center mt-0.5">
+                  গত সপ্তাহ: ৳{p.lastWeek}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -196,7 +243,7 @@ export default function MarketWidget() {
 
       {/* Footer */}
       <div className="flex justify-between items-center text-[9px] text-gray-400 px-4 py-2 border-t border-gray-200">
-        <span>ঢাকা বিভাগের পাইকারি গড় মূল্য (৳/kg)</span>
+        <span>ঢাকা বিভাগের পাইকারি গড় মূল্য (৳)</span>
         <span className="flex items-center gap-2">
           {lastUpdated && `আপডেট: ${lastUpdated.toLocaleTimeString("bn-BD")}`}
           <button

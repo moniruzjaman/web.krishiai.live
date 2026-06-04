@@ -222,7 +222,6 @@ async function fetchViaCORSProxy(targetUrl: string, ms = 12000): Promise<string 
         const text = await r.text();
         // Validate it looks like XML/RSS
         if (text.includes("<") && text.length > 200) {
-          console.log(`[news] CORS proxy (${proxy.name}) success for ${targetUrl}`);
           return text;
         }
       }
@@ -1127,7 +1126,7 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
       dateStr: ctx.dateStr,
     };
   } catch (e) {
-    console.error("[news] AI bulletin generation failed:", e);
+    // AI bulletin generation failed, return null for graceful fallback
     return null;
   }
 }
