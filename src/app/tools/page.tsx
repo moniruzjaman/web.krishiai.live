@@ -73,6 +73,26 @@ const TOOLS = [
     to: "/tools/satellite",
     badge: "সক্রিয়",
   },
+  {
+    icon: "📅",
+    title: "ফসল ক্যালেন্ডার",
+    sub: "১০টি ফসলের মৌসুম ক্যালেন্ডার, রোগ ও পোকার ঝুঁকি সতর্কতা",
+    cat: "CROP CALENDAR",
+    catColor: "#0891b2",
+    bg: "linear-gradient(135deg,#ecfeff,#cffafe)",
+    to: "/tools/crop-calendar",
+    badge: "নতুন",
+  },
+  {
+    icon: "🧠",
+    title: "স্মার্ট সিদ্ধান্ত",
+    sub: "আবহাওয়া, মূল্য ও মৌসুম মিলিয়ে সেরা ফসল নির্বাচন ও সেচ পরিকল্পনা",
+    cat: "SMART DECISION",
+    catColor: "#7c3aed",
+    bg: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+    to: "/tools/smart-decision",
+    badge: "নতুন",
+  },
 ];
 
 const ECOSYSTEM = [
@@ -182,9 +202,9 @@ export default function ToolsPage() {
                     className="text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap"
                     style={{
                       background:
-                        t.badge === "শীঘ্রই" ? "#e5e7eb" : "rgba(27,138,62,.12)",
+                        t.badge === "শীঘ্রই" ? "#e5e7eb" : t.badge === "নতুন" ? "rgba(124,58,237,.12)" : "rgba(27,138,62,.12)",
                       color:
-                        t.badge === "শীঘ্রই" ? "#9ca3af" : "#1b8a3e",
+                        t.badge === "শীঘ্রই" ? "#9ca3af" : t.badge === "নতুন" ? "#7c3aed" : "#1b8a3e",
                     }}
                   >
                     {t.badge}

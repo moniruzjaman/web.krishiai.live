@@ -117,8 +117,9 @@ export async function POST(request: NextRequest) {
 
     let completion;
     try {
-      // Use createVision() for VLM (Vision Language Model) — not create()
-      completion = await zai.chat.completions.createVision({
+      // Use chat.completions.create with multimodal content for VLM
+      // The SDK supports vision via image_url content type in messages
+      completion = await zai.chat.completions.create({
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -142,8 +143,7 @@ export async function POST(request: NextRequest) {
       const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
       console.error("[analyze] VLM API call failed:", errMsg);
 
-      // If VLM fails (e.g. model doesn't support vision), try text-only fallback
-      // Describe the image context and ask for general diagnosis
+      // If multimodal fails, try text-only fallback
       try {
         console.log("[analyze] Attempting text-only fallback...");
         completion = await zai.chat.completions.create({

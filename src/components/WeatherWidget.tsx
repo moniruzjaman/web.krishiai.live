@@ -201,6 +201,23 @@ export default function WeatherWidget() {
     );
   }
 
+  // If no location and not loading, show location request
+  if (!location && !locLoading) {
+    return (
+      <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-5 text-center card-shadow">
+        <div className="text-3xl mb-2">🌤️</div>
+        <div className="text-white font-bold text-sm mb-1">লাইভ আবহাওয়া</div>
+        <div className="text-white/60 text-[11px] mb-3">আপনার এলাকার আবহাওয়া দেখতে লোকেশন চালু করুন</div>
+        <button
+          onClick={requestLocation}
+          className="bg-green-500 hover:bg-green-400 text-white text-[11px] font-bold rounded-full px-5 py-2 border-none cursor-pointer transition-colors active:scale-95 shadow-md"
+        >
+          📍 লোকেশন চালু করুন
+        </button>
+      </div>
+    );
+  }
+
   if (!w || locLoading) {
     return (
       <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-4 flex items-center justify-center gap-2 text-white/80 text-sm">
