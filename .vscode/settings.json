@@ -4,5 +4,7 @@
     "geminicodeassist.codeGenerationPaneViewEnabled": true,
     "geminicodeassist.outlines.automaticOutlineGeneration": true,
     "geminicodeassist.updateChannel": "Default",
-    "sixth.telegram.enabled": true
+    "sixth.telegram.enabled": true,
+    "npm.runSilent": true,
+    "npm.scriptExplorerAction": "run"
 }
