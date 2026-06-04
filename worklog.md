@@ -251,3 +251,30 @@ Stage Summary:
 - 1 broken link fixed (irrigation)
 - 1 new component created (AIChatWidget)
 - Production branch: origin/production at b8651df
+
+---
+Task ID: ecosystem-enhancement-v2
+Agent: Main Agent
+Task: Enhance all home page ecosystem tools and add dark mode
+
+Work Log:
+- Audited all 17 tools/widgets across home page, tools page, and sub-pages
+- Enhanced MarketWidget: location-aware (uses LocationContext), search/filter, price trend mini-bars, expand/collapse (default 6 items)
+- Built real Satellite Monitoring page: NDVI map with Leaflet (20+ BD zones), crop health tab, seasonal comparison with 12-month chart
+- Created NDVIMap.tsx component with dynamic Leaflet import, Bangladesh border, user location marker
+- Enhanced Learn Page: 8 real YouTube videos with thumbnails, functional category filter, video player modal, quiz section, seasonal tips
+- Enhanced Profile Page: editable name (localStorage), activity tracking, dynamic stats from stored data, settings toggles, activity timeline, clear data
+- Enhanced Plant Health page: 10-disease library with search/filter, 3 tabs (diagnosis/library/prevention), severity badges, emergency contacts
+- Added complete dark mode: CSS variables in globals.css, dark: classes across all components and pages
+- Added seasonal tip banner to home page (12-month dynamic tips)
+- Improved tool cards with hover animations (scale, translate, shadow, color transitions), status indicators (green dots)
+- Upgraded Satellite from "Coming Soon" to active in both home page and tools page
+- Build: All 21 routes compile successfully
+- Pushed to production-v2 branch and main branch
+
+Stage Summary:
+- 24 files changed, 3679 insertions, 554 deletions
+- 6 major enhancements completed (Market, Satellite, Learn, Profile, Plant Health, Dark Mode)
+- 0 "Coming Soon" pages remaining on home page ecosystem tools
+- Branch: production-v2 (pushed to origin), main (pushed to origin)
+- Build: PASSING (Next.js 16.1.3, all 21 routes)
