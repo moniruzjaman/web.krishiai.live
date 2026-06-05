@@ -1,84 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-
-// ── Video Categories ──────────────────────────────────────────────────────────
-const VIDEO_CATEGORIES = [
-  { id: "all", label: "সব", icon: "📋" },
-  { id: "crop", label: "ফসল চাষ", icon: "🌾" },
-  { id: "disease", label: "রোগ নির্ণয়", icon: "🔬" },
-  { id: "soil", label: "মাটি বিজ্ঞান", icon: "🏺" },
-  { id: "pest", label: "কীটনাশক", icon: "🧪" },
-];
-
-// ── Real YouTube Video Data ───────────────────────────────────────────────────
-const VIDEOS = [
-  {
-    id: "dQw4w9WgXcQ",
-    title: "ধান চাষের আধুনিক পদ্ধতি",
-    channel: "কৃষি মন্ত্রণালয়",
-    views: "১.২লক্ষ",
-    duration: "৮:৩০",
-    cat: "crop",
-    featured: true,
-  },
-  {
-    id: "ScMzIDXBSHg",
-    title: "সবজি চাষের লাভজনক উপায়",
-    channel: "BARI বাংলাদেশ",
-    views: "৮৫ হাজার",
-    duration: "১২:১৫",
-    cat: "crop",
-  },
-  {
-    id: "kJQP7kiw5Fk",
-    title: "ফসলের রোগ প্রতিরোধ",
-    channel: "DAE বাংলাদেশ",
-    views: "৯২ হাজার",
-    duration: "১০:৪৫",
-    cat: "disease",
-  },
-  {
-    id: "RgKAFK5djSk",
-    title: "মাটির পুষ্টি বিশ্লেষণ",
-    channel: "SRDI বাংলাদেশ",
-    views: "৪৫ হাজার",
-    duration: "৬:২০",
-    cat: "soil",
-  },
-  {
-    id: "JGwWNGJdvx8",
-    title: "নিরাপদ কীটনাশক ব্যবহার",
-    channel: "কৃষি সম্প্রসারণ",
-    views: "৩৮ হাজার",
-    duration: "১৫:০০",
-    cat: "pest",
-  },
-  {
-    id: "OPf0YbXqDm0",
-    title: "আধুনিক সেচ ব্যবস্থা",
-    channel: "BARC বাংলাদেশ",
-    views: "২৯ হাজার",
-    duration: "৯:৪৫",
-    cat: "soil",
-  },
-  {
-    id: "YQHsXMglC9A",
-    title: "গম চাষের পদ্ধতি",
-    channel: "BARI বাংলাদেশ",
-    views: "৫৫ হাজার",
-    duration: "১১:৩০",
-    cat: "crop",
-  },
-  {
-    id: "CevxZvSJLk8",
-    title: "পাট চাষের আধুনিক প্রযুক্তি",
-    channel: "BJRI বাংলাদেশ",
-    views: "৪১ হাজার",
-    duration: "৭:৫০",
-    cat: "crop",
-  },
-];
+import { useState } from "react";
 
 // ── Quiz Questions ────────────────────────────────────────────────────────────
 const QUIZ_QUESTIONS = [
@@ -261,48 +183,13 @@ const BANGLA_MONTHS = [
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function LearnPage() {
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [playerVideoId, setPlayerVideoId] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState<Record<number, boolean>>({});
   const [currentMonth] = useState(() => new Date().getMonth() + 1);
 
-  // Filter videos by category
-  const filteredVideos = activeCategory === "all"
-    ? VIDEOS
-    : VIDEOS.filter((v) => v.cat === activeCategory);
-
-  // Featured video (first crop video)
-  const featuredVideo = VIDEOS.find((v) => v.featured) || VIDEOS[0];
-
   // Seasonal tips for current month
   const currentTips = SEASONAL_TIPS[currentMonth] || SEASONAL_TIPS[1];
   const banglaMonth = BANGLA_MONTHS[currentMonth - 1] || "";
-
-  // Handle video click — open player modal
-  const openPlayer = useCallback((videoId: string) => {
-    setPlayerVideoId(videoId);
-  }, []);
-
-  // Close player modal
-  const closePlayer = useCallback(() => {
-    setPlayerVideoId(null);
-  }, []);
-
-  // Handle Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closePlayer();
-    };
-    if (playerVideoId) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [playerVideoId, closePlayer]);
 
   // Quiz answer handler
   const handleQuizAnswer = (questionId: number, optionIndex: number) => {
@@ -326,7 +213,7 @@ export default function LearnPage() {
           background: "linear-gradient(135deg,#1b4332,#2d6a4f)",
         }}
       >
-        <div className="absolute -bottom-px left-0 right-0 h-5 bg-white rounded-t-[20px]" />
+        <div className="absolute -bottom-px left-0 right-0 h-5 bg-white dark:bg-gray-900 rounded-t-[20px]" />
         <div className="text-[11px] text-white/50 tracking-widest font-bold mb-2">
           KRISHI AI
         </div>
@@ -334,123 +221,35 @@ export default function LearnPage() {
           📚 শিক্ষা কেন্দ্র
         </h1>
         <p className="text-xs text-white/70">
-          ভিডিও টিউটোরিয়াল, প্রশিক্ষণ ও কৃষি জ্ঞান ভাণ্ডার
+          কৃষি টিপস, কুইজ ও জ্ঞান ভাণ্ডার
         </p>
       </div>
 
       <div className="px-4 pt-5 pb-24">
-        {/* ═══ FEATURED VIDEO ═════════════════════════════════════════════════ */}
-        <div
-          className="rounded-2xl overflow-hidden mb-5 border border-gray-200 dark:border-gray-700 card-shadow cursor-pointer"
-          onClick={() => openPlayer(featuredVideo.id)}
-        >
-          <div className="relative">
-            <img
-              src={`https://img.youtube.com/vi/${featuredVideo.id}/hqdefault.jpg`}
-              alt={featuredVideo.title}
-              className="w-full h-44 object-cover"
-            />
-            {/* Play overlay */}
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center hover:bg-black/40 transition-colors">
-              <div className="w-14 h-14 rounded-full bg-white/25 flex items-center justify-center backdrop-blur-sm border border-white/30">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-              </div>
+        {/* ═══ VIDEO COMING SOON ═════════════════════════════════════════════════ */}
+        <div className="rounded-2xl overflow-hidden mb-5 border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 card-shadow">
+          <div className="p-5 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center mx-auto mb-3">
+              <span className="text-3xl">📹</span>
             </div>
-            {/* Duration badge */}
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-              {featuredVideo.duration}
+            <div className="text-[10px] font-bold text-green-600 dark:text-green-400 tracking-wider mb-2">
+              COMING SOON
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+              ভিডিও শীঘ্রই আসছে
+            </h3>
+            <p className="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed mb-4 max-w-xs mx-auto">
+              AgriWisdom চ্যানেলের কৃষি শিক্ষামূলক ভিডিও টিউটোরিয়াল শীঘ্রই এখানে যুক্ত হবে। ফসল চাষ, রোগ নির্ণয়, মাটি বিজ্ঞান ও আরও অনেক বিষয়ে বিশেষজ্ঞদের ভিডিও।
+            </p>
+            <div className="flex items-center justify-center gap-2 text-[11px] text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-800/40 rounded-full px-4 py-2 mx-auto w-fit">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              AgriWisdom চ্যানেল থেকে ভিডিও আসছে
             </div>
           </div>
-          <div className="p-4">
-            <div className="text-[10px] font-bold text-[#1b8a3e] tracking-wider mb-1">
-              ⭐ ফিচার্ড ভিডিও
-            </div>
-            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {featuredVideo.title}
-            </div>
-            <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
-              {featuredVideo.channel} · {featuredVideo.views} ভিউ
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ CATEGORY FILTER ════════════════════════════════════════════════ */}
-        <div className="flex gap-2 overflow-x-auto pb-3 mb-5 scrollbar-none">
-          {VIDEO_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                activeCategory === cat.id
-                  ? "bg-[#1b8a3e] text-white shadow-md shadow-green-500/20 scale-105"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 active:scale-95"
-              }`}
-            >
-              <span className="text-sm">{cat.icon}</span>
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ═══ VIDEO LIST ═════════════════════════════════════════════════════ */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            জনপ্রিয় টিউটোরিয়াল
-          </div>
-          <div className="text-[11px] text-gray-400 dark:text-gray-500">
-            {filteredVideos.length}টি ভিডিও
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {filteredVideos.map((video) => (
-            <div
-              key={video.id}
-              onClick={() => openPlayer(video.id)}
-              className="flex gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white hover:bg-green-50/30 hover:border-green-200 transition-all cursor-pointer card-shadow active:scale-[0.98]"
-            >
-              <div className="w-28 h-[72px] rounded-lg shrink-0 relative overflow-hidden">
-                <img
-                  src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`}
-                  alt={video.title}
-                  className="w-full h-full object-cover"
-                />
-                {/* Mini play icon */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
-                  {video.duration}
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100 mb-0.5 leading-tight line-clamp-2">
-                  {video.title}
-                </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{video.channel}</div>
-                <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                  {video.views} ভিউ
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredVideos.length === 0 && (
-            <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-              <div className="text-4xl mb-2">📹</div>
-              <div className="text-sm">এই বিভাগে কোনো ভিডিও নেই</div>
-            </div>
-          )}
         </div>
 
         {/* ═══ SEASONAL TIPS ══════════════════════════════════════════════════ */}
-        <div className="mt-8">
+        <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div
               className="w-1 h-5 rounded-full"
@@ -477,7 +276,7 @@ export default function LearnPage() {
               >
                 {currentTips.season} মৌসুম
               </span>
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 ml-auto">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 ml-auto">
                 আজকের টিপস
               </span>
             </div>
@@ -487,7 +286,7 @@ export default function LearnPage() {
               {currentTips.tips.map((tip, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2.5 bg-white/80 rounded-xl p-3 border border-gray-100 dark:border-gray-700"
+                  className="flex items-start gap-2.5 bg-white/80 dark:bg-gray-800/80 rounded-xl p-3 border border-gray-100 dark:border-gray-700"
                 >
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
@@ -505,20 +304,20 @@ export default function LearnPage() {
         </div>
 
         {/* ═══ QUIZ SECTION ═══════════════════════════════════════════════════ */}
-        <div className="mt-8">
+        <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-5 rounded-full bg-amber-500" />
             <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
               🧠 কুইজ — কৃষি জ্ঞান যাচাই
             </div>
           </div>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4 ml-3">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 ml-3">
             আপনার কৃষি জ্ঞান পরীক্ষা করুন!
           </p>
 
           {/* Score display */}
           {totalAnswered > 0 && (
-            <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
+            <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 flex items-center gap-3">
               <div className="text-2xl">
                 {totalCorrect === totalAnswered ? "🏆" : totalCorrect > totalAnswered / 2 ? "👍" : "📖"}
               </div>
@@ -526,7 +325,7 @@ export default function LearnPage() {
                 <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   স্কোর: {totalCorrect}/{totalAnswered}
                 </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-[11px] text-gray-500 dark:text-gray-400">
                   {totalCorrect === totalAnswered
                     ? "অসাধারণ! সব উত্তর সঠিক!"
                     : totalCorrect > totalAnswered / 2
@@ -555,7 +354,7 @@ export default function LearnPage() {
                 >
                   {/* Question number & text */}
                   <div className="flex items-start gap-2.5 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-bold shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0">
                       {qi + 1}
                     </div>
                     <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100 leading-snug">
@@ -572,14 +371,14 @@ export default function LearnPage() {
                       let optionStyle = "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300";
                       if (isAnswered) {
                         if (isThisCorrect) {
-                          optionStyle = "bg-green-50 border-green-400 text-green-800";
+                          optionStyle = "bg-green-50 dark:bg-green-900/20 border-green-400 text-green-800 dark:text-green-300";
                         } else if (isThisSelected && !isCorrect) {
-                          optionStyle = "bg-red-50 border-red-400 text-red-700";
+                          optionStyle = "bg-red-50 dark:bg-red-900/20 border-red-400 text-red-700 dark:text-red-300";
                         } else {
                           optionStyle = "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500";
                         }
                       } else if (isThisSelected) {
-                        optionStyle = "bg-amber-50 border-amber-400 text-amber-800";
+                        optionStyle = "bg-amber-50 dark:bg-amber-900/20 border-amber-400 text-amber-800 dark:text-amber-300";
                       }
 
                       return (
@@ -613,8 +412,8 @@ export default function LearnPage() {
                     <div
                       className={`mt-3 ml-[38px] p-3 rounded-xl text-[11px] leading-relaxed ${
                         isCorrect
-                          ? "bg-green-50 text-green-800 border border-green-200"
-                          : "bg-amber-50 text-amber-800 border border-amber-200"
+                          ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800"
+                          : "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
                       }`}
                     >
                       <div className="font-bold mb-1">
@@ -629,70 +428,6 @@ export default function LearnPage() {
           </div>
         </div>
       </div>
-
-      {/* ═══ VIDEO PLAYER MODAL ════════════════════════════════════════════════ */}
-      {playerVideoId && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={closePlayer}
-        >
-          {/* Dark backdrop */}
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-
-          {/* Modal content */}
-          <div
-            className="relative w-full max-w-2xl mx-4 animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={closePlayer}
-              className="absolute -top-10 right-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors z-10"
-              aria-label="ভিডিও বন্ধ করুন"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" strokeWidth="2.5" fill="none">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-
-            {/* Video info */}
-            <div className="mb-2">
-              <div className="text-white text-sm font-bold truncate">
-                {VIDEOS.find((v) => v.id === playerVideoId)?.title || "ভিডিও প্লেয়ার"}
-              </div>
-              <div className="text-white/60 text-[11px]">
-                {VIDEOS.find((v) => v.id === playerVideoId)?.channel || ""}
-              </div>
-            </div>
-
-            {/* YouTube iframe */}
-            <div className="rounded-xl overflow-hidden shadow-2xl">
-              <iframe
-                src={`https://www.youtube.com/embed/${playerVideoId}?autoplay=1&rel=0`}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-                className="w-full aspect-video"
-                title="কৃষি ভিডিও প্লেয়ার"
-              />
-            </div>
-
-            {/* Bottom bar */}
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-white/50 text-[11px]">লাইভ প্লেয়ার</span>
-              </div>
-              <button
-                onClick={closePlayer}
-                className="text-white/60 text-xs font-medium hover:text-white transition-colors"
-              >
-                বন্ধ করুন ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -123,6 +123,9 @@ const uvLevel = (uv: number) => {
   return { label: "চরম", color: "text-purple-300" };
 };
 
+// ── Dhaka fallback for weather auto-load ──────────────────────────────────────
+const DHAKACoords = { lat: 23.8103, lon: 90.4125, city: "ঢাকা" };
+
 // ── Component ────────────────────────────────────────────────────────────────
 export default function WeatherWidget() {
   const { location, loading: locLoading, permission, requestLocation } = useLocation();
@@ -131,6 +134,8 @@ export default function WeatherWidget() {
   const [showHourly, setShowHourly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const prevCoordsRef = useRef<string>("");
+  const [fallbackUsed, setFallbackUsed] = useState(false);
+  const [loadingWeather, setLoadingWeather] = useState(true);
 
   const loadWeather = useCallback(async (lat: number, lon: number, city: string) => {
     const r = await fetch(
@@ -140,52 +145,82 @@ export default function WeatherWidget() {
     return r.json();
   }, []);
 
-  // Load weather when location changes
+  // Auto-fallback to Dhaka after 3 seconds if location is still not available
   useEffect(() => {
-    if (!location) return;
+    if (location) return; // Location already available
+    const timer = setTimeout(() => {
+      setFallbackUsed(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [location]);
 
-    const coordsKey = `${location.lat.toFixed(2)},${location.lon.toFixed(2)}`;
+  // Load weather when location changes OR when fallback kicks in
+  useEffect(() => {
+    const effectiveLocation = location || (fallbackUsed ? DHAKACoords : null);
+    if (!effectiveLocation) return;
+
+    const lat = effectiveLocation.lat;
+    const lon = effectiveLocation.lon;
+    const city = 'city' in effectiveLocation ? effectiveLocation.city : (location?.city || location?.district || "ঢাকা");
+
+    const coordsKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
     // Skip if we already loaded for these coords
     if (prevCoordsRef.current === coordsKey && w) return;
     prevCoordsRef.current = coordsKey;
 
     const load = async () => {
+      setLoadingWeather(true);
       try {
-        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
+        const data = await loadWeather(lat, lon, city);
         setW(data);
-        setErr(false); // Reset error state on successful fetch
+        setErr(false);
         setLastUpdated(new Date());
       } catch {
         setErr(true);
+      } finally {
+        setLoadingWeather(false);
       }
     };
     load();
-  }, [location, loadWeather]); // removed `w` from deps to prevent re-render loop
+  }, [location, fallbackUsed, loadWeather]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh every 30 minutes
   useEffect(() => {
+    const effectiveLocation = location || (fallbackUsed ? DHAKACoords : null);
+    if (!effectiveLocation) return;
+
+    const lat = effectiveLocation.lat;
+    const lon = effectiveLocation.lon;
+    const city = 'city' in effectiveLocation ? effectiveLocation.city : (location?.city || location?.district || "ঢাকা");
+
     const interval = setInterval(async () => {
-      if (!location) return;
       try {
-        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
+        const data = await loadWeather(lat, lon, city);
         setW(data);
-        setErr(false); // Reset error state on successful auto-refresh
+        setErr(false);
         setLastUpdated(new Date());
       } catch { /* ignore auto-refresh errors */ }
     }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [location, loadWeather]);
+  }, [location, fallbackUsed, loadWeather]);
 
   // Retry handler for error state
   const handleRetry = useCallback(() => {
-    if (!location) return;
+    const effectiveLocation = location || (fallbackUsed ? DHAKACoords : null);
+    if (!effectiveLocation) return;
+    const lat = effectiveLocation.lat;
+    const lon = effectiveLocation.lon;
+    const city = 'city' in effectiveLocation ? effectiveLocation.city : (location?.city || location?.district || "ঢাকা");
+
     setErr(false);
+    setLoadingWeather(true);
     prevCoordsRef.current = ""; // Force refetch
-    loadWeather(location.lat, location.lon, location.city || location.district)
+    loadWeather(lat, lon, city)
       .then((data) => { setW(data); setLastUpdated(new Date()); })
-      .catch(() => setErr(true));
-  }, [location, loadWeather]);
+      .catch(() => setErr(true))
+      .finally(() => setLoadingWeather(false));
+  }, [location, fallbackUsed, loadWeather]);
 
   if (err) {
     return (
@@ -201,28 +236,32 @@ export default function WeatherWidget() {
     );
   }
 
-  // If no location and not loading, show location request
-  if (!location && !locLoading) {
-    return (
-      <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-5 text-center card-shadow">
-        <div className="text-3xl mb-2">🌤️</div>
-        <div className="text-white font-bold text-sm mb-1">লাইভ আবহাওয়া</div>
-        <div className="text-white/60 text-[11px] mb-3">আপনার এলাকার আবহাওয়া দেখতে লোকেশন চালু করুন</div>
-        <button
-          onClick={requestLocation}
-          className="bg-green-500 hover:bg-green-400 text-white text-[11px] font-bold rounded-full px-5 py-2 border-none cursor-pointer transition-colors active:scale-95 shadow-md"
-        >
-          📍 লোকেশন চালু করুন
-        </button>
-      </div>
-    );
-  }
+  // Show loading state while location is being determined or weather is being fetched
+  if (!w || (locLoading && !fallbackUsed)) {
+    const loadingMessage = locLoading && !fallbackUsed
+      ? "অবস্থান নির্ধারণ হচ্ছে…"
+      : "আবহাওয়া লোড হচ্ছে…";
 
-  if (!w || locLoading) {
     return (
-      <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-4 flex items-center justify-center gap-2 text-white/80 text-sm">
-        <span className="inline-block animate-spin-slow">📍</span>
-        {locLoading ? "অবস্থান নির্ধারণ হচ্ছে…" : "আবহাওয়া লোড হচ্ছে…"}
+      <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-5 card-shadow">
+        <div className="flex items-center justify-center gap-3 text-white/80 text-sm mb-3">
+          <svg className="animate-spin h-5 w-5 text-white/60" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          {loadingMessage}
+        </div>
+        {locLoading && !fallbackUsed && (
+          <div className="text-center">
+            <div className="text-white/40 text-[10px] mb-2">৩ সেকেন্ড পর ঢাকার আবহাওয়া দেখানো হবে</div>
+            <button
+              onClick={() => setFallbackUsed(true)}
+              className="bg-white/10 hover:bg-white/20 text-white/70 text-[10px] font-bold rounded-full px-4 py-1.5 border border-white/20 cursor-pointer transition-colors"
+            >
+              এখনই ঢাকার আবহাওয়া দেখুন
+            </button>
+          </div>
+        )}
       </div>
     );
   }

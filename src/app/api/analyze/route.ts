@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getDiagnosisContext, getCropContext } from "@/lib/cropDataset";
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -66,12 +67,24 @@ export async function POST(request: NextRequest) {
 
     const seasonContext = getSeasonContext();
 
+    // Enrich prompt with crop dataset context
+    const diagnosisContext = getDiagnosisContext();
+    const cropContext = getCropContext();
+
     const systemPrompt = `তুমি একজন বাংলাদেশি কৃষি বিশেষজ্ঞ যিনি ফসলের রোগ নির্ণয়ে অভিজ্ঞ। বর্তমান মৌসুম: ${seasonContext}।
 
 তুমি কৃষকদের আপলোড করা ফসলের ছবি বিশ্লেষণ করে:
 - রোগ/কীটপতঙ্গ/পুষ্টির ঘাটতি চিহ্নিত করো
 - চিকিৎসা ও প্রতিরোধ ব্যবস্থার পরামর্শ দাও
 - সাধারণ কৃষকের বোঝার মতো সহজ বাংলায় ব্যাখ্যা করো
+
+${diagnosisContext ? `নিচে তোমার রেফারেন্সের জন্য বিশেষজ্ঞ-যাচাইকৃত রোগ নির্ণয় ডেটাবেস দেওয়া হলো — এই তথ্য ব্যবহার করে আরও সঠিক নির্ণয় করো:
+
+${diagnosisContext}` : ""}
+
+${cropContext ? `নিচে বাংলাদেশের ফসলের চাষ সংক্রান্ত তথ্য রয়েছে — চিকিৎসা ও প্রতিরোধের পরামর্শে এই তথ্য ব্যবহার করো:
+
+${cropContext}` : ""}
 
 অত্যন্ত গুরুত্বপূর্ণ: ঠিক এই JSON ফরম্যাটে উত্তর দাও, অন্য কিছু নয়:
 {
