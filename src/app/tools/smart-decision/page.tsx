@@ -27,6 +27,7 @@ import {
   CROP_WATER_NEEDS,
   BD_CLIMATE_AVERAGES,
 } from "@/lib/weatherService";
+import { useLocation } from "@/context/LocationContext";
 import type { SimulatedPrice, ProfitabilityResult } from "@/lib/cropPriceService";
 
 // ── Bengali digit helper ──────────────────────────────────────────────────────
@@ -154,14 +155,18 @@ export default function SmartDecisionPage() {
   const [compareB, setCompareB] = useState("আলু");
   const [loading, setLoading] = useState(true);
   const [weatherData, setWeatherData] = useState<Record<string, unknown> | null>(null);
+  const { location } = useLocation();
 
   const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
 
-  // Fetch weather data
+  // Fetch weather data using user's actual location
   useEffect(() => {
     async function fetchWeather() {
       try {
-        const res = await fetch("/api/weather?lat=23.81&lon=90.41&city=ঢাকা");
+        const lat = location?.lat ?? 23.81;
+        const lon = location?.lon ?? 90.41;
+        const city = location?.city ?? "ঢাকা";
+        const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(city)}`);
         if (res.ok) {
           const data = await res.json();
           setWeatherData(data);
@@ -172,7 +177,7 @@ export default function SmartDecisionPage() {
       setLoading(false);
     }
     fetchWeather();
-  }, []);
+  }, [location]);
 
   // Calculate all smart decision data
   const decisionData: SmartDecisionData = useMemo(() => {

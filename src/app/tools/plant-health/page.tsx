@@ -5,7 +5,7 @@
  *
  * Features:
  * - Disease Diagnosis tab with analyzer link & how-it-works guide
- * - Disease Library with 10 BD-specific diseases, search & filter
+ * - Disease Library with 50 BD-specific diseases (10 crops × 5 diseases), search & filter
  * - Prevention Guide with seasonal calendar & emergency contacts
  * - Expandable disease cards with color-coded severity
  * - All text in Bengali
@@ -13,33 +13,12 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-
-// ── Disease Database ──────────────────────────────────────────────────────────
-interface Disease {
-  id: number;
-  name: string;
-  en: string;
-  crop: string;
-  icon: string;
-  severity: "গুরুতর" | "মাঝারি" | "হালকা";
-  season: string;
-  symptoms: string;
-  treatment: string;
-  prevention: string;
-}
-
-const DISEASES: Disease[] = [
-  { id: 1, name: "ধানের ব্লাস্ট", en: "Rice Blast", crop: "ধান", icon: "🌾", severity: "গুরুতর", season: "সারাবছর", symptoms: "পাতায় হীরে আকৃতির বাদামি দাগ, গিটে পচন", treatment: "ট্রাইসাইক্লাজোল স্প্রে, রোগ প্রতিরোধী জাত ব্যবহার", prevention: "সুষম সার ব্যবহার, আগাছা পরিষ্কার, জল নিষ্কাশন" },
-  { id: 2, name: "টুংরো রোগ", en: "Tungro Virus", crop: "ধান", icon: "🌾", severity: "গুরুতর", season: "বোরো/আউশ", symptoms: "পাতা হলুদ-কমলা হয়ে যাওয়া, গাছ বামন হওয়া", treatment: "সবুজ পাতার ফাঁদ, জাব পোকা নিয়ন্ত্রণ", prevention: "প্রতিরোধী জাত, চারা রোপণের সঠিক সময়" },
-  { id: 3, name: "আলুর লেট ব্লাইট", en: "Late Blight", crop: "আলু", icon: "🥔", severity: "গুরুতর", season: "রবি", symptoms: "পাতায় জলজ দাগ, দ্রুত ছড়ায়, কান্ড পচে যায়", treatment: "ম্যানকোজেব/মেটাল্যাক্সিল স্প্রে", prevention: "প্রতিরোধী জাত, সঠিক সময়ে রোপণ" },
-  { id: 4, name: "পেঁয়াজের পার্পল ব্লচ", en: "Purple Blotch", crop: "পেঁয়াজ", icon: "🧅", severity: "মাঝারি", season: "রবি", symptoms: "পাতায় বেগুনি দাগ, কেন্দ্রে হলুদ", treatment: "ম্যানকোজেব + ক্লোরোথ্যালোনিল স্প্রে", prevention: "ফসল আবর্তন, সঠিক দূরত্বে রোপণ" },
-  { id: 5, name: "টমেটোর পাতামোড়া", en: "Leaf Curl Virus", crop: "টমেটো", icon: "🍅", severity: "গুরুতর", season: "সারাবছর", symptoms: "পাতা উপরের দিকে মুড়ে যাওয়া, হলুদ হওয়া", treatment: "সাদা মাছি নিয়ন্ত্রণ, ইমিডাক্লোপ্রিড স্প্রে", prevention: "প্রতিরোধী জাত, সাদা মাছি ফাঁদ" },
-  { id: 6, name: "সরিষার অলটারনেরিয়া দাগ", en: "Alternaria Blight", crop: "সরিষা", icon: "🟡", severity: "মাঝারি", season: "রবি", symptoms: "পাতায় গোল বাদামি দাগ, ক্রমশ বড় হয়", treatment: "ম্যানকোজেব স্প্রে ১৫ দিন অন্তর", prevention: "বীজ শোধন, পরিষ্কার চাষ" },
-  { id: 7, name: "পাটের মারমোরিক রোগ", en: "Mosaic Disease", crop: "পাট", icon: "🪢", severity: "মাঝারি", season: "খরিফ", symptoms: "পাতায় সবুজ-হলুদ মোজাইক প্যাটার্ন", treatment: "আক্রান্ত গাছ তুলে ফেলা, জাব পোকা নিয়ন্ত্রণ", prevention: "প্রতিরোধী জাত, জাব পোকা দমন" },
-  { id: 8, name: "গমের পাউডারি মিলডিউ", en: "Powdery Mildew", crop: "গম", icon: "🌾", severity: "হালকা", season: "রবি", symptoms: "পাতায় সাদা পাউডারের মত আবরণ", treatment: "প্রোপিকোনাজোল স্প্রে", prevention: "প্রতিরোধী জাত, সঠিক সার ব্যবস্থা" },
-  { id: 9, name: "বেগুনের ফুট রট", en: "Fruit Rot", crop: "বেগুন", icon: "🍆", severity: "মাঝারি", season: "সারাবছর", symptoms: "ফলে পানিসদৃশ দাগ, দ্রুত পচে যাওয়া", treatment: "কপার অক্সিক্লোরাইড স্প্রে", prevention: "ফসল আবর্তন, জল নিষ্কাশন" },
-  { id: 10, name: "মরিচের অ্যানথ্রাকনোজ", en: "Anthracnose", crop: "মরিচ", icon: "🌶️", severity: "মাঝারি", season: "সারাবছর", symptoms: "ফলে গোল কালো দাগ, শুকিয়ে যাওয়া", treatment: "ক্লোরোথ্যালোনিল স্প্রে", prevention: "বীজ শোধন, আক্রান্ত ফল তুলে ফেলা" },
-];
+import {
+  CROP_DISEASES,
+  getAllDiseases,
+  getCropNames,
+  type CropDisease,
+} from "@/lib/cropDiseases";
 
 // ── Severity colors ───────────────────────────────────────────────────────────
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -48,18 +27,62 @@ const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string
   "হালকা": { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
 };
 
+// ── Cause type icons and Bengali labels ────────────────────────────────────────
+const CAUSE_INFO: Record<string, { icon: string; label: string }> = {
+  fungal: { icon: "🍄", label: "ছত্রাক" },
+  bacterial: { icon: "🦠", label: "ব্যাকটেরিয়া" },
+  viral: { icon: "🧬", label: "ভাইরাস" },
+  insect: { icon: "🐛", label: "পোকামাকড়" },
+  nematode: { icon: "🪱", label: "নিমাটোড" },
+  deficiency: { icon: "⚗️", label: "পুষ্টি ঘাটতি" },
+};
+
+// ── Crop icons ────────────────────────────────────────────────────────────────
+const CROP_ICONS: Record<string, string> = {
+  "ধান": "🌾", "পাট": "🪢", "আলু": "🥔", "টমেটো": "🍅",
+  "বেগুন": "🍆", "সরিষা": "🟡", "কলা": "🍌", "আম": "🥭",
+  "গম": "🌾", "ভুট্টা": "🌽",
+};
+
+// ── Build flat disease list for the library ──────────────────────────────────
+interface FlatDisease extends CropDisease {
+  id: number;
+  crop: string;
+  cropEn: string;
+  icon: string;
+  severityBn: string;
+}
+
+function buildFlatDiseases(): FlatDisease[] {
+  const all = getAllDiseases();
+  let id = 1;
+  return all.map((d) => ({
+    ...d,
+    id: id++,
+    crop: d.crop,
+    cropEn: d.cropEn,
+    icon: CROP_ICONS[d.crop] || "🌱",
+    severityBn: d.severity === "severe" ? "গুরুতর" : d.severity === "moderate" ? "মাঝারি" : "হালকা",
+  }));
+}
+
+const FLAT_DISEASES = buildFlatDiseases();
+
 // ── Crop filter options ───────────────────────────────────────────────────────
-const ALL_CROPS = ["সব", "ধান", "আলু", "পেঁয়াজ", "টমেটো", "সরিষা", "পাট", "গম", "বেগুন", "মরিচ"];
+const ALL_CROPS = ["সব", ...getCropNames()];
+const CAUSE_FILTERS = ["সব", "ছত্রাক", "ব্যাকটেরিয়া", "ভাইরাস", "পোকামাকড়"];
 const SEVERITY_FILTERS = ["সব", "গুরুতর", "মাঝারি", "হালকা"];
 
 // ── Common diseases quick list ────────────────────────────────────────────────
 const COMMON_DISEASES = [
   { name: "ধানের ব্লাস্ট", icon: "🌾", crop: "ধান" },
   { name: "আলুর লেট ব্লাইট", icon: "🥔", crop: "আলু" },
-  { name: "পেঁয়াজের পার্পল ব্লচ", icon: "🧅", crop: "পেঁয়াজ" },
   { name: "টমেটোর পাতামোড়া", icon: "🍅", crop: "টমেটো" },
-  { name: "মরিচের অ্যানথ্রাকনোজ", icon: "🌶️", crop: "মরিচ" },
-  { name: "পাটের মারমোরিক রোগ", icon: "🪢", crop: "পাট" },
+  { name: "সরিষার অলটারনেরিয়া ব্লাইট", icon: "🟡", crop: "সরিষা" },
+  { name: "বেগুনের ডগা ও ফল ছিদ্রকারী", icon: "🍆", crop: "বেগুন" },
+  { name: "কলার পানামা উইল্ট", icon: "🍌", crop: "কলা" },
+  { name: "গমের পাতায় মরচে রোগ", icon: "🌾", crop: "গম" },
+  { name: "আমের অ্যানথ্রাকনোজ", icon: "🥭", crop: "আম" },
 ];
 
 // ── Seasonal prevention calendar ──────────────────────────────────────────────
@@ -69,7 +92,7 @@ const SEASONAL_CALENDAR = [
     icon: "❄️",
     color: "bg-blue-50 border-blue-200",
     titleColor: "text-blue-900",
-    diseases: ["আলুর লেট ব্লাইট", "পেঁয়াজের পার্পল ব্লচ", "সরিষার অলটারনেরিয়া দাগ", "গমের পাউডারি মিলডিউ"],
+    diseases: ["আলুর লেট ব্লাইট", "সরিষার অলটারনেরিয়া ব্লাইট", "গমের পাতায় মরচে রোগ", "টমেটোর লেট ব্লাইট"],
     actions: ["বীজ শোধন করুন", "সঠিক সময়ে রোপণ করুন", "ছত্রাকনাশক স্প্রে নিয়মিত করুন", "জল নিষ্কাশন নিশ্চিত করুন"],
   },
   {
@@ -77,7 +100,7 @@ const SEASONAL_CALENDAR = [
     icon: "🌧️",
     color: "bg-green-50 border-green-200",
     titleColor: "text-green-900",
-    diseases: ["পাটের মারমোরিক রোগ", "বেগুনের ফুট রট"],
+    diseases: ["পাটের মোজাইক রোগ", "বেগুনের ফুট রট", "ভুট্টার মেডিস লিফ ব্লাইট", "আমের অ্যানথ্রাকনোজ"],
     actions: ["জাব পোকা নিয়ন্ত্রণ করুন", "আক্রান্ত গাছ তুলে ফেলুন", "ফসল আবর্তন করুন", "সেচ ব্যবস্থাপনা করুন"],
   },
   {
@@ -85,7 +108,7 @@ const SEASONAL_CALENDAR = [
     icon: "🌊",
     color: "bg-teal-50 border-teal-200",
     titleColor: "text-teal-900",
-    diseases: ["ধানের ব্লাস্ট", "টুংরো রোগ", "মরিচের অ্যানথ্রাকনোজ"],
+    diseases: ["ধানের ব্লাস্ট", "টুংরো রোগ", "শিথ ব্লাইট", "ভুট্টার স্টক রট"],
     actions: ["প্রতিরোধী জাত ব্যবহার করুন", "সবুজ পাতার ফাঁদ বসান", "সুষম সার প্রয়োগ করুন", "আগাছা পরিষ্কার রাখুন"],
   },
   {
@@ -93,7 +116,7 @@ const SEASONAL_CALENDAR = [
     icon: "🔄",
     color: "bg-amber-50 border-amber-200",
     titleColor: "text-amber-900",
-    diseases: ["টমেটোর পাতামোড়া", "বেগুনের ফুট রট", "মরিচের অ্যানথ্রাকনোজ", "ধানের ব্লাস্ট"],
+    diseases: ["টমেটোর পাতামোড়া", "বেগুনের ডগা ও ফল ছিদ্রকারী", "কলার পানামা উইল্ট", "কলার সিগাটোকা"],
     actions: ["নিয়মিত পরিদর্শন করুন", "সাদা মাছি ফাঁদ ব্যবহার করুন", "স্বাস্থ্যকর চারা ব্যবহার করুন", "জমি পরিষ্কার রাখুন"],
   },
 ];
@@ -107,21 +130,36 @@ export default function PlantHealthPage() {
   const [expandedDisease, setExpandedDisease] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [cropFilter, setCropFilter] = useState("সব");
+  const [causeFilter, setCauseFilter] = useState("সব");
   const [severityFilter, setSeverityFilter] = useState("সব");
 
   // Filter diseases
   const filtered = useMemo(() => {
-    return DISEASES.filter((d) => {
+    return FLAT_DISEASES.filter((d) => {
       const matchCrop = cropFilter === "সব" || d.crop === cropFilter;
-      const matchSeverity = severityFilter === "সব" || d.severity === severityFilter;
+      const matchSeverity = severityFilter === "সব" || d.severityBn === severityFilter;
+      const matchCause = causeFilter === "সব" ||
+        (causeFilter === "ছত্রাক" && d.cause === "fungal") ||
+        (causeFilter === "ব্যাকটেরিয়া" && d.cause === "bacterial") ||
+        (causeFilter === "ভাইরাস" && d.cause === "viral") ||
+        (causeFilter === "পোকামাকড়" && d.cause === "insect");
       const matchSearch =
         search === "" ||
+        d.nameBn.toLowerCase().includes(search.toLowerCase()) ||
         d.name.toLowerCase().includes(search.toLowerCase()) ||
-        d.en.toLowerCase().includes(search.toLowerCase()) ||
-        d.crop.includes(search);
-      return matchCrop && matchSeverity && matchSearch;
+        d.crop.includes(search) ||
+        d.pathogen.toLowerCase().includes(search.toLowerCase());
+      return matchCrop && matchSeverity && matchCause && matchSearch;
     });
-  }, [cropFilter, severityFilter, search]);
+  }, [cropFilter, severityFilter, causeFilter, search]);
+
+  // Stats
+  const diseaseStats = useMemo(() => ({
+    total: FLAT_DISEASES.length,
+    severe: FLAT_DISEASES.filter((d) => d.severity === "severe").length,
+    fungal: FLAT_DISEASES.filter((d) => d.cause === "fungal").length,
+    crops: Object.keys(CROP_DISEASES).length,
+  }), []);
 
   return (
     <div className="bg-white min-h-screen">
@@ -138,7 +176,9 @@ export default function PlantHealthPage() {
           </Link>
         </div>
         <h1 className="text-[22px] font-bold text-white mb-1">🌿 উদ্ভিদ স্বাস্থ্য বিশেষজ্ঞ</h1>
-        <p className="text-xs text-white/70">রোগ নির্ণয়, রোগ ভাণ্ডার ও প্রতিরোধ গাইড — বাংলাদেশের ফসলের জন্য</p>
+        <p className="text-xs text-white/70">
+          {diseaseStats.crops} টি ফসলের {diseaseStats.total} টি রোগের ডাটাবেস — রোগ নির্ণয়, চিকিৎসা ও প্রতিরোধ
+        </p>
       </div>
 
       <div className="px-4 pt-5 pb-24">
@@ -146,7 +186,7 @@ export default function PlantHealthPage() {
         <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-none bg-gray-100 rounded-xl p-1">
           {[
             { key: "diagnosis" as TabKey, label: "🔬 রোগ নির্ণয়" },
-            { key: "library" as TabKey, label: "📚 রোগ ভাণ্ডার" },
+            { key: "library" as TabKey, label: `📚 রোগ ভাণ্ডার (${diseaseStats.total})` },
             { key: "prevention" as TabKey, label: "🛡️ প্রতিরোধ গাইড" },
           ].map((tab) => (
             <button
@@ -185,14 +225,14 @@ export default function PlantHealthPage() {
               <span className="text-[14px] font-semibold text-amber-600 group-hover:translate-x-1 transition-transform">→</span>
             </Link>
 
-            {/* How it works — 4 step guide */}
+            {/* How it works */}
             <div className="bg-white border border-gray-200 rounded-2xl p-4">
               <div className="text-[13px] font-bold text-gray-900 mb-3">কীভাবে কাজ করে?</div>
               <div className="space-y-3">
                 {[
                   { step: "১", icon: "📷", title: "ছবি তুলুন", desc: "ফসলের আক্রান্ত পাতা, কান্ড বা ফলের স্পষ্ট ছবি তুলুন" },
-                  { step: "২", icon: "🤖", title: "AI বিশ্লেষণ", desc: "আমাদের AI মডেল ছবি বিশ্লেষণ করে রোগ শনাক্ত করবে" },
-                  { step: "৩", icon: "💊", title: "চিকিৎসা পরামর্শ", desc: "রোগের জন্য নির্দিষ্ট চিকিৎসা ও ওষুধের তথ্য পান" },
+                  { step: "২", icon: "🤖", title: "AI বিশ্লেষণ (CABI পদ্ধতি)", desc: "CABI Plantwise পদ্ধতিতে বর্জন বিশ্লেষণ করে রোগ শনাক্ত করবে" },
+                  { step: "৩", icon: "💊", title: "চিকিৎসা পরামর্শ", desc: "IPM ভিত্তিক চিকিৎসা ও ওষুধের তথ্য পান (FRAC/IRAC গ্রুপসহ)" },
                   { step: "৪", icon: "🛡️", title: "প্রতিরোধ ব্যবস্থা", desc: "ভবিষ্যতে রোগ প্রতিরোধে পদক্ষেপ জানুন" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
@@ -209,6 +249,22 @@ export default function PlantHealthPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Stats overview */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: "ফসল", value: diseaseStats.crops, icon: "🌾" },
+                { label: "রোগ", value: diseaseStats.total, icon: "🦠" },
+                { label: "গুরুতর", value: diseaseStats.severe, icon: "🔴" },
+                { label: "ছত্রাক", value: diseaseStats.fungal, icon: "🍄" },
+              ].map((s, i) => (
+                <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-center">
+                  <div className="text-lg mb-0.5">{s.icon}</div>
+                  <div className="text-[16px] font-bold text-gray-900">{s.value}</div>
+                  <div className="text-[9px] text-gray-500">{s.label}</div>
+                </div>
+              ))}
             </div>
 
             {/* Common diseases quick-list */}
@@ -234,7 +290,7 @@ export default function PlantHealthPage() {
               </div>
             </div>
 
-            {/* Quick tip */}
+            {/* Tip */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
               <div className="flex items-start gap-2">
                 <span className="text-base">💡</span>
@@ -257,7 +313,7 @@ export default function PlantHealthPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 রোগের নাম বা ফসল দিয়ে খুঁজুন..."
+                placeholder="🔍 রোগের নাম, ফসল বা জীবাণু দিয়ে খুঁজুন..."
                 className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30"
               />
             </div>
@@ -276,34 +332,54 @@ export default function PlantHealthPage() {
                         : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
                     }`}
                   >
-                    {c === "সব" ? "📊" : ""} {c}
+                    {c === "সব" ? "📊" : CROP_ICONS[c] || ""} {c}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Severity filter */}
-            <div>
-              <div className="text-[10px] font-bold text-gray-500 mb-1.5">মাত্রা অনুযায়ী</div>
-              <div className="flex gap-1.5">
-                {SEVERITY_FILTERS.map((s) => {
-                  const sColor = SEVERITY_COLORS[s];
-                  return (
+            {/* Cause & Severity filters */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="text-[10px] font-bold text-gray-500 mb-1.5">কারণ অনুযায়ী</div>
+                <div className="flex gap-1 flex-wrap">
+                  {CAUSE_FILTERS.map((c) => (
                     <button
-                      key={s}
-                      onClick={() => setSeverityFilter(s)}
-                      className={`whitespace-nowrap text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-                        severityFilter === s
-                          ? sColor
-                            ? `${sColor.bg} ${sColor.text} ${sColor.border}`
-                            : "bg-amber-600 text-white border-amber-600"
+                      key={c}
+                      onClick={() => setCauseFilter(c)}
+                      className={`whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                        causeFilter === c
+                          ? "bg-amber-600 text-white border-amber-600"
                           : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
                       }`}
                     >
-                      {s === "সব" ? "📊" : s === "গুরুতর" ? "🔴" : s === "মাঝারি" ? "🟡" : "🟢"} {s}
+                      {c}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-gray-500 mb-1.5">মাত্রা</div>
+                <div className="flex gap-1">
+                  {SEVERITY_FILTERS.map((s) => {
+                    const sColor = SEVERITY_COLORS[s];
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => setSeverityFilter(s)}
+                        className={`whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                          severityFilter === s
+                            ? sColor
+                              ? `${sColor.bg} ${sColor.text} ${sColor.border}`
+                              : "bg-amber-600 text-white border-amber-600"
+                            : "bg-white text-gray-600 border-gray-200"
+                        }`}
+                      >
+                        {s === "সব" ? "📊" : s === "গুরুতর" ? "🔴" : s === "মাঝারি" ? "🟡" : "🟢"} {s}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -311,10 +387,11 @@ export default function PlantHealthPage() {
             <div className="text-[10px] text-gray-400">{filtered.length} টি রোগ পাওয়া গেছে</div>
 
             {/* Disease cards */}
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 max-h-[70vh] overflow-y-auto">
               {filtered.map((disease) => {
                 const isExpanded = expandedDisease === disease.id;
-                const severityStyle = SEVERITY_COLORS[disease.severity];
+                const severityStyle = SEVERITY_COLORS[disease.severityBn] || SEVERITY_COLORS["মাঝারি"];
+                const causeInfo = CAUSE_INFO[disease.cause] || { icon: "❓", label: disease.cause };
                 return (
                   <div
                     key={disease.id}
@@ -331,19 +408,24 @@ export default function PlantHealthPage() {
                     >
                       <div className="text-2xl">{disease.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-gray-900">{disease.name}</div>
-                        <div className="text-[10px] text-gray-500">{disease.en}</div>
+                        <div className="text-[13px] font-bold text-gray-900">{disease.nameBn}</div>
+                        <div className="text-[10px] text-gray-500">{disease.name} • {disease.pathogen}</div>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
                           <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
                             🌱 {disease.crop}
                           </span>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${severityStyle.bg} ${severityStyle.text}`}>
                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${severityStyle.dot} mr-1`} />
-                            {disease.severity}
+                            {disease.severityBn}
                           </span>
-                          <span className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                            📅 {disease.season}
+                          <span className="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                            {causeInfo.icon} {causeInfo.label}
                           </span>
+                          {disease.season.length > 0 && (
+                            <span className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              📅 {disease.season.join(", ")}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <span className={`text-[11px] font-semibold transition-transform ${isExpanded ? "text-amber-600 rotate-90" : "text-gray-400"}`}>
@@ -354,22 +436,35 @@ export default function PlantHealthPage() {
                     {/* Expanded view */}
                     {isExpanded && (
                       <div className="px-4 pb-4 space-y-3">
-                        {/* Brief symptoms */}
+                        {/* Symptoms */}
                         <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
                           <div className="text-[11px] font-bold text-red-900 mb-1">🩺 লক্ষণসমূহ</div>
-                          <div className="text-[11px] text-red-800 leading-relaxed">{disease.symptoms}</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {disease.symptoms.map((sym, i) => (
+                              <span key={i} className="text-[10px] bg-white text-red-800 px-2 py-0.5 rounded-full border border-red-200">
+                                {sym}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Conditions */}
+                        <div className="bg-sky-50 border border-sky-200 rounded-lg p-2.5">
+                          <div className="text-[11px] font-bold text-sky-900 mb-1">🌡️ অনুকূল পরিবেশ</div>
+                          <div className="text-[11px] text-sky-800 leading-relaxed">{disease.conditions}</div>
                         </div>
 
                         {/* Treatment */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
-                          <div className="text-[11px] font-bold text-blue-900 mb-1">💊 চিকিৎসা</div>
-                          <div className="text-[11px] text-blue-800 leading-relaxed">{disease.treatment}</div>
-                        </div>
-
-                        {/* Prevention */}
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-2.5">
-                          <div className="text-[11px] font-bold text-green-900 mb-1">🛡️ প্রতিরোধ</div>
-                          <div className="text-[11px] text-green-800 leading-relaxed">{disease.prevention}</div>
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                          <div className="text-[11px] font-bold text-emerald-900 mb-1">💊 চিকিৎসা ও ব্যবস্থাপনা</div>
+                          <div className="space-y-1">
+                            {disease.recommendations.map((rec, i) => (
+                              <div key={i} className="flex items-start gap-1.5">
+                                <span className="text-[10px] text-emerald-600 mt-0.5 flex-shrink-0">✓</span>
+                                <span className="text-[11px] text-emerald-800 leading-relaxed">{rec}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
 
                         {/* Action links */}
@@ -476,7 +571,7 @@ export default function PlantHealthPage() {
               </div>
             </div>
 
-            {/* When to consult an expert */}
+            {/* When to consult expert */}
             <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
               <div className="text-[13px] font-bold text-amber-900 mb-3">👨‍⚕️ কখন বিশেষজ্ঞের পরামর্শ নেবেন?</div>
               <div className="space-y-2">

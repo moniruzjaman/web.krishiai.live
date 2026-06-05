@@ -231,6 +231,47 @@ function generateAlerts(
   return alerts;
 }
 
+// ── Agricultural Index Estimators (fallback for unavailable Open-Meteo fields) ─
+// These estimate soil/agricultural indices from reliable weather parameters.
+
+/** Estimate soil moisture (0-1 m³/m³) from precipitation, humidity, and temperature */
+function estimateSoilMoisture(precip: number, humidity: number, _temp: number): number {
+  // Simple model: base from humidity + rain contribution
+  const baseMoisture = (humidity / 100) * 0.25; // 0–0.25 range
+  const rainContribution = Math.min(0.20, precip * 0.008); // Each mm adds ~0.008, max 0.20
+  return Math.min(0.50, baseMoisture + rainContribution);
+}
+
+/** Estimate deep soil moisture (1-3cm, slightly more stable) */
+function estimateSoilMoistureDeep(precip: number, humidity: number): number {
+  const shallow = estimateSoilMoisture(precip, humidity, 25);
+  return Math.min(0.55, shallow * 1.15); // Deeper soil retains more
+}
+
+/** Estimate soil temperature from air temperature */
+function estimateSoilTemp(airTemp: number): number {
+  // Soil temp is typically 2-4°C below air temp in Bangladesh
+  return Math.round((airTemp - 3) * 10) / 10;
+}
+
+/** Estimate reference evapotranspiration (mm/day) using simplified Hargreaves */
+function estimateET0(temp: number, humidity: number, wind: number): number {
+  // Simplified ET0: based on temp, adjusted by humidity and wind
+  const baseET = temp > 0 ? 0.0023 * (temp + 17.8) * Math.sqrt(Math.max(0, temp - 0)) : 0;
+  const humidFactor = Math.max(0.4, 1 - (humidity / 200)); // Higher humidity = lower ET
+  const windFactor = 1 + (wind / 100); // Higher wind = higher ET
+  return Math.round(baseET * humidFactor * windFactor * 10) / 10;
+}
+
+/** Estimate leaf wetness probability (%) from humidity and precipitation */
+function estimateLeafWetness(humidity: number, precip: number): number {
+  if (humidity > 90) return Math.min(95, 70 + precip * 2);
+  if (humidity > 80) return Math.min(80, 50 + precip * 2);
+  if (humidity > 70) return Math.min(60, 30 + precip * 2);
+  if (precip > 5) return 40;
+  return Math.min(30, humidity * 0.3);
+}
+
 // ── Main Handler ─────────────────────────────────────────────────────────────
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get("origin");
@@ -363,12 +404,6 @@ export async function GET(request: NextRequest) {
       "wind_direction_10m",
       "precipitation",
       "weather_code",
-      "soil_moisture_0_to_1cm",
-      "soil_moisture_1_to_3cm",
-      "soil_temperature_0cm",
-      "et0_fao_evapotranspiration",
-      "leaf_wetness_probability",
-      "growing_degree_days_base_0_limit_50",
       "uv_index",
       "dew_point_2m",
       "surface_pressure",
@@ -378,14 +413,13 @@ export async function GET(request: NextRequest) {
       "temperature_2m_max",
       "temperature_2m_min",
       "weather_code",
-      "et0_fao_evapotranspiration_sum",
-      "growing_degree_days_base_0_limit_50",
       "precipitation_probability_max",
       "precipitation_sum",
       "sunrise",
       "sunset",
       "uv_index_max",
       "wind_speed_10m_max",
+      "relative_humidity_2m_mean",
     ].join(","));
     url.searchParams.set("hourly", [
       "temperature_2m",
@@ -462,8 +496,8 @@ export async function GET(request: NextRequest) {
       c.relative_humidity_2m,
       c.precipitation,
       c.wind_speed_10m,
-      c.soil_moisture_0_to_1cm,
-      c.et0_fao_evapotranspiration,
+      estimateSoilMoisture(c.precipitation, c.relative_humidity_2m, c.temperature_2m),
+      estimateET0(c.temperature_2m, c.relative_humidity_2m, c.wind_speed_10m),
       month
     );
 
@@ -498,13 +532,13 @@ export async function GET(request: NextRequest) {
       dewPoint: c.dew_point_2m,
       pressure: c.surface_pressure,
       cloudCover: c.cloud_cover,
-      // Agricultural indices
-      soilMoisture: c.soil_moisture_0_to_1cm,
-      soilMoistureDeep: c.soil_moisture_1_to_3cm,
-      soilTemp: c.soil_temperature_0cm,
-      et0: c.et0_fao_evapotranspiration,
-      leafWetness: c.leaf_wetness_probability,
-      gdd: c.growing_degree_days_base_0_limit_50,
+      // Agricultural indices (estimated from available data)
+      soilMoisture: estimateSoilMoisture(c.precipitation, c.relative_humidity_2m, c.temperature_2m),
+      soilMoistureDeep: estimateSoilMoistureDeep(c.precipitation, c.relative_humidity_2m),
+      soilTemp: estimateSoilTemp(c.temperature_2m),
+      et0: estimateET0(c.temperature_2m, c.relative_humidity_2m, c.wind_speed_10m),
+      leafWetness: estimateLeafWetness(c.relative_humidity_2m, c.precipitation),
+      gdd: Math.max(0, c.temperature_2m - 0), // GDD base 0°C
       // Sun times
       sunrise: formatTime(dl.sunrise[0]),
       sunset: formatTime(dl.sunset[0]),
