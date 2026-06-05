@@ -6,7 +6,7 @@ const TOOLS = [
   {
     icon: "🌿",
     title: "উদ্ভিদ স্বাস্থ্য বিশেষজ্ঞ",
-    sub: "ছবি তুলে রোগ সনাক্ত করুন",
+    sub: "CABI Plantwise পদ্ধতিতে পেশাদার রোগ নির্ণয়",
     cat: "PLANT HEALTH",
     catColor: "#ca8a04",
     bg: "linear-gradient(135deg,#fef9c3,#fef3c7)",

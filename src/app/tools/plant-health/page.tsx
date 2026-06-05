@@ -231,7 +231,7 @@ export default function PlantHealthPage() {
               <div className="space-y-3">
                 {[
                   { step: "১", icon: "📷", title: "ছবি তুলুন", desc: "ফসলের আক্রান্ত পাতা, কান্ড বা ফলের স্পষ্ট ছবি তুলুন" },
-                  { step: "২", icon: "🤖", title: "AI বিশ্লেষণ (CABI পদ্ধতি)", desc: "CABI Plantwise পদ্ধতিতে বর্জন বিশ্লেষণ করে রোগ শনাক্ত করবে" },
+                  { step: "২", icon: "🤖", title: "AI বিশ্লেষণ (CABI পদ্ধতি)", desc: "CABI Plantwise পদ্ধতিতে বর্জন গেট, রোগ ত্রিভুজ ও IPM পরামর্শ প্রদান করবে" },
                   { step: "৩", icon: "💊", title: "চিকিৎসা পরামর্শ", desc: "IPM ভিত্তিক চিকিৎসা ও ওষুধের তথ্য পান (FRAC/IRAC গ্রুপসহ)" },
                   { step: "৪", icon: "🛡️", title: "প্রতিরোধ ব্যবস্থা", desc: "ভবিষ্যতে রোগ প্রতিরোধে পদক্ষেপ জানুন" },
                 ].map((item, i) => (

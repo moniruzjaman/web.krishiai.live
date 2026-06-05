@@ -224,3 +224,62 @@ export function getAllDiseases(): Array<CropDisease & { crop: string; cropEn: st
 export function getCropNames(): string[] {
   return Object.keys(CROP_DISEASES);
 }
+
+/** Match diseases by symptoms for a given crop */
+export function matchDiseasesBySymptoms(cropInput: string, symptomTexts: string[]): Array<{
+  disease: CropDisease;
+  score: number;
+  maxScore: number;
+  matchRatio: number;
+  matchedSymptoms: string[];
+}> {
+  const key = resolveCropKey(cropInput);
+  if (!key || !CROP_DISEASES[key]) return [];
+
+  return CROP_DISEASES[key].diseases.map(disease => {
+    let score = 0;
+    const matchedSymptoms: string[] = [];
+
+    for (const text of symptomTexts) {
+      const lowerText = text.toLowerCase();
+      for (const symptom of disease.symptoms) {
+        const lowerSymptom = symptom.toLowerCase();
+        // Check if symptom keywords appear in the text or vice versa
+        const symptomWords = lowerSymptom.split(/\s+/);
+        const matchCount = symptomWords.filter(w => w.length > 2 && lowerText.includes(w)).length;
+        if (matchCount > 0) {
+          score += matchCount / symptomWords.length;
+          if (!matchedSymptoms.includes(symptom)) matchedSymptoms.push(symptom);
+        }
+      }
+    }
+
+    const maxScore = disease.symptoms.length;
+    return {
+      disease,
+      score: Math.round(score * 10) / 10,
+      maxScore,
+      matchRatio: maxScore > 0 ? Math.min(score / maxScore, 1) : 0,
+      matchedSymptoms,
+    };
+  }).sort((a, b) => b.matchRatio - a.matchRatio);
+}
+
+/** Estimate inoculum pressure based on season */
+export function estimateInoculumPressure(cropInput: string, season: string): 'high' | 'medium' | 'low' {
+  const key = resolveCropKey(cropInput);
+  if (!key || !CROP_DISEASES[key]) return 'low';
+
+  const inSeasonDiseases = CROP_DISEASES[key].diseases.filter(d => d.season.includes(season));
+  return inSeasonDiseases.length >= 3 ? 'high' : inSeasonDiseases.length >= 1 ? 'medium' : 'low';
+}
+
+/** Get variety susceptibility (simplified) */
+export function getVarietySusceptibility(cropInput: string, variety?: string): 'high' | 'medium' | 'low' {
+  // Simplified - most Bangladeshi varieties are medium susceptibility
+  if (!variety) return 'medium';
+  const v = variety.toLowerCase();
+  if (v.includes('প্রতিরোধী') || v.includes('resistant') || v.includes('ব্রি') || v.includes('বারি')) return 'low';
+  if (v.includes('সংবেদনশীল') || v.includes('susceptible')) return 'high';
+  return 'medium';
+}

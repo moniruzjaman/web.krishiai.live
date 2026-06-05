@@ -1,6 +1,9 @@
 /**
  * /api/analyze — KrishiAI Crop Disease Analysis API
  *
+ * @deprecated Use /api/diagnose instead for CABI Plantwise methodology.
+ * This route is kept for backward compatibility only.
+ *
  * Uses z-ai-web-dev-sdk VLM (Vision Language Model) to analyze
  * crop images and identify diseases, pests, and deficiencies.
  * Returns Bengali-first diagnosis with treatment recommendations.
