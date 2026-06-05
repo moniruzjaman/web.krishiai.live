@@ -134,6 +134,7 @@ export default function WeatherWidget() {
   const [showHourly, setShowHourly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const prevCoordsRef = useRef<string>("");
+  const hasDataRef = useRef(false); // tracks whether we successfully loaded data for current coords
   const [fallbackUsed, setFallbackUsed] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(true);
 
@@ -164,9 +165,10 @@ export default function WeatherWidget() {
     const city = 'city' in effectiveLocation ? effectiveLocation.city : (location?.city || location?.district || "ঢাকা");
 
     const coordsKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
-    // Skip if we already loaded for these coords
-    if (prevCoordsRef.current === coordsKey && w) return;
+    // Skip if we already loaded successfully for these exact coords
+    if (prevCoordsRef.current === coordsKey && hasDataRef.current) return;
     prevCoordsRef.current = coordsKey;
+    hasDataRef.current = false; // reset until fetch succeeds
 
     const load = async () => {
       setLoadingWeather(true);
@@ -174,15 +176,17 @@ export default function WeatherWidget() {
         const data = await loadWeather(lat, lon, city);
         setW(data);
         setErr(false);
+        hasDataRef.current = true; // mark as loaded
         setLastUpdated(new Date());
       } catch {
         setErr(true);
+        hasDataRef.current = false;
       } finally {
         setLoadingWeather(false);
       }
     };
     load();
-  }, [location, fallbackUsed, loadWeather]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location, fallbackUsed, loadWeather]);
 
   // Auto-refresh every 30 minutes
   useEffect(() => {
@@ -216,9 +220,10 @@ export default function WeatherWidget() {
     setErr(false);
     setLoadingWeather(true);
     prevCoordsRef.current = ""; // Force refetch
+    hasDataRef.current = false; // Allow re-fetch
     loadWeather(lat, lon, city)
-      .then((data) => { setW(data); setLastUpdated(new Date()); })
-      .catch(() => setErr(true))
+      .then((data) => { setW(data); hasDataRef.current = true; setLastUpdated(new Date()); })
+      .catch(() => { setErr(true); hasDataRef.current = false; })
       .finally(() => setLoadingWeather(false));
   }, [location, fallbackUsed, loadWeather]);
 
@@ -237,7 +242,7 @@ export default function WeatherWidget() {
   }
 
   // Show loading state while location is being determined or weather is being fetched
-  if (!w || (locLoading && !fallbackUsed)) {
+  if (loadingWeather || (!w && !err) || (locLoading && !fallbackUsed)) {
     const loadingMessage = locLoading && !fallbackUsed
       ? "অবস্থান নির্ধারণ হচ্ছে…"
       : "আবহাওয়া লোড হচ্ছে…";
@@ -265,6 +270,9 @@ export default function WeatherWidget() {
       </div>
     );
   }
+
+  // After error & loading checks, w must be non-null; guard for TypeScript
+  if (!w) return null;
 
   const { icon, bn: bnDesc } = wmo(w.code);
   const advisoryColors = {

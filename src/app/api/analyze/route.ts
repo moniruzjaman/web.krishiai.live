@@ -68,8 +68,14 @@ export async function POST(request: NextRequest) {
     const seasonContext = getSeasonContext();
 
     // Enrich prompt with crop dataset context
-    const diagnosisContext = getDiagnosisContext();
-    const cropContext = getCropContext();
+    let diagnosisContext = "";
+    let cropContext = "";
+    try {
+      diagnosisContext = getDiagnosisContext();
+      cropContext = getCropContext();
+    } catch (ctxErr) {
+      console.warn("[analyze] Could not load crop dataset context:", ctxErr);
+    }
 
     const systemPrompt = `তুমি একজন বাংলাদেশি কৃষি বিশেষজ্ঞ যিনি ফসলের রোগ নির্ণয়ে অভিজ্ঞ। বর্তমান মৌসুম: ${seasonContext}।
 
@@ -130,9 +136,11 @@ ${cropContext}` : ""}
 
     let completion;
     try {
-      // Use chat.completions.create with multimodal content for VLM
-      // The SDK supports vision via image_url content type in messages
-      completion = await zai.chat.completions.create({
+      // IMPORTANT: Use createVision() for multimodal/VLM calls, NOT create()
+      // The SDK routes createVision() to /chat/completions/vision endpoint
+      // which supports image_url content type with data URIs
+      completion = await zai.chat.completions.createVision({
+        model: "glm-4v-plus",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -149,8 +157,7 @@ ${cropContext}` : ""}
             ],
           },
         ],
-        temperature: 0.3,
-        max_tokens: 1500,
+        thinking: { type: "disabled" },
       });
     } catch (apiErr: unknown) {
       const errMsg = apiErr instanceof Error ? apiErr.message : String(apiErr);
@@ -167,8 +174,7 @@ ${cropContext}` : ""}
               content: "একজন কৃষক তার ফসলের ছবি আপলোড করেছেন কিন্তু ছবি বিশ্লেষণ সাময়িকভাবে উপলব্ধ নয়। বাংলাদেশের বর্তমান মৌসুমে সবচেয়ে সাধারণ ফসলের রোগগুলো কী কী? প্রতিটির চিকিৎসা ও প্রতিরোধ ব্যবস্থা বলুন।",
             },
           ],
-          temperature: 0.5,
-          max_tokens: 1500,
+          thinking: { type: "disabled" },
         });
       } catch (fallbackErr) {
         console.error("[analyze] Text-only fallback also failed:", fallbackErr);
@@ -182,7 +188,7 @@ ${cropContext}` : ""}
       }
     }
 
-    const reply = completion.choices?.[0]?.message?.content || "";
+    const reply = completion?.choices?.[0]?.message?.content || "";
 
     if (!reply) {
       return NextResponse.json(

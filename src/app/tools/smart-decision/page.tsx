@@ -583,19 +583,19 @@ export default function SmartDecisionPage() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="text-[20px] font-extrabold text-sky-700 dark:text-sky-400">
-                    {bn(weatherData?.temp ?? 28)}°C
+                    {bn(weatherData?.temp as number ?? 28)}°C
                   </div>
                   <div className="text-[9px] text-gray-500 dark:text-gray-400">তাপমাত্রা</div>
                 </div>
                 <div>
                   <div className="text-[20px] font-extrabold text-sky-700 dark:text-sky-400">
-                    {bn(weatherData?.humid ?? 70)}%
+                    {bn(weatherData?.humid as number ?? 70)}%
                   </div>
                   <div className="text-[9px] text-gray-500 dark:text-gray-400">আর্দ্রতা</div>
                 </div>
                 <div>
                   <div className="text-[20px] font-extrabold text-sky-700 dark:text-sky-400">
-                    {bn(weatherData?.rain ?? 0)}mm
+                    {bn(weatherData?.rain as number ?? 0)}mm
                   </div>
                   <div className="text-[9px] text-gray-500 dark:text-gray-400">বৃষ্টি</div>
                 </div>

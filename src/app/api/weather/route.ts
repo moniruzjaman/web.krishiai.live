@@ -27,8 +27,8 @@ function isAllowedOrigin(origin: string | null): boolean {
   return ALLOWED_ORIGINS.includes(origin);
 }
 
-function corsHeaders(origin: string | null) {
-  const accessControl = isAllowedOrigin(origin) ? origin : "*";
+function corsHeaders(origin: string | null): Record<string, string> {
+  const accessControl = isAllowedOrigin(origin) ? (origin ?? "*") : "*";
   return {
     "Access-Control-Allow-Origin": accessControl,
     "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -308,7 +308,7 @@ function getSeasonalFallback(city: string, lat: number, lon: number): Record<str
     feelTemp = baseTemp + 1; humid = 70 + Math.random() * 15; rain = Math.random() * 8; code = 2; wind = 6 + Math.random() * 10;
   }
 
-  const forecast = [];
+  const forecast: Array<{ day: string; max: number; min: number; code: number; precipProb: number; precipSum: number; windMax: number }> = [];
   for (let d = 1; d <= 5; d++) {
     const fDate = new Date(); fDate.setDate(fDate.getDate() + d);
     forecast.push({
@@ -322,7 +322,7 @@ function getSeasonalFallback(city: string, lat: number, lon: number): Record<str
     });
   }
 
-  const hourly = [];
+  const hourly: Array<{ time: string; temp: number; code: number; precipProb: number; wind: number }> = [];
   for (let h = 0; h < 24; h += 2) {
     const hTemp = h >= 6 && h <= 17 ? baseTemp + (h - 12) * 0.3 : baseTemp - 4 + Math.random() * 2;
     hourly.push({
@@ -430,10 +430,18 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("timezone", "Asia/Dhaka");
     url.searchParams.set("forecast_days", "6");
 
+    // AbortSignal.timeout fallback for Node < 17.3
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const signal = AbortSignal.timeout
+      ? AbortSignal.timeout(12000)
+      : controller.signal;
+
     const response = await fetch(url.toString(), {
       headers: { "User-Agent": "KrishiAI/3.0" },
-      signal: AbortSignal.timeout(12000),
+      signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       // Open-Meteo rate limited or down — use seasonal fallback
@@ -508,7 +516,7 @@ export async function GET(request: NextRequest) {
       const m = d.getMinutes();
       const period = h >= 12 ? "PM" : "AM";
       const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      const bn2 = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
+      const bn2 = (n: number | string) => String(n).replace(/\d/g, (d: string) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
       return `${bn2(h12)}:${bn2(m.toString().padStart(2, "0"))} ${period}`;
     };
 

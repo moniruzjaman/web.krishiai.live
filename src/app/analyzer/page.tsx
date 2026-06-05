@@ -156,7 +156,6 @@ export default function AnalyzerPage() {
         >
           {selectedImage ? (
             <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selectedImage}
                 alt="Selected crop"
