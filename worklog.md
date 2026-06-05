@@ -303,3 +303,31 @@ Stage Summary:
 - Crop Calendar page: visual 12-month × 10-crop calendar with season colors, risk alerts, expandable detail cards
 - Smart Decision page: 5-tab interface with crop recommendations, weather scoring, price trends, irrigation needs, crop comparison
 - All data ported from cabi-diagnosis reference repo
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix broken features and integrate crop datasets
+
+Work Log:
+- Analyzed uploaded crop_diagnosis_dataset.csv.xlsx (20 expert-verified rice diagnoses)
+- Analyzed uploaded crops_export.csv (923 rows, 146 unique Bengali crops)
+- Cloned cabi-diagnosis repo for reference implementations (weather, prices, calendar)
+- Generated cropDataset.ts with 146 crop entries and 473 varieties from crops_export.csv
+- Added DIAGNOSIS_DATASET with 20 rice diagnoses from the uploaded Excel file
+- Added getDiagnosisContext() and getCropContext() helper functions for AI prompt enrichment
+- Verified WeatherWidget already has Dhaka 3-second fallback mechanism
+- Confirmed weather API works (returns real Open-Meteo data with seasonal fallback)
+- Confirmed smart-decision API works (10 crops, 3 recommendations, disease pressure)
+- Confirmed crop-prices API works (15 crop prices)
+- Removed YouTube video references from home page Learning Center card
+- Verified Learn page already has "AgriWisdom Coming Soon" card instead of videos
+- Build passes: 25 routes compile successfully
+- Pushed to main (9fad2ea) and production-v2 (3724df6)
+
+Stage Summary:
+- All APIs verified working: /api/weather, /api/smart-decision, /api/crop-prices, /api/analyze
+- Weather Widget works with auto-fallback to Dhaka after 3 seconds
+- Crop Analyzer now uses uploaded dataset context for better AI diagnosis
+- YouTube videos removed from Learn page (AgriWisdom Coming Soon)
+- All tool pages exist and compile: crop-calendar, crop-library, soil, yield, irrigation, pesticide, smart-decision, satellite, plant-health
