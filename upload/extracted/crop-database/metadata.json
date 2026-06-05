@@ -1,0 +1,5 @@
+{
+  "name": "Bangladesh Crop Database",
+  "description": "A comprehensive, modular database of all crops cultivated in Bangladesh, categorized for easy exploration, powered by Gemini AI for detailed information.",
+  "requestFramePermissions": []
+}
