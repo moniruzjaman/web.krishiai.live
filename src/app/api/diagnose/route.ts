@@ -1,7 +1,7 @@
 /**
  * /api/diagnose — CABI Plantwise Diagnosis API
  *
- * Multi-provider waterfall: z-ai-vlm → Gemini → OpenRouter → Groq → z-ai-text → Offline → Emergency
+ * Multi-provider waterfall: CF Workers AI → Gemini → OpenRouter → Groq → Offline → Emergency
  * System prompt: Full CABI Plantwise Ready Reckoner + Exclusion Logic embedded
  */
 
@@ -571,60 +571,29 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     let resultText = "";
     let provider = "";
 
-    // 1. Primary: z-ai-web-dev-sdk VLM
+    // 1. Primary: Cloudflare Workers AI (Llama 3 8B)
     try {
       if (overallTimeout.aborted) throw new Error("Overall timeout");
-      const ZAI = (await import("z-ai-web-dev-sdk")).default;
-      const zai = await ZAI.create();
-      const completion = await Promise.race([
-        zai.chat.completions.createVision({
-          model: "glm-4v-plus",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
-          ],
-          thinking: { type: "disabled" },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Provider timeout")), PROVIDER_TIMEOUT_MS)
-        ),
-      ]);
-      resultText = completion?.choices?.[0]?.message?.content || "";
-      provider = "z-ai-vlm";
+      const { callCloudflareAI } = await import("@/lib/cloudflareAI");
+      const textMessages = messages.map(m => ({
+        role: m.role as "system" | "user" | "assistant",
+        content: Array.isArray(m.content)
+          ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
+          : (m.content as string),
+      }));
+      const cfResult = await callCloudflareAI(
+        [{ role: "system", content: SYSTEM_PROMPT }, ...textMessages],
+        { temperature: 0.3, maxTokens: 3000, timeout: PROVIDER_TIMEOUT_MS }
+      );
+      if (cfResult.ok && cfResult.reply) {
+        resultText = cfResult.reply;
+        provider = "Cloudflare Workers AI (Llama 3 8B)";
+      }
     } catch (e) {
-      if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] z-ai-vlm failed:", e instanceof Error ? e.message : String(e)); }
+      console.warn("[diagnose] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback 1: Cloudflare Workers AI (Llama 3 8B — text-only)
-    if (!resultText) {
-      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return NextResponse.json(
-          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, headers: corsHeaders(origin) }
-        );
-      }
-      try {
-        const { callCloudflareAI } = await import("@/lib/cloudflareAI");
-        const textMessages = messages.map(m => ({
-          role: m.role as "system" | "user" | "assistant",
-          content: Array.isArray(m.content)
-            ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
-            : (m.content as string),
-        }));
-        const cfResult = await callCloudflareAI(
-          [{ role: "system", content: SYSTEM_PROMPT }, ...textMessages],
-          { temperature: 0.3, maxTokens: 3000, timeout: PROVIDER_TIMEOUT_MS }
-        );
-        if (cfResult.ok && cfResult.reply) {
-          resultText = cfResult.reply;
-          provider = "Cloudflare Workers AI (Llama 3 8B)";
-        }
-      } catch (e) {
-        console.warn("[diagnose] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
-    // 3. Fallback 2: Gemini 2.5 Flash
+    // 2. Fallback 1: Gemini 2.5 Flash
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -641,7 +610,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 4. Fallback 3: OpenRouter Qwen-VL
+    // 3. Fallback 2: OpenRouter Qwen-VL
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -658,7 +627,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 5. Fallback 4: Groq text-only
+    // 4. Fallback 3: Groq text-only
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -675,43 +644,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 6. Fallback 5: z-ai-web-dev-sdk text-only
-    if (!resultText) {
-      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return NextResponse.json(
-          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, headers: corsHeaders(origin) }
-        );
-      }
-      try {
-        const ZAI = (await import("z-ai-web-dev-sdk")).default;
-        const zai = await ZAI.create();
-        const textMessages = messages.map(m => ({
-          role: m.role,
-          content: Array.isArray(m.content)
-            ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
-            : (m.content as string),
-        }));
-        const completion = await Promise.race([
-          zai.chat.completions.create({
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              ...textMessages,
-            ],
-            thinking: { type: "disabled" },
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Provider timeout")), PROVIDER_TIMEOUT_MS)
-          ),
-        ]);
-        resultText = completion?.choices?.[0]?.message?.content || "";
-        provider = "z-ai-text";
-      } catch (e) {
-        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] z-ai-text failed:", e instanceof Error ? e.message : String(e)); }
-      }
-    }
-
-    // 7. Fallback 6: Offline CABI engine
+    // 5. Fallback 4: Offline CABI engine
     if (!resultText) {
       try {
         const symptomObj: Record<string, string> = {};

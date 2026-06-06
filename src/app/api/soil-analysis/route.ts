@@ -1,7 +1,7 @@
 /**
  * /api/soil-analysis — AEZ Soil Analysis API
  *
- * Uses z-ai-web-dev-sdk for AI-powered soil analysis.
+ * Uses Cloudflare Workers AI for AI-powered soil analysis.
  * Supports two modes:
  *   1. GET ?aezId=28 → AEZ zone soil analysis
  *   2. POST { sand, silt, clay, organicMatter?, aezId? } → Sample analysis with USDA classification
@@ -134,23 +134,9 @@ export async function GET(request: NextRequest) {
       console.warn("[soil-analysis:GET] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback: z-ai-web-dev-sdk
+    // 2. Offline fallback: Static AEZ soil info
     if (!analysis) {
-      try {
-        const ZAI = (await import("z-ai-web-dev-sdk")).default;
-        const zai = await ZAI.create();
-        const completion = await zai.chat.completions.create({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.6,
-          max_tokens: 2000,
-        });
-        analysis = completion.choices?.[0]?.message?.content || "";
-      } catch (e) {
-        console.warn("[soil-analysis:GET] z-ai failed:", e instanceof Error ? e.message : String(e));
-      }
+      analysis = `AEZ জোন ${zone.id} "${zone.bn}" — মৃত্তিকা বিশ্লেষণ\n\nএই জোনের মাটি সাধারণত পলি থেকে পলি দোআঁশ প্রকারের। জৈব পদার্থের পরিমাণ মাঝারি। বন্যার ঝুঁকি অঞ্চলভেদে ভিন্ন।\n\nউপযুক্ত ফসল: ধান, গম, সরিষা, আলু (মৌসুম অনুযায়ী)।\nসার সুপারিশ: BARC গাইডলাইন অনুযায়ী মাটি পরীক্ষার পর সার প্রয়োগ করুন।\n\nবিস্তারিত তথ্যের জন্য নিকটস্থ SRDI অফিসে যোগাযোগ করুন।`;
     }
 
     if (!analysis) {
@@ -215,9 +201,6 @@ export async function POST(request: NextRequest) {
       ? `জৈব পদার্থ: ${omNum}%`
       : "জৈব পদার্থের তথ্য দেওয়া হয়নি।";
 
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     const systemPrompt = `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। USDA মাটি শ্রেণিবিন্যাস পদ্ধতির উপর দক্ষ। তোমার পরামর্শ SRDI, BARC, BRRI, BARI-এর মান অনুযায়ী হবে। বাংলায় উত্তর দাও। সংক্ষিপ্ত কিন্তু তথ্যপূর্ণ উত্তর দাও।`;
 
     const userPrompt = `মাটি নমুনা বিশ্লেষণ করো:
@@ -253,25 +236,10 @@ ${aezContext}
       console.warn("[soil-analysis:POST] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback: z-ai-web-dev-sdk
+    // 2. Offline fallback: USDA classification-based analysis
     if (!analysis) {
-      try {
-        const completion = await zai.chat.completions.create({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.6,
-          max_tokens: 2000,
-        });
-        analysis = completion.choices?.[0]?.message?.content || "";
-      } catch (e) {
-        console.warn("[soil-analysis:POST] z-ai failed:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
-    if (!analysis) {
-      analysis = "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
+      const zoneNote = zone ? ` AEZ জোন ${zone.id} "${zone.bn}" অঞ্চলের।` : "";
+      analysis = `মাটি নমুনা বিশ্লেষণ\n\nUSDA শ্রেণিবিন্যাস: ${usdaClass}\nগঠন: বালি ${sandNum}%, পলি ${siltNum}%, কাদা ${clayNum}%${omNum != null ? `, জৈব পদার্থ ${omNum}%` : ""}${zoneNote}\n\nএই মাটির জল ধারণ ক্ষমতা ও বায়ু চলাচল USDA শ্রেণিবিন্যাস অনুযায়ী নির্ধারিত।\nউপযুক্ত ফসল ও সারের মাত্রার জন্য BARC গাইডলাইন ও নিকটস্থ SRDI অফিসে যোগাযোগ করুন।`;
     }
 
     return NextResponse.json({

@@ -6,7 +6,7 @@
  * 2. Google News RSS with `site:gov.bd` queries → government-sourced articles
  * 3. Curated seasonal advisories from DAE/BRRI/BARI/BADC as fallback
  *
- * Also generates AI daily bulletin using z-ai-web-dev-sdk.
+ * Also generates AI daily bulletin using Cloudflare Workers AI.
  * Falls back to seasonal calendar entries if all sources fail.
  */
 
@@ -1028,7 +1028,7 @@ function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[
   return [...base, ...(monthlyExtras[m] || [])];
 }
 
-// ── AI Daily Bulletin using Cloudflare Workers AI + z-ai fallback ──────────────
+// ── AI Daily Bulletin using Cloudflare Workers AI ──────────────
 async function generateDailyBulletin(
   ctx: ReturnType<typeof bdAgriContext>,
   newsHeadlines: NewsItem[]
@@ -1071,18 +1071,15 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
       console.warn("[news:bulletin] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback: z-ai-web-dev-sdk
+    // 2. Fallback: static seasonal bulletin
     if (!text) {
-      try {
-        const ZAI = (await import("z-ai-web-dev-sdk")).default;
-        const zai = await ZAI.create();
-        const result = await zai.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
-        });
-        text = result.choices?.[0]?.message?.content || null;
-      } catch (e) {
-        console.warn("[news:bulletin] z-ai failed:", e instanceof Error ? e.message : String(e));
-      }
+      text = `শিরোনাম: ${ctx.season} মৌসুমের কৃষি বুলেটিন
+মূল তথ্য: বর্তমানে ${ctx.activeCrops} চাষের সময়। ${ctx.urgentTasks}
+সতর্কতা: ${ctx.riskAlerts}
+করণীয়:
+১. ${ctx.urgentTasks.split("·")[0]?.trim() || "সময়মতো ফসলের পরিচর্যা করুন"}
+২. আবহাওয়ার পূর্বাভাস নিয়মিত দেখুন
+৩. সরকারি ভর্তুকি ও সেবার তথ্য স্থানীয় কৃষি অফিস থেকে নিন`;
     }
 
     if (!text) return null;

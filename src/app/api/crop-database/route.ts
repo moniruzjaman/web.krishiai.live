@@ -63,6 +63,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Build the prompt for AI
+    const prompt = `List 8 important ${category} crops grown in Bangladesh as a JSON array.
+Each object must have: name (English), nameBn (Bengali), season (Bengali: রবি/খরিফ-১/খরিফ-২), waterNeed (Low/Medium/High), soilType (Bengali), growingDays (number), descriptionBn (1-2 sentence Bengali description).
+Example: [{"name":"Rice","nameBn":"ধান","season":"খরিফ-২/আমন","waterNeed":"High","soilType":"দোআঁশ মাটি","growingDays":140,"descriptionBn":"বাংলাদেশের প্রধান খাদ্য ফসল"}]
+Return ONLY the JSON array, no other text.`;
+
     let crops;
 
     // 1. Primary: Cloudflare Workers AI
@@ -88,32 +94,42 @@ export async function GET(request: NextRequest) {
       console.warn("[crop-database] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback: z-ai-web-dev-sdk
+    // 2. Offline fallback: Static crop database
     if (!crops || crops.length === 0) {
-      try {
-        const ZAI = (await import("z-ai-web-dev-sdk")).default;
-        const zai = await ZAI.create();
-
-        const completion = await zai.chat.completions.create({
-          messages: [
-            {
-              role: "system",
-              content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations."
-            },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 3000,
-        });
-
-        const reply = completion.choices?.[0]?.message?.content || "";
-        const jsonMatch = reply.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          crops = JSON.parse(jsonMatch[0]);
-        }
-      } catch (e) {
-        console.warn("[crop-database] z-ai failed:", e instanceof Error ? e.message : String(e));
-      }
+      const STATIC_CROPS: Record<string, Array<Record<string, string | number>>> = {
+        Grains: [
+          { name: "Rice", nameBn: "ধান", season: "খরিফ-২/আমন", waterNeed: "High", soilType: "দোআঁশ মাটি", growingDays: 140, descriptionBn: "বাংলাদেশের প্রধান খাদ্য ফসল" },
+          { name: "Wheat", nameBn: "গম", season: "রবি", waterNeed: "Medium", soilType: "দোআঁশ মাটি", growingDays: 110, descriptionBn: "শীতকালীন শস্য, পুষ্টিকর" },
+          { name: "Maize", nameBn: "ভুট্টা", season: "খরিফ-১/রবি", waterNeed: "Medium", soilType: "বেলে দোআঁশ", growingDays: 100, descriptionBn: "পশুখাদ্য ও শিল্পে ব্যবহৃত" },
+        ],
+        Vegetables: [
+          { name: "Potato", nameBn: "আলু", season: "রবি", waterNeed: "Medium", soilType: "বেলে দোআঁশ", growingDays: 90, descriptionBn: "প্রধান শীতকালীন সবজি" },
+          { name: "Eggplant", nameBn: "বেগুন", season: "খরিফ-১/রবি", waterNeed: "Medium", soilType: "দোআঁশ মাটি", growingDays: 80, descriptionBn: "সারাবছর চাষযোগ্য সবজি" },
+          { name: "Tomato", nameBn: "টমেটো", season: "রবি", waterNeed: "Medium", soilType: "দোআঁশ মাটি", growingDays: 75, descriptionBn: "শীতকালীন জনপ্রিয় সবজি" },
+        ],
+        Oils: [
+          { name: "Mustard", nameBn: "সরিষা", season: "রবি", waterNeed: "Low", soilType: "দোআঁশ মাটি", growingDays: 85, descriptionBn: "প্রধান তৈলবীজ ফসল" },
+          { name: "Sesame", nameBn: "তিল", season: "খরিফ-১", waterNeed: "Low", soilType: "বেলে দোআঁশ", growingDays: 75, descriptionBn: "গ্রীষ্মকালীন তৈলবীজ" },
+        ],
+        Spices: [
+          { name: "Chili", nameBn: "মরিচ", season: "খরিফ-১/রবি", waterNeed: "Medium", soilType: "দোআঁশ মাটি", growingDays: 90, descriptionBn: "মসলা হিসেবে অপরিহার্য" },
+          { name: "Turmeric", nameBn: "হলুদ", season: "খরিফ-২", waterNeed: "Medium", soilType: "পলি দোআঁশ", growingDays: 240, descriptionBn: "মসলা ও ঔষধি ফসল" },
+          { name: "Ginger", nameBn: "আদা", season: "খরিফ-২", waterNeed: "Medium", soilType: "পলি দোআঁশ", growingDays: 210, descriptionBn: "মসলা ও ঔষধি ফসল" },
+        ],
+        Pulses: [
+          { name: "Lentil", nameBn: "মসুর ডাল", season: "রবি", waterNeed: "Low", soilType: "দোআঁশ মাটি", growingDays: 100, descriptionBn: "প্রধান ডাল ফসল" },
+          { name: "Chickpea", nameBn: "ছোলা", season: "রবি", waterNeed: "Low", soilType: "বেলে দোআঁশ", growingDays: 110, descriptionBn: "শীতকালীন ডাল ফসল" },
+        ],
+        Fruits: [
+          { name: "Mango", nameBn: "আম", season: "খরিফ-১", waterNeed: "Low", soilType: "বেলে দোআঁশ", growingDays: 120, descriptionBn: "জাতীয় ফল" },
+          { name: "Jackfruit", nameBn: "কাঁঠাল", season: "খরিফ-১", waterNeed: "Low", soilType: "দোআঁশ মাটি", growingDays: 180, descriptionBn: "জাতীয় ফল" },
+        ],
+        "High Value Crops": [
+          { name: "Cotton", nameBn: "তুলা", season: "খরিফ-১", waterNeed: "Medium", soilType: "বেলে দোআঁশ", growingDays: 150, descriptionBn: "বাণিজ্যিক ফসল" },
+          { name: "Tea", nameBn: "চা", season: "সারাবছর", waterNeed: "High", soilType: "পলিত দোআঁশ", growingDays: 365, descriptionBn: "পার্বত্য চা বাগান" },
+        ],
+      };
+      crops = STATIC_CROPS[category] || [];
     }
 
     if (!crops) {

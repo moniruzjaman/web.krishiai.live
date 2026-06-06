@@ -2,7 +2,7 @@
  * ChatPage.tsx — AI-powered Agricultural Chat with persistence
  *
  * Features:
- * - Real AI chat via /api/chat (z-ai-web-dev-sdk)
+ * - Real AI chat via /api/chat (Cloudflare Workers AI)
  * - Message persistence in localStorage
  * - Clear chat button
  * - Bengali-first responses

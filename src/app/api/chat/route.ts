@@ -1,8 +1,9 @@
 /**
  * /api/chat — KrishiAI Chat API
  *
- * Uses z-ai-web-dev-sdk for AI-powered agricultural chat responses.
+ * Uses Cloudflare Workers AI (Llama 3 8B) for AI-powered agricultural chat.
  * Provides Bengali-first responses with agricultural context.
+ * Offline fallback when AI is unavailable.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -139,25 +140,11 @@ ${seasonContext}`;
       console.warn("[chat] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Fallback: z-ai-web-dev-sdk
+    // 2. Offline fallback: Season-aware generic response
     if (!reply) {
-      try {
-        const ZAI = (await import("z-ai-web-dev-sdk")).default;
-        const zai = await ZAI.create();
-        const completion = await zai.chat.completions.create({
-          messages: chatMessages,
-          temperature: 0.7,
-          max_tokens: 1000,
-        });
-        reply = completion.choices?.[0]?.message?.content || "";
-        model = "z-ai";
-      } catch (e) {
-        console.warn("[chat] z-ai failed:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
-    if (!reply) {
-      reply = "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন।";
+      const m = new Date().getMonth() + 1;
+      const seasonName = m >= 11 || m <= 2 ? "রবি" : m <= 5 ? "বোরো/প্রাক-খরিফ" : m <= 8 ? "খরিফ/আমন" : "আমন/রবি প্রস্তুতি";
+      reply = `দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। বর্তমানে ${seasonName} মৌসুম চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।`;
     }
 
     return NextResponse.json({
