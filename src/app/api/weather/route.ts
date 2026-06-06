@@ -282,8 +282,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 // ── In-memory cache to avoid rate-limiting ───────────────────────────────────
-let cachedWeather: Record<string, unknown> | null = null;
-let cachedWeatherAt = 0;
+const weatherCache = new Map<string, { data: Record<string, unknown>; timestamp: number }>();
 const WEATHER_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 // ── Seasonal fallback data ──────────────────────────────────────────────────
@@ -385,9 +384,11 @@ export async function GET(request: NextRequest) {
 
   // Return cached data if available and fresh
   const now = Date.now();
-  if (cachedWeather && now - cachedWeatherAt < WEATHER_CACHE_TTL) {
+  const cacheKey = `${lat},${lon}`;
+  const cached = weatherCache.get(cacheKey);
+  if (cached && now - cached.timestamp < WEATHER_CACHE_TTL) {
     return NextResponse.json(
-      { ...cachedWeather, city, lat, lon },
+      { ...cached.data, city, lat, lon },
       { headers: { "Cache-Control": "public, s-maxage=300", ...corsHeaders(origin) } }
     );
   }
@@ -446,8 +447,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       // Open-Meteo rate limited or down — use seasonal fallback
       const fallback = getSeasonalFallback(city, lat, lon);
-      cachedWeather = fallback;
-      cachedWeatherAt = now;
+      weatherCache.set(cacheKey, { data: fallback, timestamp: now });
       return NextResponse.json(fallback, {
         headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
       });
@@ -457,8 +457,7 @@ export async function GET(request: NextRequest) {
     // Check for API-level errors (rate limit, etc.)
     if (data.error) {
       const fallback = getSeasonalFallback(city, lat, lon);
-      cachedWeather = fallback;
-      cachedWeatherAt = now;
+      weatherCache.set(cacheKey, { data: fallback, timestamp: now });
       return NextResponse.json(fallback, {
         headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
       });
@@ -571,8 +570,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache successful response
-    cachedWeather = weatherData;
-    cachedWeatherAt = now;
+    weatherCache.set(cacheKey, { data: weatherData, timestamp: now });
 
     return NextResponse.json(weatherData, {
       headers: {
@@ -583,8 +581,7 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     // Network error, timeout, etc — use seasonal fallback
     const fallback = getSeasonalFallback(city, lat, lon);
-    cachedWeather = fallback;
-    cachedWeatherAt = now;
+    weatherCache.set(cacheKey, { data: fallback, timestamp: now });
     return NextResponse.json(fallback, {
       headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
     });

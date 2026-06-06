@@ -14,6 +14,44 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "@/context/LocationContext";
 
+// ── Map yield crop IDs to API crop names ──────────────────────────────────────
+const CROP_NAME_TO_API: Record<string, string> = {
+  rice_boro: "ধান",
+  rice_aman: "ধান",
+  rice_aus: "ধান",
+  wheat: "গম",
+  potato: "আলু",
+  mustard: "সরিষা",
+  jute: "পাট",
+  tomato: "টমেটো",
+  onion: "পেঁয়াজ",
+  maize: "ভুট্টা",
+};
+
+// ── API price type ────────────────────────────────────────────────────────────
+interface ApiCropPrice {
+  crop: string;
+  price: number;
+  trend: "up" | "down" | "stable";
+  trendBn: string;
+  priceChangePercent: number;
+  isPeakSeason: boolean;
+}
+
+// ── Hardcoded fallback prices (৳/kg) ─────────────────────────────────────────
+const FALLBACK_PRICES: Record<string, number> = {
+  rice_boro: 25,
+  rice_aman: 22,
+  rice_aus: 20,
+  wheat: 38,
+  potato: 15,
+  mustard: 85,
+  jute: 70,
+  tomato: 20,
+  onion: 35,
+  maize: 22,
+};
+
 // ── Crop yield data (Bangladesh average yields) ──────────────────────────────
 const YIELD_DATA = [
   { id: "rice_boro", name: "বোরো ধান", icon: "🌾", avgYield: 4.5, unit: "টন/হেক্টর", pricePerKg: 25, season: "রবি", riskFactors: ["শীতল প্রবাহ", "ব্লাস্ট রোগ", "পানি সংকট"], variety: ["ব্রি ধান-২৮", "ব্রি ধান-২৯", "ব্রি ধান-৫০", "ব্রি ধান-৮৪"] },
@@ -61,24 +99,79 @@ export default function YieldPage() {
   const [weather, setWeather] = useState<keyof typeof WEATHER_IMPACT>("normal");
   const [activeTab, setActiveTab] = useState<"estimate" | "calendar" | "market">("estimate");
 
+  // ── Live price state ──────────────────────────────────────────────────────────
+  const [livePrices, setLivePrices] = useState<Record<string, ApiCropPrice>>({});
+  const [pricesLoading, setPricesLoading] = useState(true);
+  const [pricesSource, setPricesSource] = useState<"live" | "fallback">("fallback");
+
+  // Fetch live prices from API on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/crop-prices");
+        if (!res.ok) throw new Error("API error");
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.prices)) {
+          const map: Record<string, ApiCropPrice> = {};
+          for (const p of data.prices as ApiCropPrice[]) {
+            map[p.crop] = p;
+          }
+          if (!cancelled) {
+            setLivePrices(map);
+            setPricesSource("live");
+          }
+        }
+      } catch {
+        // Fallback prices will be used automatically
+        if (!cancelled) {
+          setPricesSource("fallback");
+        }
+      } finally {
+        if (!cancelled) setPricesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Get effective price for a crop (live or fallback)
+  const getEffectivePrice = useCallback((cropId: string): number => {
+    const apiName = CROP_NAME_TO_API[cropId];
+    if (apiName && livePrices[apiName]) {
+      return livePrices[apiName].price;
+    }
+    return FALLBACK_PRICES[cropId] ?? YIELD_DATA.find(c => c.id === cropId)?.pricePerKg ?? 0;
+  }, [livePrices]);
+
+  // Get price trend info for a crop
+  const getPriceTrend = useCallback((cropId: string): ApiCropPrice | null => {
+    const apiName = CROP_NAME_TO_API[cropId];
+    if (apiName && livePrices[apiName]) {
+      return livePrices[apiName];
+    }
+    return null;
+  }, [livePrices]);
+
   const crop = YIELD_DATA.find((c) => c.id === selectedCrop);
   const areaNum = Math.max(parseFloat(area) || 1, 0.1);
   const varietyMult = variety === "optimal" ? 1.2 : variety === "average" ? 1.0 : 0.8;
   const weatherMult = WEATHER_IMPACT[weather].mult;
 
-  // Calculate estimated yield
+  // Calculate estimated yield (using effective price)
   const estimateYield = useCallback(() => {
     if (!crop) return null;
+    const effectivePrice = getEffectivePrice(crop.id);
     const yieldPerHa = crop.avgYield * varietyMult * weatherMult;
     const totalYield = yieldPerHa * areaNum;
-    const revenue = totalYield * 1000 * crop.pricePerKg; // Convert ton to kg
+    const revenue = totalYield * 1000 * effectivePrice; // Convert ton to kg
     return {
       yieldPerHa: yieldPerHa.toFixed(2),
       totalYield: totalYield.toFixed(2),
       revenue: revenue.toLocaleString("bn-BD"),
       revenueNum: revenue,
+      pricePerKg: effectivePrice,
     };
-  }, [crop, varietyMult, weatherMult, areaNum]);
+  }, [crop, varietyMult, weatherMult, areaNum, getEffectivePrice]);
 
   const estimate = estimateYield();
 
@@ -235,7 +328,19 @@ export default function YieldPage() {
                       </div>
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-purple-100 text-center">
                         <div className="text-[16px] font-extrabold text-amber-700">৳{estimate.revenue}</div>
-                        <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">আনুমানিক আয়</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400">আনুমানিক আয়</div>
+                        {(() => {
+                          const trend = crop ? getPriceTrend(crop.id) : null;
+                          return trend ? (
+                            <div className={`text-[8px] font-bold mt-1 ${
+                              trend.trend === "up" ? "text-green-600" :
+                              trend.trend === "down" ? "text-red-600" :
+                              "text-amber-600"
+                            }`}>
+                              {trend.trend === "up" ? "📈" : trend.trend === "down" ? "📉" : "➡️"} {trend.trendBn}
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
 
@@ -249,8 +354,17 @@ export default function YieldPage() {
                       </div>
                     </div>
 
-                    <div className="text-[9px] text-gray-400 dark:text-gray-500 mt-2 text-center">
-                      * এই অনুমান গড় ফলন ও বর্তমান বাজার মূল্যের উপর ভিত্তি করে। প্রকৃত ফলন ভিন্ন হতে পারে।
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className="text-[9px] text-gray-400 dark:text-gray-500">
+                        * এই অনুমান গড় ফলন ও বর্তমান বাজার মূল্যের উপর ভিত্তি করে। প্রকৃত ফলন ভিন্ন হতে পারে।
+                      </span>
+                      {estimate.pricePerKg && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                          pricesSource === "live" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {pricesSource === "live" ? "● লাইভ মূল্য" : "গড় মূল্য"}: ৳{bn(estimate.pricePerKg.toFixed(0))}/কেজি
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -306,26 +420,58 @@ export default function YieldPage() {
         {activeTab === "market" && (
           <div className="space-y-3">
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <div className="text-[12px] font-bold text-amber-900 mb-2">💰 ফসলভিত্তিক আয়ের হিসাব</div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[12px] font-bold text-amber-900">💰 ফসলভিত্তিক আয়ের হিসাব</div>
+                {pricesLoading ? (
+                  <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full animate-pulse">লোড হচ্ছে…</span>
+                ) : pricesSource === "live" ? (
+                  <span className="text-[9px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">● লাইভ মূল্য</span>
+                ) : (
+                  <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">গড় মূল্য</span>
+                )}
+              </div>
               <div className="text-[11px] text-amber-800 leading-relaxed">
                 প্রতিটি ফসলের গড় ফলন ও বর্তমান বাজার মূল্য অনুযায়ী প্রতি হেক্টর আয়ের অনুমান।
               </div>
             </div>
 
-            {YIELD_DATA.map((c, i) => {
-              const revenue = c.avgYield * 1000 * c.pricePerKg;
+            {pricesLoading && (
+              <div className="flex items-center justify-center py-6 gap-2 text-gray-400">
+                <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[12px] font-medium">মূল্য লোড হচ্ছে…</span>
+              </div>
+            )}
+
+            {!pricesLoading && YIELD_DATA.map((c, i) => {
+              const effectivePrice = getEffectivePrice(c.id);
+              const trend = getPriceTrend(c.id);
+              const revenue = c.avgYield * 1000 * effectivePrice;
               return (
                 <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
                   <div className="flex items-center gap-2.5 mb-2">
                     <span className="text-lg">{c.icon}</span>
                     <div className="flex-1">
                       <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100">{c.name}</div>
-                      <div className="text-[9px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{c.season} মৌসুম · গড় {c.avgYield} {c.unit}</div>
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400">{c.season} মৌসুম · গড় {c.avgYield} {c.unit}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-[14px] font-extrabold text-green-700">৳{bn(revenue.toLocaleString())}</div>
                       <div className="text-[9px] text-gray-400 dark:text-gray-500">প্রতি হেক্টর</div>
                     </div>
+                  </div>
+
+                  {/* Price per kg & trend */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">মূল্য: ৳{bn(effectivePrice.toFixed(0))}/কেজি</span>
+                    {trend && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                        trend.trend === "up" ? "bg-green-100 text-green-700" :
+                        trend.trend === "down" ? "bg-red-100 text-red-700" :
+                        "bg-amber-100 text-amber-700"
+                      }`}>
+                        {trend.trend === "up" ? "📈" : trend.trend === "down" ? "📉" : "➡️"} {trend.trendBn} ({trend.priceChangePercent > 0 ? "+" : ""}{trend.priceChangePercent.toFixed(1)}%)
+                      </span>
+                    )}
                   </div>
 
                   {/* Mini bar chart */}

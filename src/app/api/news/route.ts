@@ -1132,23 +1132,18 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
 }
 
 // ── CORS headers ─────────────────────────────────────────────────────────────
-function corsHeaders(request: NextRequest): Record<string, string> {
-  const allowed = [
-    "https://krishiai.live",
-    "https://www.krishiai.live",
-    "https://web.krishiai.live",
-  ];
-  const origin = request.headers.get("origin") || "";
-  const accessControl =
-    allowed.includes(origin) || origin.includes("localhost")
-      ? origin
-      : allowed[0];
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
 
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
   return {
-    "Access-Control-Allow-Origin": accessControl,
+    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
   };
 }
 
@@ -1160,8 +1155,9 @@ export async function GET(request: NextRequest) {
 
   // Check cache (auto-invalidate on day change or after 30 min)
   if (!forceRefresh && !dayChanged && cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
+    const origin = request.headers.get("origin");
     return NextResponse.json(cachedResponse, {
-      headers: corsHeaders(request),
+      headers: corsHeaders(origin),
     });
   }
 
@@ -1325,12 +1321,13 @@ export async function GET(request: NextRequest) {
   cachedAt = Date.now();
   cachedDate = today;
 
-  return NextResponse.json(response, { headers: corsHeaders(request) });
+  const origin = request.headers.get("origin");
+  return NextResponse.json(response, { headers: corsHeaders(origin) });
 }
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(request),
+    headers: corsHeaders(request.headers.get("origin")),
   });
 }

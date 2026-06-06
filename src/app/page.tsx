@@ -155,10 +155,10 @@ const STATS = [
 
 // ── Metrics ───────────────────────────────────────────────────────────────────
 const METRICS = [
-  { value: "১১.৫%", label: "ফলন বৃদ্ধি", trend: "↑", trendColor: "text-green-600" },
-  { value: "৮.৭ টি", label: "প্রতিদিন পরামর্শ", trend: "↑", trendColor: "text-green-600" },
-  { value: "১৪%", label: "খরচ সাশ্রয়", trend: "↑", trendColor: "text-green-600" },
-  { value: "৫১ মি+", label: "ব্যবহারকারী", trend: "↑", trendColor: "text-green-600" },
+  { value: "১০+", label: "AI টুলস" },
+  { value: "৩০+", label: "AEZ জোন" },
+  { value: "২০০+", label: "ফসল তথ্য" },
+  { value: "৭×২৪", label: "সহায়তা" },
 ];
 
 // ── Seasonal Tip Banner ──────────────────────────────────────────────────────
@@ -372,9 +372,9 @@ export default function HomePage() {
               পেরেছি এবং সঠিক সময়ে ব্যবস্থা নিতে পেরেছি। আবহাওয়া পূর্বাভাস ও বাজার মূল্য
               দেখে সঠিক সময়ে ফসল বিক্রি করতে পেরে ফলন আগের চেয়ে অনেক ভালো।&rdquo;
             </p>
-            <button className="text-[12px] font-semibold text-green-700 hover:text-green-600 transition-colors">
+            <a href="/learn" className="text-[12px] font-semibold text-green-700 hover:text-green-600 transition-colors no-underline">
               আরও সাফল্যের গল্প →
-            </button>
+            </a>
           </div>
         </div>
       </section>
@@ -389,7 +389,6 @@ export default function HomePage() {
             >
               <div className="text-lg font-extrabold text-[#1b4332] dark:text-green-400">{m.value}</div>
               <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{m.label}</div>
-              <div className={`text-[9px] font-bold ${m.trendColor} mt-0.5`}>{m.trend} বৃদ্ধি</div>
             </div>
           ))}
         </div>

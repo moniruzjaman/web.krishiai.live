@@ -386,8 +386,12 @@ function buildEmergencyDiagnosis(symptoms: string[], imageAttached: boolean, cro
 ---END_ENGLISH---`;
 }
 
+// ─── Timeout constants ──────────────────────────────────────────────────
+const OVERALL_TIMEOUT_MS = 30_000;
+const PROVIDER_TIMEOUT_MS = 15_000;
+
 // ─── Provider: Gemini 2.5 Flash ──────────────────────────────────────────
-async function tryGemini(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>): Promise<{ text: string; provider: string }> {
+async function tryGemini(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
@@ -417,6 +421,7 @@ async function tryGemini(messages: Array<{ role: string; content: string | Array
     method: "POST",
     headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   const data = await res.json();
@@ -427,7 +432,7 @@ async function tryGemini(messages: Array<{ role: string; content: string | Array
 }
 
 // ─── Provider: Groq Llama 4 Scout ────────────────────────────────────────
-async function tryGroq(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>): Promise<{ text: string; provider: string }> {
+async function tryGroq(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY not set");
 
@@ -450,6 +455,7 @@ async function tryGroq(messages: Array<{ role: string; content: string | Array<{
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   const data = await res.json();
@@ -458,7 +464,7 @@ async function tryGroq(messages: Array<{ role: string; content: string | Array<{
 }
 
 // ─── Provider: OpenRouter ────────────────────────────────────────────────
-async function tryOpenRouter(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>): Promise<{ text: string; provider: string }> {
+async function tryOpenRouter(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
 
@@ -477,6 +483,7 @@ async function tryOpenRouter(messages: Array<{ role: string; content: string | A
       "X-Title": "KrishiAI CABI Diagnosis",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   const data = await res.json();
@@ -511,6 +518,7 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
   const startTime = Date.now();
+  const overallTimeout = AbortSignal.timeout(OVERALL_TIMEOUT_MS);
 
   try {
     const body = await request.json();
@@ -565,16 +573,22 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 1. Primary: z-ai-web-dev-sdk VLM
     try {
+      if (overallTimeout.aborted) throw new Error("Overall timeout");
       const ZAI = (await import("z-ai-web-dev-sdk")).default;
       const zai = await ZAI.create();
-      const completion = await zai.chat.completions.createVision({
-        model: "glm-4v-plus",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
-        ],
-        thinking: { type: "disabled" },
-      });
+      const completion = await Promise.race([
+        zai.chat.completions.createVision({
+          model: "glm-4v-plus",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...messages,
+          ],
+          thinking: { type: "disabled" },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Provider timeout")), PROVIDER_TIMEOUT_MS)
+        ),
+      ]);
       resultText = completion?.choices?.[0]?.message?.content || "";
       provider = "z-ai-vlm";
     } catch (e) {
@@ -583,6 +597,12 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 2. Fallback 1: Gemini 2.5 Flash
     if (!resultText) {
+      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
+        return NextResponse.json(
+          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
       try {
         const geminiResult = await tryGemini(messages);
         resultText = geminiResult.text;
@@ -594,6 +614,12 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 3. Fallback 2: OpenRouter Qwen-VL
     if (!resultText) {
+      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
+        return NextResponse.json(
+          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
       try {
         const orResult = await tryOpenRouter(messages);
         resultText = orResult.text;
@@ -605,6 +631,12 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 4. Fallback 3: Groq text-only
     if (!resultText) {
+      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
+        return NextResponse.json(
+          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
       try {
         const groqResult = await tryGroq(messages);
         resultText = groqResult.text;
@@ -616,6 +648,12 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 5. Fallback 4: z-ai-web-dev-sdk text-only
     if (!resultText) {
+      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
+        return NextResponse.json(
+          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
       try {
         const ZAI = (await import("z-ai-web-dev-sdk")).default;
         const zai = await ZAI.create();
@@ -625,13 +663,18 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
             ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
             : (m.content as string),
         }));
-        const completion = await zai.chat.completions.create({
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...textMessages,
-          ],
-          thinking: { type: "disabled" },
-        });
+        const completion = await Promise.race([
+          zai.chat.completions.create({
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...textMessages,
+            ],
+            thinking: { type: "disabled" },
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Provider timeout")), PROVIDER_TIMEOUT_MS)
+          ),
+        ]);
         resultText = completion?.choices?.[0]?.message?.content || "";
         provider = "z-ai-text";
       } catch (e) {

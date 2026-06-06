@@ -37,6 +37,12 @@ export async function GET(request: NextRequest) {
       "/api/market": "বাজার মূল্য — DAM live + seasonal (25+ commodities, categories)",
       "/api/news": "কৃষি সংবাদ — Google News RSS + .gov.bd CORS proxy + AI bulletin",
       "/api/chat": "AI চ্যাট — কৃষি পরামর্শদাতা (POST, messages required)",
+      "/api/diagnose": "রোগ নির্ণয় — CABI Plantwise পদ্ধতি (POST, image + symptoms)",
+      "/api/crop-database": "ফসল ডাটাবেস — বিভাগভুক্ত ফসলের তথ্য (GET, category param)",
+      "/api/crop-prices": "ফসল মূল্য — মৌসুমী মূল্য বিশ্লেষণ ও লাভজনকতা",
+      "/api/smart-decision": "স্মার্ট সিদ্ধান্ত — আবহাওয়া + মূল্য + মৌসুম বিশ্লেষণ",
+      "/api/soil-analysis": "মৃত্তিকা বিশ্লেষণ — AEZ জোন + USDA শ্রেণিবিন্যাস",
+      "/api": "স্বাস্থ্য পরীক্ষা ও তথ্য",
     },
     features: {
       weather: {

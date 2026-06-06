@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
 
-// CORS headers
-const corsHeaders = (origin: string | null) => ({
-  "Access-Control-Allow-Origin": !origin || origin.includes("localhost") ? (origin || "*") : "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-});
+// ── CORS ────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
+function corsHeaders(origin: string | null) {
+  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
+  return {
+    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
@@ -31,7 +39,12 @@ const VALID_CATEGORIES = Object.keys(CATEGORY_EXAMPLES);
 export async function GET(request: NextRequest) {
   const origin = request.headers.get("origin");
   const { searchParams } = new URL(request.url);
-  const category = searchParams.get("category") || "Grains";
+  const rawCategory = searchParams.get("category") || "Grains";
+  // Convert to title case for case-insensitive matching
+  const category = rawCategory
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 
   if (!VALID_CATEGORIES.includes(category)) {
     return NextResponse.json(
@@ -50,6 +63,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const ZAI = (await import("z-ai-web-dev-sdk")).default;
     const zai = await ZAI.create();
 
     const prompt = `Act as an expert on Bangladeshi agriculture. Provide a list of 5-7 distinct crops for the "${category}" category cultivated in Bangladesh.

@@ -25,13 +25,16 @@ import {
 import type { ParsedForecast } from "@/lib/weatherService";
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
 function corsHeaders(origin: string | null) {
-  const accessControl =
-    origin && (origin.includes("localhost") || origin.includes("127.0.0.1"))
-      ? origin
-      : "*";
+  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
   return {
-    "Access-Control-Allow-Origin": accessControl,
+    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
@@ -101,8 +104,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 // ── Cache ────────────────────────────────────────────────────────────────────
-let cachedResult: Record<string, unknown> | null = null;
-let cachedAt = 0;
+const decisionCache = new Map<string, { data: Record<string, unknown>; timestamp: number }>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 // ── GET Handler ──────────────────────────────────────────────────────────────
@@ -113,11 +115,21 @@ export async function GET(request: NextRequest) {
   const lon = parseFloat(searchParams.get("lon") || "90.356");
   const city = searchParams.get("city") || "ঢাকা";
 
+  // Validate lat/lon ranges
+  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    return NextResponse.json(
+      { ok: false, error: "অবৈধ অক্ষাংশ/দ্রাঘিমাংশ", city },
+      { status: 400, headers: corsHeaders(origin) }
+    );
+  }
+
   // Return cached if fresh
   const now = Date.now();
-  if (cachedResult && now - cachedAt < CACHE_TTL) {
+  const cacheKey = `${lat},${lon}`;
+  const cached = decisionCache.get(cacheKey);
+  if (cached && now - cached.timestamp < CACHE_TTL) {
     return NextResponse.json(
-      { ...cachedResult, city, lat, lon },
+      { ...cached.data, city, lat, lon },
       {
         headers: {
           "Cache-Control": "public, s-maxage=300",
@@ -211,8 +223,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache
-    cachedResult = result;
-    cachedAt = now;
+    decisionCache.set(cacheKey, { data: result, timestamp: now });
 
     return NextResponse.json(result, {
       headers: {

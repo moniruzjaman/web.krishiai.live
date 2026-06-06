@@ -64,25 +64,33 @@ function classifyUSDA(sand: number, silt: number, clay: number): string {
 }
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-function corsHeaders() {
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
+function corsHeaders(origin: string | null) {
+  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
 }
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders() });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
 }
 
 // ── GET: AEZ Zone Analysis ────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin");
   const aezId = request.nextUrl.searchParams.get("aezId");
   if (!aezId) {
     return NextResponse.json(
       { ok: false, error: "aezId প্যারামিটার প্রয়োজন" },
-      { status: 400, headers: corsHeaders() }
+      { status: 400, headers: corsHeaders(origin) }
     );
   }
 
@@ -90,7 +98,7 @@ export async function GET(request: NextRequest) {
   if (!zone) {
     return NextResponse.json(
       { ok: false, error: "অবৈধ AEZ জোন ID" },
-      { status: 400, headers: corsHeaders() }
+      { status: 400, headers: corsHeaders(origin) }
     );
   }
 
@@ -137,18 +145,19 @@ export async function GET(request: NextRequest) {
         "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
         "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
       ],
-    }, { headers: corsHeaders() });
+    }, { headers: corsHeaders(origin) });
   } catch (e) {
     console.error("AEZ analysis error:", e);
     return NextResponse.json(
       { ok: false, error: "AI বিশ্লেষণ এখন উপলব্ধ নয়", analysis: null },
-      { status: 503, headers: corsHeaders() }
+      { status: 503, headers: corsHeaders(origin) }
     );
   }
 }
 
 // ── POST: Soil Sample Analysis ────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin");
   try {
     const body = await request.json();
     const { sand, silt, clay, organicMatter, aezId } = body;
@@ -156,7 +165,7 @@ export async function POST(request: NextRequest) {
     if (sand == null || silt == null || clay == null) {
       return NextResponse.json(
         { ok: false, error: "বালি, পলি ও কাদার শতাংশ প্রয়োজন" },
-        { status: 400, headers: corsHeaders() }
+        { status: 400, headers: corsHeaders(origin) }
       );
     }
 
@@ -169,7 +178,7 @@ export async function POST(request: NextRequest) {
     if (Math.abs(total - 100) > 5) {
       return NextResponse.json(
         { ok: false, error: `বালি + পলি + কাদা = ${total}% হতে হবে ১০০% (±৫% সহনশীলতা)` },
-        { status: 400, headers: corsHeaders() }
+        { status: 400, headers: corsHeaders(origin) }
       );
     }
 
@@ -233,12 +242,12 @@ ${aezContext}
         "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
         "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
       ],
-    }, { headers: corsHeaders() });
+    }, { headers: corsHeaders(origin) });
   } catch (e) {
     console.error("Soil sample analysis error:", e);
     return NextResponse.json(
       { ok: false, error: "AI বিশ্লেষণ এখন উপলব্ধ নয়" },
-      { status: 503, headers: corsHeaders() }
+      { status: 503, headers: corsHeaders(origin) }
     );
   }
 }
