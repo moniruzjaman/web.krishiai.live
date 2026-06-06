@@ -30,6 +30,10 @@
 
 13. **`noImplicitAny: false`**: TypeScript is in relaxed mode. Function parameters may lack explicit types. Be careful when refactoring.
 
+14. **Cloudflare Workers AI requires env vars**: `CF_ACCOUNT_ID` and `CF_API_TOKEN` must be set in Vercel environment variables. If missing, CF Workers AI is skipped and routes fall through to z-ai-web-dev-sdk. The `.env.local` file has them for local dev but is gitignored.
+
+15. **CF Workers AI response format varies**: CF Workers AI can return either `{ result: { response: "..." } }` or `{ result: { choices: [{ message: { content: "..." } }] } }`. The utility handles both formats, but if Cloudflare changes their API, the parser may break.
+
 ## Minor
 
 14. **Toast redundancy**: Both `@radix-ui/react-toast` and `sonner` are installed. Only `sonner` is used (via `<Toaster />` in layout). The Radix toast is unused.

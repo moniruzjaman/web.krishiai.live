@@ -112,10 +112,6 @@ export async function POST(request: NextRequest) {
 
 ${seasonContext}`;
 
-    // Import z-ai-web-dev-sdk dynamically
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     // Build conversation with system prompt
     const chatMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -125,18 +121,49 @@ ${seasonContext}`;
       })),
     ];
 
-    const completion = await zai.chat.completions.create({
-      messages: chatMessages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let reply = "";
+    let model = "";
 
-    const reply = completion.choices?.[0]?.message?.content || "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন।";
+    // 1. Primary: Cloudflare Workers AI (Llama 3 8B Instruct)
+    try {
+      const { cfAIChatFull } = await import("@/lib/cloudflareAI");
+      const cfResult = await cfAIChatFull(chatMessages, {
+        temperature: 0.7,
+        maxTokens: 1000,
+      });
+      if (cfResult?.ok && cfResult.reply) {
+        reply = cfResult.reply;
+        model = cfResult.model;
+      }
+    } catch (e) {
+      console.warn("[chat] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: z-ai-web-dev-sdk
+    if (!reply) {
+      try {
+        const ZAI = (await import("z-ai-web-dev-sdk")).default;
+        const zai = await ZAI.create();
+        const completion = await zai.chat.completions.create({
+          messages: chatMessages,
+          temperature: 0.7,
+          max_tokens: 1000,
+        });
+        reply = completion.choices?.[0]?.message?.content || "";
+        model = "z-ai";
+      } catch (e) {
+        console.warn("[chat] z-ai failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (!reply) {
+      reply = "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন।";
+    }
 
     return NextResponse.json({
       ok: true,
       reply,
-      model: "z-ai",
+      model: model || "fallback",
     }, {
       headers: corsHeaders(origin),
     });

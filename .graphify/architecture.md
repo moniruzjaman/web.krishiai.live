@@ -28,23 +28,26 @@
           ▼             ▼               ▼
    ┌───────────┐ ┌──────────┐  ┌──────────────┐
    │Open-Meteo │ │z-ai SDK  │  │DAM/DAE/RSS   │
-   │(weather)  │ │(AI chat/ │  │(.gov.bd APIs)│
-   │No key     │ │diagnose/ │  │CORS proxy    │
-   │           │ │soil/crop)│  │required      │
+   │(weather)  │ │(AI fallback) │(.gov.bd APIs)│
+   │No key     │ │chat/soil/ │  │CORS proxy    │
+   │           │ │crop/news  │  │required      │
    └───────────┘ └──────────┘  └──────────────┘
                         │
-                  ┌─────┼─────┐
-                  ▼     ▼     ▼
-              Gemini  Groq  OpenRouter
-             (opt)   (opt)  (opt)
-           env keys  env    env keys
+          ┌─────────────┼───────────────┐
+          ▼             ▼               ▼
+   ┌───────────────┐ Gemini  Groq  OpenRouter
+   │CF Workers AI  │ (opt)   (opt)  (opt)
+   │(Llama 3 8B)   │ env keys env    env keys
+   │PRIMARY AI     │
+   │Built-in token │
+   └───────────────┘
 ```
 
 ## Key Design Decisions
 
 1. **No external API keys required for core features** — All primary data sources (Open-Meteo, Nominatim, OSM) are keyless. Optional providers (Gemini, Groq, OpenRouter) enhance diagnosis if keys are set.
 
-2. **Waterfall provider pattern** — The diagnose API tries 7 providers in sequence: z-ai-vlm → Gemini → OpenRouter → Groq → z-ai-text → Offline CABI → Emergency regex. First success wins.
+2. **Waterfall provider pattern** — The diagnose API tries 8 providers in sequence: z-ai-vlm → CF Workers AI (Llama 3) → Gemini → OpenRouter → Groq → z-ai-text → Offline CABI → Emergency regex. First success wins. Chat, soil, and crop-database routes use CF Workers AI as primary with z-ai as fallback.
 
 3. **Centralized location** — `LocationContext` is the single source of GPS truth. All widgets consume via `useLocation()`. Auto-fallback to Dhaka after 3s timeout.
 

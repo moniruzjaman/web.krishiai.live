@@ -33,14 +33,14 @@ src/
 │   │   └── yield/page.tsx         # Yield forecast
 │   └── api/
 │       ├── route.ts            # API health/info endpoint
-│       ├── chat/route.ts       # AI chat (z-ai-web-dev-sdk, Bengali agri system prompt)
-│       ├── diagnose/route.ts   # CABI diagnosis (7-provider waterfall: z-ai-vlm → Gemini → OpenRouter → Groq → z-ai-text → Offline → Emergency)
+│       ├── chat/route.ts       # AI chat (CF Workers AI → z-ai fallback, Bengali agri system prompt)
+│       ├── diagnose/route.ts   # CABI diagnosis (8-provider waterfall: z-ai-vlm → CF Workers AI → Gemini → OpenRouter → Groq → z-ai-text → Offline → Emergency)
 │       ├── weather/route.ts    # Open-Meteo proxy with agri indices (597 lines)
 │       ├── market/route.ts     # DAM live + seasonal fallback prices (364 lines)
 │       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin (1000+ lines)
-│       ├── crop-database/route.ts # AI-generated crop info (7 categories)
+│       ├── crop-database/route.ts # AI-generated crop info (CF Workers AI → z-ai fallback)
 │       ├── crop-prices/route.ts   # Simulated crop prices (DAM/DAE reference)
-│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (z-ai)
+│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (CF Workers AI → z-ai)
 │       └── smart-decision/route.ts # Combined weather+price+season scoring
 ├── components/
 │   ├── TopNavbar.tsx           # Top nav bar
@@ -66,6 +66,7 @@ src/
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
 │   ├── weatherService.ts       # Open-Meteo integration, crop scoring, disease pressure, irrigation
+│   ├── cloudflareAI.ts         # Cloudflare Workers AI REST API (Llama 3 8B, Mistral 7B)
 │   └── cabi/
 │       ├── bengaliKeywords.ts  # Bengali→English symptom translation
 │       └── diagnosticEngine.ts # Offline CABI diagnosis engine
@@ -106,12 +107,12 @@ public/
 | `/tools/crop-calendar` | Page | GET | — | cropCalendar.ts |
 | `/tools/yield` | Page | GET | — | — |
 | `/api` | API | GET | 300s | Static info |
-| `/api/chat` | API | POST | no-store | z-ai-web-dev-sdk |
-| `/api/diagnose` | API | POST | no-store | 7-provider waterfall |
+| `/api/chat` | API | POST | no-store | CF Workers AI → z-ai |
+| `/api/diagnose` | API | POST | no-store | 8-provider waterfall |
 | `/api/weather` | API | GET | 600s | Open-Meteo + seasonal fallback |
 | `/api/market` | API | GET | 3600s | DAM live + seasonal fallback |
 | `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI |
-| `/api/crop-database` | API | GET | 600s | z-ai generated |
+| `/api/crop-database` | API | GET | 600s | CF Workers AI → z-ai |
 | `/api/crop-prices` | API | GET | 300s | Simulated from DAM/DAE baselines |
-| `/api/soil-analysis` | API | GET/POST | no-store | z-ai + AEZ/USDA |
+| `/api/soil-analysis` | API | GET/POST | no-store | CF Workers AI → z-ai + AEZ/USDA |
 | `/api/smart-decision` | API | GET | 600s | Open-Meteo + cropPriceService |

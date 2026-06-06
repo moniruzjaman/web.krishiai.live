@@ -1028,15 +1028,12 @@ function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[
   return [...base, ...(monthlyExtras[m] || [])];
 }
 
-// ── AI Daily Bulletin using z-ai-web-dev-sdk ─────────────────────────────────
+// ── AI Daily Bulletin using Cloudflare Workers AI + z-ai fallback ──────────────
 async function generateDailyBulletin(
   ctx: ReturnType<typeof bdAgriContext>,
   newsHeadlines: NewsItem[]
 ): Promise<DailyBulletin | null> {
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     const headlineList = newsHeadlines
       .slice(0, 8)
       .map((h, i) => `${i + 1}. ${h.title} (${h.source})`)
@@ -1060,11 +1057,34 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
 ২. দ্বিতীয় অগ্রাধিকার কাজ
 ৩. তৃতীয় অগ্রাধিকার কাজ`;
 
-    const result = await zai.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-    });
+    let text: string | null = null;
 
-    const text = result.choices?.[0]?.message?.content;
+    // 1. Primary: Cloudflare Workers AI
+    try {
+      const { cfAIChat } = await import("@/lib/cloudflareAI");
+      text = await cfAIChat(
+        "তুমি বাংলাদেশের কৃষি বিশেষজ্ঞ। বাংলায় সংক্ষিপ্ত বুলেটিন তৈরি করো। কোনো markdown ব্যবহার করো না।",
+        prompt,
+        { temperature: 0.7, maxTokens: 800 }
+      );
+    } catch (e) {
+      console.warn("[news:bulletin] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: z-ai-web-dev-sdk
+    if (!text) {
+      try {
+        const ZAI = (await import("z-ai-web-dev-sdk")).default;
+        const zai = await ZAI.create();
+        const result = await zai.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+        });
+        text = result.choices?.[0]?.message?.content || null;
+      } catch (e) {
+        console.warn("[news:bulletin] z-ai failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
     if (!text) return null;
 
     // Clean markdown formatting from AI response

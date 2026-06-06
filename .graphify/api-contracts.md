@@ -12,14 +12,16 @@ Request:
 
 Response:
 ```json
-{ "ok": true, "reply": "বাংলা উত্তর...", "model": "z-ai" }
+{ "ok": true, "reply": "বাংলা উত্তর...", "model": "@cf/meta/llama-3-8b-instruct|z-ai|fallback" }
 ```
+- Primary: Cloudflare Workers AI (Llama 3 8B Instruct)
+- Fallback: z-ai-web-dev-sdk
 Error: `{ "ok": false, "error": "বার্তা অত্যন্ত দীর্ঘ" }` (400/503)
 
 ---
 
 ## POST /api/diagnose
-**Purpose**: CABI Plantwise crop disease diagnosis (7-provider waterfall)
+**Purpose**: CABI Plantwise crop disease diagnosis (8-provider waterfall)
 
 Request:
 ```json
@@ -36,7 +38,7 @@ Response:
 ```json
 {
   "ok": true,
-  "provider": "z-ai-vlm|Gemini 2.5 Flash|OpenRouter Qwen-VL|Groq Llama 4 Scout|z-ai-text|Offline CABI Engine|Emergency Regex",
+  "provider": "z-ai-vlm|Cloudflare Workers AI (Llama 3 8B)|Gemini 2.5 Flash|OpenRouter Qwen-VL|Groq Llama 4 Scout|z-ai-text|Offline CABI Engine|Emergency Regex",
   "elapsed_ms": 3200,
   "text": "full markdown text (Bangla + English sections, JSON summary stripped)",
   "bangla": "Bangla section only",

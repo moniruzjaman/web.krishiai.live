@@ -63,49 +63,60 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
-    const prompt = `Act as an expert on Bangladeshi agriculture. Provide a list of 5-7 distinct crops for the "${category}" category cultivated in Bangladesh.
-
-For each crop, include:
-- name: Common Bengali name
-- scientificName: Botanical name
-- description: 2-3 sentence description about significance in Bangladesh (in Bengali)
-- cultivationAreas: 2-3 prominent districts in Bangladesh
-- soilRequirements: Brief ideal soil types (in Bengali)
-- climateRequirements: Temperature, rainfall, seasons (in Bengali)
-- averageYield: Approximate yield in Bangladesh
-- economicImportance: Economic impact (in Bengali)
-- commonUses: 2-3 common uses
-
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no explanation.
-${CATEGORY_EXAMPLES[category] ? `Example crops: ${CATEGORY_EXAMPLES[category]}.` : ""}`;
-
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations."
-        },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 3000,
-    });
-
-    const reply = completion.choices?.[0]?.message?.content || "";
-
-    // Parse JSON from reply
     let crops;
+
+    // 1. Primary: Cloudflare Workers AI
     try {
-      const jsonMatch = reply.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        crops = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("No JSON array found");
+      const { callCloudflareAI } = await import("@/lib/cloudflareAI");
+      const cfResult = await callCloudflareAI(
+        [
+          {
+            role: "system",
+            content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations."
+          },
+          { role: "user", content: prompt }
+        ],
+        { temperature: 0.7, maxTokens: 3000 }
+      );
+      if (cfResult.ok && cfResult.reply) {
+        const jsonMatch = cfResult.reply.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          crops = JSON.parse(jsonMatch[0]);
+        }
       }
-    } catch {
+    } catch (e) {
+      console.warn("[crop-database] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: z-ai-web-dev-sdk
+    if (!crops || crops.length === 0) {
+      try {
+        const ZAI = (await import("z-ai-web-dev-sdk")).default;
+        const zai = await ZAI.create();
+
+        const completion = await zai.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations."
+            },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 3000,
+        });
+
+        const reply = completion.choices?.[0]?.message?.content || "";
+        const jsonMatch = reply.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          crops = JSON.parse(jsonMatch[0]);
+        }
+      } catch (e) {
+        console.warn("[crop-database] z-ai failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (!crops) {
       crops = [];
     }
 

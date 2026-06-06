@@ -14,27 +14,38 @@
 | FAO/IRRI/IFPRI RSS | Various international feeds | `/api/news` intlHeadlines | Curated seasonal |
 | CORS Proxies | allorigins.win, corsproxy.io | `/api/news`, `/api/market` | Direct fetch |
 
-## AI Providers (z-ai-web-dev-sdk Primary)
+## AI Providers (Cloudflare Workers AI Primary)
 
 | Provider | How Used | Key Required | Priority |
 |----------|----------|-------------|----------|
-| z-ai-web-dev-sdk (chat) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis` | No (built-in) | Primary for all text |
+| **Cloudflare Workers AI** (Llama 3 8B) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis`, `/api/diagnose`, `/api/news` bulletin | Built-in token in `cloudflareAI.ts` | **Primary for all AI** |
+| z-ai-web-dev-sdk (chat) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis`, `/api/news` | No (built-in) | Fallback |
 | z-ai-web-dev-sdk (VLM) | `/api/diagnose` vision | No (built-in) | 1st in waterfall |
-| Gemini 2.5 Flash | `/api/diagnose` | `GEMINI_API_KEY` env | 2nd in waterfall |
-| OpenRouter Qwen-VL | `/api/diagnose` | `OPENROUTER_API_KEY` env | 3rd in waterfall |
-| Groq Llama 4 Scout | `/api/diagnose` | `GROQ_API_KEY` env | 4th in waterfall |
-| z-ai-web-dev-sdk (text) | `/api/diagnose` | No (built-in) | 5th in waterfall |
+| Gemini 2.5 Flash | `/api/diagnose` | `GEMINI_API_KEY` env | 3rd in waterfall |
+| OpenRouter Qwen-VL | `/api/diagnose` | `OPENROUTER_API_KEY` env | 4th in waterfall |
+| Groq Llama 4 Scout | `/api/diagnose` | `GROQ_API_KEY` env | 5th in waterfall |
+| z-ai-web-dev-sdk (text) | `/api/diagnose` | No (built-in) | 6th in waterfall |
+
+### Cloudflare Workers AI Configuration
+
+- **Account ID**: Set via `CF_ACCOUNT_ID` env var
+- **API Token**: Set via `CF_API_TOKEN` env var (must be added in Vercel dashboard)
+- **Models**: `@cf/meta/llama-3-8b-instruct` (default), `@cf/mistral/mistral-7b-instruct`, `@cf/meta/llama-3-70b-instruct`
+- **Utility**: `callCloudflareAI()` (full response), `cfAIChat()` (simple system+user), `cfAIChatFull()` (chat with history)
+- **Timeout**: 15s default, configurable per call
+- **Fallback**: If env vars not set, throws error and routes fall through to z-ai-web-dev-sdk
 
 ## Fallback Chain for Diagnosis
 
 ```
-1. z-ai-vlm (GLM-4V-Plus, vision) → best for image analysis
-2. Gemini 2.5 Flash (vision)       → if env key set
-3. OpenRouter Qwen-VL (vision)     → if env key set
-4. Groq Llama 4 Scout (text-only)  → if env key set
-5. z-ai-text (GLM text)            → text-only fallback
-6. Offline CABI Engine             → pure algorithmic, no API
-7. Emergency Regex                 → keyword matching, always available
+1. z-ai-vlm (GLM-4V-Plus, vision)     → best for image analysis
+2. CF Workers AI (Llama 3 8B, text)    → primary text diagnosis
+3. Gemini 2.5 Flash (vision)           → if env key set
+4. OpenRouter Qwen-VL (vision)         → if env key set
+5. Groq Llama 4 Scout (text-only)      → if env key set
+6. z-ai-text (GLM text)                → text-only fallback
+7. Offline CABI Engine                 → pure algorithmic, no API
+8. Emergency Regex                     → keyword matching, always available
 ```
 
 ## Simulated Data (No External API)
@@ -50,6 +61,8 @@
 
 | Variable | Purpose | Required |
 |----------|---------|----------|
+| `CF_ACCOUNT_ID` | Cloudflare Workers AI account ID | Yes (for CF AI) |
+| `CF_API_TOKEN` | Cloudflare Workers AI API token | Yes (for CF AI) |
 | `GEMINI_API_KEY` | Gemini diagnosis fallback | No |
 | `GROQ_API_KEY` | Groq diagnosis fallback | No |
 | `OPENROUTER_API_KEY` | OpenRouter diagnosis fallback | No |

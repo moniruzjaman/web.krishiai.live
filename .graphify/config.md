@@ -62,16 +62,18 @@ bun install → bun run build → .next/standalone output
 
 ## .gitignore Highlights
 - `/skills/`, `/agent-ctx/`, `/upload/`, `/download/` excluded
-- `.env*` excluded (DATABASE_URL only env var)
+- `.env*` excluded (env vars for CF AI, Gemini, Groq, OpenRouter)
 - `/worklog.md` excluded
 
 ## Environment Variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
+| `CF_ACCOUNT_ID` | unset | Cloudflare Workers AI account ID (required for CF AI) |
+| `CF_API_TOKEN` | unset | Cloudflare Workers AI API token (required for CF AI) |
 | `DATABASE_URL` | `file:/home/z/my-project/db/custom.db` | SQLite path (unused in production) |
 | `GEMINI_API_KEY` | unset | Gemini diagnosis fallback |
 | `GROQ_API_KEY` | unset | Groq diagnosis fallback |
 | `OPENROUTER_API_KEY` | unset | OpenRouter diagnosis fallback |
 
-All features work WITHOUT any env variables set. Optional keys only enhance the diagnosis waterfall.
+All features work WITHOUT any env variables set (CF AI and optional keys enhance but aren't required — z-ai-web-dev-sdk is the universal fallback).

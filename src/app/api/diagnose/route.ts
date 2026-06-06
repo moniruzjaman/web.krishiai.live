@@ -595,7 +595,36 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] z-ai-vlm failed:", e instanceof Error ? e.message : String(e)); }
     }
 
-    // 2. Fallback 1: Gemini 2.5 Flash
+    // 2. Fallback 1: Cloudflare Workers AI (Llama 3 8B — text-only)
+    if (!resultText) {
+      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
+        return NextResponse.json(
+          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
+          { status: 503, headers: corsHeaders(origin) }
+        );
+      }
+      try {
+        const { callCloudflareAI } = await import("@/lib/cloudflareAI");
+        const textMessages = messages.map(m => ({
+          role: m.role as "system" | "user" | "assistant",
+          content: Array.isArray(m.content)
+            ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
+            : (m.content as string),
+        }));
+        const cfResult = await callCloudflareAI(
+          [{ role: "system", content: SYSTEM_PROMPT }, ...textMessages],
+          { temperature: 0.3, maxTokens: 3000, timeout: PROVIDER_TIMEOUT_MS }
+        );
+        if (cfResult.ok && cfResult.reply) {
+          resultText = cfResult.reply;
+          provider = "Cloudflare Workers AI (Llama 3 8B)";
+        }
+      } catch (e) {
+        console.warn("[diagnose] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    // 3. Fallback 2: Gemini 2.5 Flash
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -612,7 +641,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 3. Fallback 2: OpenRouter Qwen-VL
+    // 4. Fallback 3: OpenRouter Qwen-VL
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -629,7 +658,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 4. Fallback 3: Groq text-only
+    // 5. Fallback 4: Groq text-only
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -646,7 +675,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 5. Fallback 4: z-ai-web-dev-sdk text-only
+    // 6. Fallback 5: z-ai-web-dev-sdk text-only
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
         return NextResponse.json(
@@ -682,7 +711,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 6. Fallback 5: Offline CABI engine
+    // 7. Fallback 6: Offline CABI engine
     if (!resultText) {
       try {
         const symptomObj: Record<string, string> = {};
@@ -737,7 +766,7 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
       }
     }
 
-    // 7. Fallback 6: Emergency regex-based diagnosis
+    // 8. Fallback 7: Emergency regex-based diagnosis
     if (!resultText) {
       resultText = buildEmergencyDiagnosis(symptoms, !!image, crop);
       provider = "Emergency Regex";

@@ -103,9 +103,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     const systemPrompt = `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। তোমার পরামর্শ SRDI (মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট), BARC (বাংলাদেশ কৃষি গবেষণা পরিষদ), BRRI (বাংলাদেশ ধান গবেষণা ইনস্টিটিউট) এবং BARI (বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট)-এর গবেষণার উপর ভিত্তি করে হবে। বাংলায় উত্তর দাও।`;
 
     const userPrompt = `বাংলাদেশের AEZ (Agro-Ecological Zone) নম্বর ${zone.id} — "${zone.name}" (${zone.bn}) সম্পর্কে বিস্তারিত মৃত্তিকা বিশ্লেষণ দাও।
@@ -123,17 +120,42 @@ export async function GET(request: NextRequest) {
 
 তথ্যসূত্র হিসেবে SRDI, BARC, BRRI, BARI উল্লেখ করবে।`;
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.6,
-      max_tokens: 2000,
-    });
+    let analysis = "";
 
-    const analysis = completion.choices?.[0]?.message?.content ||
-      "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
+    // 1. Primary: Cloudflare Workers AI
+    try {
+      const { cfAIChat } = await import("@/lib/cloudflareAI");
+      const cfResult = await cfAIChat(systemPrompt, userPrompt, {
+        temperature: 0.6,
+        maxTokens: 2000,
+      });
+      if (cfResult) analysis = cfResult;
+    } catch (e) {
+      console.warn("[soil-analysis:GET] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: z-ai-web-dev-sdk
+    if (!analysis) {
+      try {
+        const ZAI = (await import("z-ai-web-dev-sdk")).default;
+        const zai = await ZAI.create();
+        const completion = await zai.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.6,
+          max_tokens: 2000,
+        });
+        analysis = completion.choices?.[0]?.message?.content || "";
+      } catch (e) {
+        console.warn("[soil-analysis:GET] z-ai failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (!analysis) {
+      analysis = "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
+    }
 
     return NextResponse.json({
       ok: true,
@@ -217,17 +239,40 @@ ${aezContext}
 
 তথ্যসূত্র হিসেবে SRDI, BARC, BRRI, BARI উল্লেখ করবে।`;
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.6,
-      max_tokens: 2000,
-    });
+    let analysis = "";
 
-    const analysis = completion.choices?.[0]?.message?.content ||
-      "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
+    // 1. Primary: Cloudflare Workers AI
+    try {
+      const { cfAIChat } = await import("@/lib/cloudflareAI");
+      const cfResult = await cfAIChat(systemPrompt, userPrompt, {
+        temperature: 0.6,
+        maxTokens: 2000,
+      });
+      if (cfResult) analysis = cfResult;
+    } catch (e) {
+      console.warn("[soil-analysis:POST] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: z-ai-web-dev-sdk
+    if (!analysis) {
+      try {
+        const completion = await zai.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.6,
+          max_tokens: 2000,
+        });
+        analysis = completion.choices?.[0]?.message?.content || "";
+      } catch (e) {
+        console.warn("[soil-analysis:POST] z-ai failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (!analysis) {
+      analysis = "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
+    }
 
     return NextResponse.json({
       ok: true,
