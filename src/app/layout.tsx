@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
+import ClientShell from "@/components/ClientShell";
 
 const notoSansBengali = Noto_Sans_Bengali({
   variable: "--font-bengali",
@@ -28,8 +29,15 @@ export const metadata: Metadata = {
     "কৃষি প্রযুক্তি",
   ],
   authors: [{ name: "KrishiAI Team" }],
+  manifest: "/manifest.json",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>",
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KrishiAI",
   },
   openGraph: {
     title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -60,6 +68,7 @@ export default function RootLayout({
             <BottomNav />
           </div>
         </LocationProvider>
+        <ClientShell />
         <Toaster />
       </body>
     </html>

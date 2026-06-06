@@ -1,0 +1,28 @@
+{
+  "name": "KrishiAI — কৃষি AI প্ল্যাটফর্ম",
+  "short_name": "KrishiAI",
+  "description": "বাংলাদেশের কৃষকদের জন্য AI-চালিত স্মার্ট কৃষি সেবা",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b4332",
+  "theme_color": "#1b4332",
+  "orientation": "portrait-primary",
+  "lang": "bn",
+  "categories": ["agriculture", "education", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

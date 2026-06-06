@@ -1,5 +1,0 @@
-{
-  "name": "BdSoil: AEZ Analyzer",
-  "description": "A specialized tool for analyzing soil texture and estimating organic matter content specifically for the Agro-ecological Zones (AEZ) of Bangladesh. Features real-time AI analysis and USDA texture classification.",
-  "requestFramePermissions": []
-}
