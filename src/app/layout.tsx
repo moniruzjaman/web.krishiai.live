@@ -6,6 +6,7 @@ import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
 import ClientShell from "@/components/ClientShell";
+import { Analytics } from "@vercel/analytics/next";
 
 const notoSansBengali = Noto_Sans_Bengali({
   variable: "--font-bengali",
@@ -70,6 +71,7 @@ export default function RootLayout({
         </LocationProvider>
         <ClientShell />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
