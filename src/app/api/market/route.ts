@@ -51,14 +51,49 @@ interface MarketPrice {
 
 // ── Try to fetch live prices from DAM via CORS proxy ─────────────────────────
 async function fetchDAMLivePrices(): Promise<MarketPrice[] | null> {
-  const CORS_PROXIES = [
-    (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-
+  // Try DAM API directly first (server-to-server, no CORS proxy needed)
   const damUrls = [
     "https://market.dam.gov.bd/api/commodity-price",
     "https://market.dam.gov.bd/api/today-price",
+  ];
+
+  // 1. Direct fetch (server-side, no CORS needed)
+  for (const damUrl of damUrls) {
+    try {
+      const r = await fetch(damUrl, {
+        signal: AbortSignal.timeout(8000),
+        headers: {
+          "User-Agent": "KrishiAI/3.0",
+          "Accept": "application/json",
+          "Origin": "https://web.krishiai.live",
+          "Referer": "https://web.krishiai.live/",
+        },
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data.slice(0, 20).map((item: Record<string, string>) => ({
+            name: item.nameBn || item.commodityNameBn || item.name || "অজানা",
+            en: item.nameEn || item.commodityName || item.name || "Unknown",
+            price: item.price || item.retailPrice || "০",
+            unit: item.unit || "kg",
+            trend: parseFloat(item.change || "0") > 0 ? "up" : parseFloat(item.change || "0") < 0 ? "down" : "flat",
+            change: item.change || "0%",
+            icon: item.icon || "📦",
+            category: item.category || "অন্যান্য",
+            lastWeek: item.lastWeekPrice || item.wholeSalePrice || "",
+          }));
+        }
+      }
+    } catch {
+      // Direct fetch failed, try proxy
+    }
+  }
+
+  // 2. CORS proxy fallback (only if direct fetch fails)
+  const CORS_PROXIES = [
+    (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   ];
 
   for (const proxyBuilder of CORS_PROXIES) {
@@ -74,8 +109,6 @@ async function fetchDAMLivePrices(): Promise<MarketPrice[] | null> {
           try {
             const data = JSON.parse(text);
             if (Array.isArray(data) && data.length > 0) {
-              // Live DAM data fetched successfully
-              // Transform DAM API response to our format
               return data.slice(0, 20).map((item: Record<string, string>) => ({
                 name: item.nameBn || item.commodityNameBn || item.name || "অজানা",
                 en: item.nameEn || item.commodityName || item.name || "Unknown",

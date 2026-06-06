@@ -93,9 +93,9 @@ export const BENGALI_KEYWORD_MAP: Record<string, string> = {
   'ব্যাকটেরিয়া': 'bacteria bacterial ooze',
   'ভাইরাস': 'virus mosaic distortion',
   'পোকা': 'insect pest',
-  'রসুন': 'garlic',
-  'পেঁয়াজ': 'onion',
-  'মরিচ': 'chilli',
+  'রসুন': 'garlic crop allium',
+  'পেঁয়াজ': 'onion crop allium',
+  'মরিচ': 'chilli pepper crop capsicum',
 };
 
 /**

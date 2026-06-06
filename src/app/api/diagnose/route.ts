@@ -393,7 +393,7 @@ const PROVIDER_TIMEOUT_MS = 15_000;
 // ─── Provider: Gemini 2.5 Flash ──────────────────────────────────────────
 async function tryGemini(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
 
   const lastMsg = messages[messages.length - 1];
   const content = Array.isArray(lastMsg.content) ? lastMsg.content : [{ type: "text", text: lastMsg.content as string }];
@@ -434,7 +434,7 @@ async function tryGemini(messages: Array<{ role: string; content: string | Array
 // ─── Provider: Groq Llama 4 Scout ────────────────────────────────────────
 async function tryGroq(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY not set");
+  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
 
   // Strip images for text-only model
   const textMessages = messages.map(m => ({
@@ -466,7 +466,7 @@ async function tryGroq(messages: Array<{ role: string; content: string | Array<{
 // ─── Provider: OpenRouter ────────────────────────────────────────────────
 async function tryOpenRouter(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
+  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
 
   const body = {
     model: "qwen/qwen2.5-vl-72b-instruct:free",
@@ -592,7 +592,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       resultText = completion?.choices?.[0]?.message?.content || "";
       provider = "z-ai-vlm";
     } catch (e) {
-      console.warn("[diagnose] z-ai-vlm failed:", e instanceof Error ? e.message : String(e));
+      if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] z-ai-vlm failed:", e instanceof Error ? e.message : String(e)); }
     }
 
     // 2. Fallback 1: Gemini 2.5 Flash
@@ -608,7 +608,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
         resultText = geminiResult.text;
         provider = geminiResult.provider;
       } catch (e) {
-        console.warn("[diagnose] Gemini failed:", e instanceof Error ? e.message : String(e));
+        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] Gemini failed:", e instanceof Error ? e.message : String(e)); }
       }
     }
 
@@ -625,7 +625,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
         resultText = orResult.text;
         provider = orResult.provider;
       } catch (e) {
-        console.warn("[diagnose] OpenRouter failed:", e instanceof Error ? e.message : String(e));
+        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] OpenRouter failed:", e instanceof Error ? e.message : String(e)); }
       }
     }
 
@@ -642,7 +642,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
         resultText = groqResult.text;
         provider = groqResult.provider;
       } catch (e) {
-        console.warn("[diagnose] Groq failed:", e instanceof Error ? e.message : String(e));
+        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] Groq failed:", e instanceof Error ? e.message : String(e)); }
       }
     }
 
@@ -678,7 +678,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
         resultText = completion?.choices?.[0]?.message?.content || "";
         provider = "z-ai-text";
       } catch (e) {
-        console.warn("[diagnose] z-ai-text failed:", e instanceof Error ? e.message : String(e));
+        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] z-ai-text failed:", e instanceof Error ? e.message : String(e)); }
       }
     }
 

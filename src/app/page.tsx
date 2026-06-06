@@ -284,7 +284,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ LIVE DASHBOARD ═════════════════════════════════════════════════════ */}
-      <section className="px-4 py-6 sm:px-6 sm:py-8 bg-gray-50/50 dark:bg-gray-850">
+      <section className="px-4 py-6 sm:px-6 sm:py-8 bg-gray-50/50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
           {/* Section title */}
           <div className="flex items-center gap-2 mb-5">

@@ -287,6 +287,13 @@ const WEATHER_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 // ── Seasonal fallback data ──────────────────────────────────────────────────
 function getSeasonalFallback(city: string, lat: number, lon: number): Record<string, unknown> {
+  // Deterministic pseudo-random based on date + location (no Math.random for SSR consistency)
+  const daySeed = new Date().getDate() + Math.round(lat * 10) + Math.round(lon * 10);
+  const dRand = (offset: number) => {
+    const x = Math.sin(daySeed * 9301 + offset * 49297) * 49297;
+    return x - Math.floor(x); // 0-1
+  };
+
   const m = new Date().getMonth() + 1;
   const hour = new Date().getHours();
   const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
@@ -294,17 +301,17 @@ function getSeasonalFallback(city: string, lat: number, lon: number): Record<str
   // Bangladesh seasonal temperature ranges
   let baseTemp, feelTemp, humid, rain, code, wind;
   if (m >= 11 || m <= 2) { // Winter
-    baseTemp = hour >= 6 && hour <= 17 ? 25 + Math.random() * 5 : 14 + Math.random() * 5;
-    feelTemp = baseTemp - 2; humid = 65 + Math.random() * 15; rain = Math.random() * 2; code = 0; wind = 5 + Math.random() * 8;
+    baseTemp = hour >= 6 && hour <= 17 ? 25 + dRand(0) * 5 : 14 + dRand(1) * 5;
+    feelTemp = baseTemp - 2; humid = 65 + dRand(2) * 15; rain = dRand(3) * 2; code = 0; wind = 5 + dRand(4) * 8;
   } else if (m >= 3 && m <= 5) { // Spring/Pre-monsoon
-    baseTemp = hour >= 6 && hour <= 17 ? 32 + Math.random() * 6 : 24 + Math.random() * 4;
-    feelTemp = baseTemp + 3; humid = 60 + Math.random() * 20; rain = Math.random() * 10; code = 1; wind = 8 + Math.random() * 12;
+    baseTemp = hour >= 6 && hour <= 17 ? 32 + dRand(0) * 6 : 24 + dRand(1) * 4;
+    feelTemp = baseTemp + 3; humid = 60 + dRand(2) * 20; rain = dRand(3) * 10; code = 1; wind = 8 + dRand(4) * 12;
   } else if (m >= 6 && m <= 9) { // Monsoon
-    baseTemp = hour >= 6 && hour <= 17 ? 30 + Math.random() * 4 : 26 + Math.random() * 3;
-    feelTemp = baseTemp + 4; humid = 80 + Math.random() * 15; rain = 5 + Math.random() * 30; code = 61; wind = 10 + Math.random() * 15;
+    baseTemp = hour >= 6 && hour <= 17 ? 30 + dRand(0) * 4 : 26 + dRand(1) * 3;
+    feelTemp = baseTemp + 4; humid = 80 + dRand(2) * 15; rain = 5 + dRand(3) * 30; code = 61; wind = 10 + dRand(4) * 15;
   } else { // Autumn
-    baseTemp = hour >= 6 && hour <= 17 ? 30 + Math.random() * 4 : 22 + Math.random() * 4;
-    feelTemp = baseTemp + 1; humid = 70 + Math.random() * 15; rain = Math.random() * 8; code = 2; wind = 6 + Math.random() * 10;
+    baseTemp = hour >= 6 && hour <= 17 ? 30 + dRand(0) * 4 : 22 + dRand(1) * 4;
+    feelTemp = baseTemp + 1; humid = 70 + dRand(2) * 15; rain = dRand(3) * 8; code = 2; wind = 6 + dRand(4) * 10;
   }
 
   const forecast: Array<{ day: string; max: number; min: number; code: number; precipProb: number; precipSum: number; windMax: number }> = [];
@@ -312,24 +319,25 @@ function getSeasonalFallback(city: string, lat: number, lon: number): Record<str
     const fDate = new Date(); fDate.setDate(fDate.getDate() + d);
     forecast.push({
       day: DAYS[fDate.getDay()],
-      max: Math.round(baseTemp + 3 + Math.random() * 3),
-      min: Math.round(baseTemp - 5 - Math.random() * 3),
-      code: m >= 6 && m <= 9 ? (Math.random() > 0.4 ? 63 : 61) : (Math.random() > 0.6 ? 2 : 0),
-      precipProb: m >= 6 && m <= 9 ? Math.round(40 + Math.random() * 50) : Math.round(Math.random() * 30),
-      precipSum: m >= 6 && m <= 9 ? Math.round(5 + Math.random() * 20) : Math.round(Math.random() * 5),
-      windMax: Math.round(wind + Math.random() * 8),
+      max: Math.round(baseTemp + 3 + dRand(20 + d) * 3),
+      min: Math.round(baseTemp - 5 - dRand(30 + d) * 3),
+      code: m >= 6 && m <= 9 ? (dRand(40 + d) > 0.4 ? 63 : 61) : (dRand(45 + d) > 0.6 ? 2 : 0),
+      precipProb: m >= 6 && m <= 9 ? Math.round(40 + dRand(50 + d) * 50) : Math.round(dRand(55 + d) * 30),
+      precipSum: m >= 6 && m <= 9 ? Math.round(5 + dRand(60 + d) * 20) : Math.round(dRand(65 + d) * 5),
+      windMax: Math.round(wind + dRand(70 + d) * 8),
     });
   }
 
   const hourly: Array<{ time: string; temp: number; code: number; precipProb: number; wind: number }> = [];
   for (let h = 0; h < 24; h += 2) {
-    const hTemp = h >= 6 && h <= 17 ? baseTemp + (h - 12) * 0.3 : baseTemp - 4 + Math.random() * 2;
+    const hi = h / 2;
+    const hTemp = h >= 6 && h <= 17 ? baseTemp + (h - 12) * 0.3 : baseTemp - 4 + dRand(80 + hi) * 2;
     hourly.push({
       time: `${h.toString().padStart(2, "0")}:০০`,
       temp: Math.round(hTemp),
-      code: m >= 6 && m <= 9 ? (Math.random() > 0.5 ? 63 : 3) : (Math.random() > 0.5 ? 1 : 0),
-      precipProb: m >= 6 && m <= 9 ? Math.round(30 + Math.random() * 50) : Math.round(Math.random() * 20),
-      wind: Math.round(wind + Math.random() * 5),
+      code: m >= 6 && m <= 9 ? (dRand(90 + hi) > 0.5 ? 63 : 3) : (dRand(95 + hi) > 0.5 ? 1 : 0),
+      precipProb: m >= 6 && m <= 9 ? Math.round(30 + dRand(100 + hi) * 50) : Math.round(dRand(105 + hi) * 20),
+      wind: Math.round(wind + dRand(110 + hi) * 5),
     });
   }
 
@@ -339,26 +347,26 @@ function getSeasonalFallback(city: string, lat: number, lon: number): Record<str
     feel: Math.round(feelTemp),
     humid: Math.round(humid),
     wind: Math.round(wind),
-    windDir: Math.round(180 + Math.random() * 90),
+    windDir: Math.round(180 + dRand(120) * 90),
     rain: Math.round(rain * 10) / 10,
     code,
     maxT: Math.round(baseTemp + 3),
     minT: Math.round(baseTemp - 6),
     city,
     lat, lon,
-    uvIndex: hour >= 10 && hour <= 14 ? 6 + Math.random() * 4 : Math.random() * 3,
+    uvIndex: hour >= 10 && hour <= 14 ? 6 + dRand(121) * 4 : dRand(122) * 3,
     dewPoint: Math.round(baseTemp - 8),
-    pressure: Math.round(1000 + Math.random() * 20),
-    cloudCover: Math.round(m >= 6 && m <= 9 ? 60 + Math.random() * 30 : Math.random() * 40),
-    soilMoisture: m >= 6 && m <= 9 ? 0.35 + Math.random() * 0.2 : 0.2 + Math.random() * 0.15,
-    soilMoistureDeep: m >= 6 && m <= 9 ? 0.4 + Math.random() * 0.15 : 0.25 + Math.random() * 0.1,
+    pressure: Math.round(1000 + dRand(123) * 20),
+    cloudCover: Math.round(m >= 6 && m <= 9 ? 60 + dRand(124) * 30 : dRand(124) * 40),
+    soilMoisture: m >= 6 && m <= 9 ? 0.35 + dRand(125) * 0.2 : 0.2 + dRand(125) * 0.15,
+    soilMoistureDeep: m >= 6 && m <= 9 ? 0.4 + dRand(126) * 0.15 : 0.25 + dRand(126) * 0.1,
     soilTemp: Math.round(baseTemp - 3),
-    et0: Math.round((3 + Math.random() * 3) * 10) / 10,
-    leafWetness: Math.round(m >= 6 && m <= 9 ? 50 + Math.random() * 30 : Math.random() * 20),
+    et0: Math.round((3 + dRand(127) * 3) * 10) / 10,
+    leafWetness: Math.round(m >= 6 && m <= 9 ? 50 + dRand(128) * 30 : dRand(128) * 20),
     gdd: Math.round(baseTemp),
     sunrise: "৬:০৫ AM",
     sunset: "৬:৩৫ PM",
-    uvMax: Math.round(8 + Math.random() * 3),
+    uvMax: Math.round(8 + dRand(129) * 3),
     forecast,
     hourly,
     alerts: rain > 20 ? [{ type: "heavy_rain", severity: "advisory", message: "Rain expected", messageBn: "বৃষ্টির সম্ভাবনা" }] : [],

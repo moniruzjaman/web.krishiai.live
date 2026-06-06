@@ -38,7 +38,7 @@ function getSimulatedNDVI(month: number, lat: number, lng: number): number {
 
   // Add location-based variation
   const variation = Math.sin(lat * 0.1) * 0.1 + Math.cos(lng * 0.05) * 0.05;
-  return Math.max(0.1, Math.min(0.95, base + variation + (Math.random() * 0.05 - 0.025)));
+  return Math.max(0.1, Math.min(0.95, base + variation + Math.sin(lat * 100 + lng * 100 + month * 7) * 0.025));
 }
 
 function getNDVIColor(ndvi: number): string {
@@ -142,11 +142,12 @@ const CROP_NDVI_DATA = [
 
 // ── Rain probability simulation ─────────────────────────────────────────────
 function getRainProbability(month: number): number {
-  // Bangladesh monsoon pattern
-  if (month >= 6 && month <= 9) return 70 + Math.random() * 20; // Monsoon
-  if (month === 5 || month === 10) return 40 + Math.random() * 15; // Pre/Post monsoon
-  if (month >= 3 && month <= 4) return 15 + Math.random() * 20; // Spring showers
-  return 5 + Math.random() * 10; // Dry season
+  // Bangladesh monsoon pattern — deterministic based on month
+  const r = Math.sin(month * 37) * 0.5 + 0.5; // Deterministic 0-1 based on month
+  if (month >= 6 && month <= 9) return 70 + r * 20; // Monsoon
+  if (month === 5 || month === 10) return 40 + r * 15; // Pre/Post monsoon
+  if (month >= 3 && month <= 4) return 15 + r * 20; // Spring showers
+  return 5 + r * 10; // Dry season
 }
 
 // ── Soil moisture simulation ─────────────────────────────────────────────────
