@@ -193,7 +193,8 @@ export default function MarketWidget() {
   const fetchMarket = useCallback(async () => {
     setError(false);
     try {
-      const r = await fetch("/api/market");
+      const districtParam = locationName !== "ঢাকা" ? `?district=${encodeURIComponent(locationName)}` : "";
+      const r = await fetch(`/api/market${districtParam}`);
       const d: MarketResponse = await r.json();
       if (d.ok) {
         setPrices(d.prices);

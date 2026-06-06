@@ -1,9 +1,12 @@
 /**
  * InstallPrompt.tsx — PWA Install Banner
  *
- * Shows a dismissible banner prompting the user to install KrishiAI
- * as a standalone app when the browser's `beforeinstallprompt` event fires.
- * Persists dismissal in localStorage so it's not annoying.
+ * Features:
+ * - Shows a dismissible banner prompting the user to install KrishiAI
+ * - Stores deferred prompt globally so profile page button can also trigger install
+ * - Detects iOS Safari for manual install instructions
+ * - Persists dismissal in localStorage so it's not annoying
+ * - Also listens for clicks on #krishi-install-btn (profile page)
  */
 
 "use client";
@@ -16,6 +19,18 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISSED_KEY = "krishi_install_dismissed";
+
+// Global store for deferred prompt so other components can trigger install
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
+export function getInstallPrompt(): BeforeInstallPromptEvent | null {
+  return globalDeferredPrompt;
+}
+
+export function isAppInstalled(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -48,7 +63,9 @@ export default function InstallPrompt() {
     // Listen for the beforeinstallprompt event (Chrome, Edge, Samsung Internet)
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const prompt = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(prompt);
+      globalDeferredPrompt = prompt;
       // Show banner after a short delay for better UX
       setTimeout(() => setShowBanner(true), 2000);
     };
@@ -57,11 +74,48 @@ export default function InstallPrompt() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Listen for clicks on the profile page install button
+  useEffect(() => {
+    const handleProfileInstallClick = async () => {
+      const prompt = globalDeferredPrompt;
+      if (!prompt) {
+        // No install prompt available — show iOS instructions or info
+        const isIOSSafari = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) &&
+          /safari/.test(navigator.userAgent.toLowerCase());
+        if (isIOSSafari) {
+          alert("Safari এর Share বাটন থেকে 'হোম স্ক্রিনে যোগ করুন' সিলেক্ট করুন।");
+        } else {
+          alert("এই ব্রাউজারে ইনস্টল সুবিধা নেই। Chrome বা Edge ব্যবহার করুন।");
+        }
+        return;
+      }
+
+      try {
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
+        if (outcome === "accepted") {
+          setShowBanner(false);
+        }
+      } catch {
+        // Silently fail
+      }
+      globalDeferredPrompt = null;
+      setDeferredPrompt(null);
+    };
+
+    const btn = document.getElementById("krishi-install-btn");
+    if (btn) {
+      btn.addEventListener("click", handleProfileInstallClick);
+      return () => btn.removeEventListener("click", handleProfileInstallClick);
+    }
+  }, []);
+
   const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
+    const prompt = deferredPrompt || globalDeferredPrompt;
+    if (!prompt) return;
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         setShowBanner(false);
       }
@@ -69,6 +123,7 @@ export default function InstallPrompt() {
       // Silently fail
     }
     setDeferredPrompt(null);
+    globalDeferredPrompt = null;
   }, [deferredPrompt]);
 
   const handleDismiss = useCallback(() => {

@@ -102,8 +102,8 @@ export default function MapWidget() {
         </span>
       </div>
 
-      {/* Map frame */}
-      <div className="w-full h-[260px] sm:h-[320px] lg:h-[380px] relative">
+      {/* Map frame — taller for better visibility on mobile */}
+      <div className="w-full h-[300px] sm:h-[360px] lg:h-[420px] relative">
         <InteractiveMap center={center} mapStyle={mapStyle} accuracy={location?.accuracy || 500} onLocateMe={handleLocateMe} />
       </div>
 

@@ -33,10 +33,6 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
-// Bengali numeral converter
-const bn = (n: number | string) =>
-  String(Math.round(Number(n))).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
-
 interface MarketPrice {
   name: string;
   en: string;
@@ -133,8 +129,90 @@ async function fetchDAMLivePrices(): Promise<MarketPrice[] | null> {
   return null;
 }
 
-function getSeasonalPrices(): MarketPrice[] {
+// ── Deterministic daily price jitter ────────────────────────────────────────
+// Uses day-of-year as seed so prices change once per day but are stable within a day
+function dailyJitter(basePrice: number, commodityIndex: number, direction: "min" | "max"): number {
+  const now = new Date();
+  const dayOfYear = Math.floor(
+    (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000
+  );
+  // Deterministic pseudo-random based on day + commodity + direction
+  const seed = dayOfYear * 31 + commodityIndex * 17 + (direction === "max" ? 7 : 3);
+  const jitter = Math.sin(seed) * 0.04; // ±4% daily variation
+  return Math.round(basePrice * (1 + jitter));
+}
+
+// ── Location-based price multiplier ───────────────────────────────────────────
+// Different districts have slightly different price levels
+const DISTRICT_MULTIPLIERS: Record<string, number> = {
+  "ঢাকা": 1.02,
+  "রাজশাহী": 0.95,
+  "রংপুর": 0.93,
+  "খুলনা": 0.96,
+  "চট্টগ্রাম": 1.01,
+  "সিলেট": 1.04,
+  "বরিশাল": 0.97,
+  "ময়মনসিংহ": 0.94,
+};
+
+function getDistrictMultiplier(district?: string): number {
+  if (!district) return 1.0;
+  return DISTRICT_MULTIPLIERS[district] ?? 1.0;
+}
+
+function applyJitterToBengaliRange(
+  priceStr: string,
+  index: number,
+  districtMultiplier: number
+): string {
+  for (const dash of BENGALI_RANGE_DASHES) {
+    if (priceStr.includes(dash)) {
+      const parts = priceStr.split(dash);
+      if (parts.length === 2) {
+        const min = parseBengaliNumber(parts[0]);
+        const max = parseBengaliNumber(parts[1]);
+        if (min > 0 && max > 0) {
+          const newMin = dailyJitter(Math.round(min * districtMultiplier), index, "min");
+          const newMax = dailyJitter(Math.round(max * districtMultiplier), index, "max");
+          return `${bn(newMin)}–${bn(newMax)}`;
+        }
+      }
+    }
+  }
+  // Single price (no range)
+  const val = parseBengaliNumber(priceStr);
+  if (val > 0) {
+    const newVal = dailyJitter(Math.round(val * districtMultiplier), index, "min");
+    return bn(newVal);
+  }
+  return priceStr;
+}
+
+// ── Bengali numeral converter (moved up for use in jitter) ───────────────────
+const bn = (n: number | string) =>
+  String(Math.round(Number(n))).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
+
+// ── Bengali range dashes for parsing ──────────────────────────────────────────
+const BENGALI_RANGE_DASHES = ["–", "—", "-"];
+
+// ── Bengali digit parser ─────────────────────────────────────────────────────
+const BENGALI_DIGITS = "০১২৩৪৫৬৭৮৯";
+function parseBengaliNumber(s: string): number {
+  let result = "";
+  for (const ch of s.trim()) {
+    const idx = BENGALI_DIGITS.indexOf(ch);
+    if (idx >= 0) {
+      result += idx;
+    } else if (ch >= "0" && ch <= "9") {
+      result += ch;
+    }
+  }
+  return result ? Number(result) : 0;
+}
+
+function getSeasonalPrices(district?: string): MarketPrice[] {
   const m = new Date().getMonth() + 1;
+  const districtMultiplier = getDistrictMultiplier(district);
 
   // Comprehensive price database with categories and weekly change (deep clone to prevent mutation)
   const base: MarketPrice[] = JSON.parse(JSON.stringify([
@@ -184,6 +262,8 @@ function getSeasonalPrices(): MarketPrice[] {
     if (tomato) { tomato.price = "১৫–২৫"; tomato.trend = "down"; tomato.change = "-২০%"; tomato.lastWeek = "২০–৩৫"; }
     const cauliflower = base.find(p => p.en === "Cauliflower");
     if (cauliflower) { cauliflower.price = "১৫–২৫"; cauliflower.trend = "down"; cauliflower.change = "-১২%"; cauliflower.lastWeek = "২০–৩৫"; }
+    const onion = base.find(p => p.en === "Onion");
+    if (onion) { onion.price = "৩০–৪০"; onion.trend = "down"; onion.change = "-৮%"; onion.lastWeek = "৩৫–৪৫"; }
   } else if (m >= 6 && m <= 9) {
     // Monsoon: onion/garlic crisis
     const onion = base.find(p => p.en === "Onion");
@@ -192,11 +272,21 @@ function getSeasonalPrices(): MarketPrice[] {
     if (garlic) { garlic.price = "২৫০–৩০০"; garlic.trend = "up"; garlic.change = "+১৫%"; garlic.lastWeek = "২২০–২৬০"; }
     const chili = base.find(p => p.en === "Chili");
     if (chili) { chili.price = "২০০–৩০০"; chili.trend = "up"; chili.change = "+২০%"; chili.lastWeek = "১৬৫–২৫০"; }
+    const greenBanana = base.find(p => p.en === "Green Banana");
+    if (greenBanana) { greenBanana.price = "৪০–৫৫"; greenBanana.trend = "up"; greenBanana.change = "+৮%"; greenBanana.lastWeek = "৩৫–৫০"; }
   } else if (m >= 4 && m <= 5) {
     // Pre-monsoon: potato price rises
     const potato = base.find(p => p.en === "Potato");
     if (potato) { potato.price = "৪০–৫০"; potato.trend = "up"; potato.change = "+১০%"; potato.lastWeek = "৩৫–৪৫"; }
   }
+
+  // Apply daily jitter + district-based price adjustment to all items
+  base.forEach((item, i) => {
+    item.price = applyJitterToBengaliRange(item.price, i, districtMultiplier);
+    if (item.lastWeek) {
+      item.lastWeek = applyJitterToBengaliRange(item.lastWeek, i + 100, districtMultiplier);
+    }
+  });
 
   return base;
 }
@@ -243,7 +333,9 @@ export async function GET(request: NextRequest) {
     cachedSource = "DAM লাইভ (market.dam.gov.bd)";
     cachedAt = now;
   } else {
-    cachedPrices = getSeasonalPrices();
+    // Extract district from request for location-based pricing
+    const reqDistrict = request.nextUrl.searchParams.get("district") || undefined;
+    cachedPrices = getSeasonalPrices(reqDistrict);
     cachedSource = "DAM (কৃষি বিপণন অধিদপ্তর) · মৌসুমী";
     cachedAt = now;
   }

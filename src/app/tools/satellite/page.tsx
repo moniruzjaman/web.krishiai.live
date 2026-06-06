@@ -327,7 +327,7 @@ export default function SatellitePage() {
                   </button>
                 </div>
               </div>
-              <div className="w-full h-[320px] sm:h-[380px] relative">
+              <div className="w-full h-[360px] sm:h-[420px] relative">
                 <NDVIMap center={center} ndviValue={ndviValue} />
               </div>
             </div>
@@ -348,7 +348,7 @@ export default function SatellitePage() {
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-start gap-2">
               <span className="text-sm">ℹ️</span>
               <div className="text-[10px] text-gray-500 leading-relaxed">
-                তথ্য Sentinel-2 স্যাটেলাইট ডেটার উপর ভিত্তি করে সিমুলেটেড। বাস্তব NDVI মান Copernicus Browser API থেকে পাওয়া যায়। বাংলাদেশের মৌসুমী প্যাটার্ন অনুসারে ডেটা তৈরি করা হয়েছে।
+                বাংলাদেশের মৌসুমী প্যাটার্ন (বোরো, আউশ, আমন) অনুসারে সিমুলেটেড NDVI ডেটা। কোনো API কী প্রয়োজন নেই — সম্পূর্ণ বিনামূল্যে। বাস্তব-সময়ের Sentinel-2 ডেটার জন্য Copernicus Browser ব্যবহার করুন।
               </div>
             </div>
           </div>

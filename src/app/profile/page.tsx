@@ -786,9 +786,55 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full">
-                  অনুমোদিত
-                </span>
+                <button
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(() => {}, () => {});
+                    }
+                  }}
+                  className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+                >
+                  অনুমোদিত ✓
+                </button>
+              </div>
+
+              {/* Notification Permission */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
+                    <span className="text-base">🔔</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      বিজ্ঞপ্তি অনুমতি
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      আবহাওয়া সতর্কতা ও কৃষি পরামর্শ
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+                      const result = await Notification.requestPermission();
+                      if (result === "granted") {
+                        new Notification("কৃষি AI 🌾", {
+                          body: "বিজ্ঞপ্তি সক্রিয় হয়েছে! আপনি আবহাওয়া সতর্কতা ও কৃষি পরামর্শ পাবেন।",
+                          icon: "/icons/icon-192.png",
+                        });
+                      }
+                    } else if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+                      alert("ব্রাউজার সেটিংস থেকে বিজ্ঞপ্তি অনুমতি দিন।");
+                    }
+                  }}
+                  className="text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors cursor-pointer"
+                >
+                  {typeof Notification !== "undefined" && Notification.permission === "granted"
+                    ? "অনুমোদিত ✓"
+                    : typeof Notification !== "undefined" && Notification.permission === "denied"
+                    ? "অস্বীকৃত ✕"
+                    : "অনুমতি দিন"}
+                </button>
               </div>
 
               {/* Notifications Toggle */}
@@ -851,6 +897,29 @@ export default function ProfilePage() {
                 <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
                   বাংলা
                 </span>
+              </div>
+
+              {/* Install App */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
+                    <span className="text-base">📲</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      অ্যাপ ইনস্টল
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      হোম স্ক্রিনে যোগ করুন — দ্রুত অ্যাক্সেস
+                    </div>
+                  </div>
+                </div>
+                <button
+                  id="krishi-install-btn"
+                  className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+                >
+                  ইনস্টল করুন
+                </button>
               </div>
             </div>
           </div>
