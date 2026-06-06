@@ -1,4 +1,4 @@
-name = "krishiai-api-gateway"
+name = "webkrishiailive"
 # Entry point — middleware (CORS, rate-limit) is inlined directly into this file
 # so wrangler/esbuild can bundle it without relative import issues.
 main = "src/workers/api-gateway.ts"
