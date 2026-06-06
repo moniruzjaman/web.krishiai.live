@@ -19,13 +19,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env files
+# env files — NEVER commit credentials
 .env*
 
 # vercel
 .vercel
 
-# cloudflare workers
+# cloudflare workers dev state
 .wrangler/
 
 # typescript
@@ -35,13 +35,24 @@ next-env.d.ts
 # logs
 *.log
 
-# AI dev tools
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# AI dev tools (platform-provided, not project code)
 .claude
 .z-ai-config
 /skills/
 /agent-ctx/
 
-# dev artifacts
+# IDE / tool configs
+.continue/
+.kilo/
+.vscode/
+.zscripts/
+
+# dev artifacts (screenshots, temp files, etc.)
 /upload/
 /download/
 /tables/
@@ -51,8 +62,9 @@ diff_output.txt
 final_summary.txt
 Diagnostic-Field-Guide_*
 
-# Old Vite project (replaced by Next.js)
+# Old / unused directories
 cabi-diagnosis/
+mini-services/
 
 # local
 local-*
