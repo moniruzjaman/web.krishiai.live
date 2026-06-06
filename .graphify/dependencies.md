@@ -1,6 +1,6 @@
 # Dependencies — Why Each Exists
 
-## Production Dependencies (19)
+## Production Dependencies (18)
 
 | Package | Version | Purpose | Could Remove? |
 |---------|---------|---------|---------------|
@@ -9,7 +9,6 @@
 | `next` | ^16.1.1 | App Router framework | No |
 | `leaflet` | ^1.9.4 | Map rendering (OSM, NDVI) | Would lose maps |
 | `@types/leaflet` | ^1.9.21 | TypeScript types for Leaflet | No (needed for build) |
-| `z-ai-web-dev-sdk` | ^0.0.17 | AI chat, VLM, text completions | Would lose AI features |
 | `zod` | ^4.0.2 | Schema validation | Could use manual validation |
 | `react-markdown` | ^10.1.0 | Render AI markdown responses | Could use dangerouslySetInnerHTML |
 | `lucide-react` | ^0.525.0 | Icon library (40+ icons) | Could use SVG inline |
@@ -24,10 +23,11 @@
 | `@radix-ui/react-tabs` | ^1.1.12 | Tab navigation (shadcn) | Could build custom |
 | `@radix-ui/react-toast` | ^1.2.14 | Toast primitive (shadcn) | Redundant with sonner |
 
-## Dev Dependencies (7)
+## Dev Dependencies (9)
 
 | Package | Version | Purpose |
 |---------|---------|---------|
+| `@cloudflare/workers-types` | ^4 | TypeScript types for CF Workers (src/workers/) |
 | `@tailwindcss/postcss` | ^4 | PostCSS plugin for Tailwind 4 |
 | `@types/react` | ^19 | React TypeScript types |
 | `@types/react-dom` | ^19 | React DOM TypeScript types |
@@ -40,9 +40,11 @@
 
 ## Important Notes
 
+- **No `z-ai-web-dev-sdk`**: Removed. AI calls go through Cloudflare Workers AI (REST or edge gateway)
 - **No `@react-leaflet`**: Maps use plain Leaflet via dynamic import (SSR-safe)
 - **No `axios`**: All fetches use native `fetch()`
 - **No `framer-motion`**: Animations via Tailwind CSS only
 - **No `swr`/`react-query`**: Data fetching uses useState + useEffect
 - **No `next-pwa`**: PWA handled via manifest + manual install prompt
 - **Redundancy**: `@radix-ui/react-toast` + `sonner` both installed; sonner is what's actually used
+- **CF Worker types**: `@cloudflare/workers-types` provides `ExportedHandler`, `Ai` etc. for the worker in `src/workers/`

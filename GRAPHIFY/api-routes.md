@@ -2,11 +2,11 @@
 
 All routes are under `src/app/api/` and use Next.js App Router.
 
-## Route Map
+## Vercel API Routes
 
 | Route | Method | Purpose | AI Provider | Fallback |
 |-------|--------|---------|-------------|----------|
-| `/api/chat` | POST | Bengali agricultural chat | CF Workers AI | Season-aware generic |
+| `/api/chat` | POST | Bengali agricultural chat | CF Workers AI (gateway → REST) | Season-aware generic |
 | `/api/diagnose` | POST | CABI Plantwise crop diagnosis | CF Workers AI → Gemini → OpenRouter → Groq | Offline CABI Engine |
 | `/api/weather` | GET | Weather + agri indices | Open-Meteo (no key) | Seasonal mock data |
 | `/api/market` | GET | Crop market prices | DAM live API | Seasonal prices + daily jitter |
@@ -17,9 +17,19 @@ All routes are under `src/app/api/` and use Next.js App Router.
 | `/api/soil-analysis` | GET/POST | AEZ zone + USDA analysis | CF Workers AI | Static USDA classification |
 | `/api` | GET | Health check | None | N/A |
 
+## CF Worker Routes (Edge Gateway)
+
+| Route | Method | Purpose | AI Binding |
+|-------|--------|---------|------------|
+| `/health` | GET | Worker health check | None |
+| `/api/chat` | POST | Bengali agricultural chat | `env.AI.run()` native |
+| `/api/diagnose` | POST | CABI crop diagnosis | `env.AI.run()` native |
+| `/api/analyze` | POST | General AI analysis | `env.AI.run()` native |
+
 ## Authentication
 - No user auth required — all APIs are public
-- AI credentials secured server-side via Vercel env vars
+- AI credentials secured server-side via Vercel env vars (REST path)
+- CF Worker uses native AI binding — no token needed (gateway path)
 - CORS restricted to `krishiai.live` domains + localhost
 
 ## Caching

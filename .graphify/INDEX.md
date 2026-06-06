@@ -5,7 +5,7 @@
 - **URL**: https://web.krishiai.live
 - **Repo**: moniruzjaman/web.krishiai.live
 - **Branches**: main, production, production-v2 (all synced)
-- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1)
+- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1) + CF Workers (global edge)
 
 ## Source Tree
 
@@ -22,7 +22,7 @@ src/
 │   ├── profile/page.tsx        # User profile + install button
 │   ├── tools/
 │   │   ├── page.tsx            # Tools index (12 tools grid)
-│   │   ├── satellite/page.tsx  # NDVI map + crop health + seasonal comparison (717 lines)
+│   │   ├── satellite/page.tsx  # NDVI map + crop health + seasonal comparison
 │   │   ├── soil/page.tsx       # AEZ soil analyzer
 │   │   ├── irrigation/page.tsx # Irrigation advisor
 │   │   ├── smart-decision/page.tsx # Crop decision engine
@@ -33,14 +33,14 @@ src/
 │   │   └── yield/page.tsx         # Yield forecast
 │   └── api/
 │       ├── route.ts            # API health/info endpoint
-│       ├── chat/route.ts       # AI chat (CF Workers AI → z-ai fallback, Bengali agri system prompt)
-│       ├── diagnose/route.ts   # CABI diagnosis (8-provider waterfall: z-ai-vlm → CF Workers AI → Gemini → OpenRouter → Groq → z-ai-text → Offline → Emergency)
-│       ├── weather/route.ts    # Open-Meteo proxy with agri indices (597 lines)
-│       ├── market/route.ts     # DAM live + seasonal fallback prices (364 lines)
-│       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin (1000+ lines)
-│       ├── crop-database/route.ts # AI-generated crop info (CF Workers AI → z-ai fallback)
+│       ├── chat/route.ts       # AI chat (CF Workers AI: gateway → REST → offline fallback)
+│       ├── diagnose/route.ts   # CABI diagnosis (5-provider waterfall: CF AI → Gemini → OpenRouter → Groq → Offline)
+│       ├── weather/route.ts    # Open-Meteo proxy with agri indices
+│       ├── market/route.ts     # DAM live + seasonal fallback prices
+│       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin
+│       ├── crop-database/route.ts # AI-generated crop info (CF Workers AI + static fallback)
 │       ├── crop-prices/route.ts   # Simulated crop prices (DAM/DAE reference)
-│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (CF Workers AI → z-ai)
+│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (CF Workers AI)
 │       └── smart-decision/route.ts # Combined weather+price+season scoring
 ├── components/
 │   ├── TopNavbar.tsx           # Top nav bar
@@ -55,7 +55,7 @@ src/
 │   ├── NewsWidget.tsx          # Home page news card
 │   ├── AIChatWidget.tsx        # Home page AI chat card
 │   ├── PhotoGallery.tsx        # Home page photo gallery
-│   └── ui/                     # shadcn/ui primitives: badge, button, card, input, scroll-area, skeleton, sonner, tabs, toast, toaster
+│   └── ui/                     # shadcn/ui primitives
 ├── context/
 │   └── LocationContext.tsx     # App-wide GPS provider (useLocation hook, Nominatim, Dhaka fallback)
 ├── hooks/
@@ -66,15 +66,12 @@ src/
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
 │   ├── weatherService.ts       # Open-Meteo integration, crop scoring, disease pressure, irrigation
-│   ├── cloudflareAI.ts         # Cloudflare Workers AI REST API (Llama 3 8B, Mistral 7B)
+│   ├── cloudflareAI.ts         # CF Workers AI dual-path client (gateway + REST) for Next.js routes
 │   └── cabi/
 │       ├── bengaliKeywords.ts  # Bengali→English symptom translation
 │       └── diagnosticEngine.ts # Offline CABI diagnosis engine
 └── workers/
-    ├── api-gateway.ts          # Cloudflare Worker: CORS, rate-limit, KV cache, route proxy
-    └── middleware/
-        ├── cors.ts             # CORS middleware
-        └── rate-limit.ts       # Rate limiting middleware
+    └── index.ts                # CF Worker: Edge AI Gateway (native env.AI binding, CORS, /api/chat, /api/diagnose, /api/analyze)
 
 public/
 ├── manifest.json               # PWA manifest (Bengali, standalone, portrait)
@@ -85,9 +82,17 @@ public/
 ├── disease/                    # ~60 CABI disease reference images
 ├── deficiency/                 # ~24 nutrient deficiency reference images
 └── pest/                       # ~25 pest reference images
+
+Config files:
+├── wrangler.toml               # CF Worker config (name, main, ai binding, vars, limits)
+├── tsconfig.json               # Next.js TypeScript config (excludes src/workers)
+├── tsconfig.worker.json        # CF Worker TypeScript config (@cloudflare/workers-types)
+├── next.config.ts              # Next.js config (standalone, ignoreBuildErrors)
+├── vercel.json                 # Vercel deploy config (bun, hkg1, security headers)
+└── .github/workflows/deploy-full.yml  # CI/CD: validate + deploy CF Worker
 ```
 
-## Route Table (25 routes, all HTTP 200 verified)
+## Route Table (25+ routes)
 
 | Route | Type | Method | Cache | Data Source |
 |-------|------|--------|-------|-------------|
@@ -98,21 +103,30 @@ public/
 | `/profile` | Page | GET | — | — |
 | `/tools` | Page | GET | — | — |
 | `/tools/satellite` | Page | GET | — | Simulated NDVI |
-| `/tools/soil` | Page | GET | — | z-ai + AEZ |
+| `/tools/soil` | Page | GET | — | CF Workers AI + AEZ |
 | `/tools/irrigation` | Page | GET | — | Open-Meteo |
 | `/tools/smart-decision` | Page | GET | — | Open-Meteo + cropPriceService |
-| `/tools/crop-library` | Page | GET | — | z-ai generated |
+| `/tools/crop-library` | Page | GET | — | CF Workers AI generated |
 | `/tools/pesticide` | Page | GET | — | — |
 | `/tools/plant-health` | Page | GET | — | — |
 | `/tools/crop-calendar` | Page | GET | — | cropCalendar.ts |
 | `/tools/yield` | Page | GET | — | — |
 | `/api` | API | GET | 300s | Static info |
-| `/api/chat` | API | POST | no-store | CF Workers AI → z-ai |
-| `/api/diagnose` | API | POST | no-store | 8-provider waterfall |
+| `/api/chat` | API | POST | no-store | CF Workers AI (gateway → REST → offline) |
+| `/api/diagnose` | API | POST | no-store | 5-provider waterfall |
 | `/api/weather` | API | GET | 600s | Open-Meteo + seasonal fallback |
 | `/api/market` | API | GET | 3600s | DAM live + seasonal fallback |
 | `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI |
-| `/api/crop-database` | API | GET | 600s | CF Workers AI → z-ai |
+| `/api/crop-database` | API | GET | 600s | CF Workers AI + static fallback |
 | `/api/crop-prices` | API | GET | 300s | Simulated from DAM/DAE baselines |
-| `/api/soil-analysis` | API | GET/POST | no-store | CF Workers AI → z-ai + AEZ/USDA |
+| `/api/soil-analysis` | API | GET/POST | no-store | CF Workers AI + AEZ/USDA |
 | `/api/smart-decision` | API | GET | 600s | Open-Meteo + cropPriceService |
+
+## CF Worker Routes (Edge AI Gateway)
+
+| Route | Method | Purpose | AI |
+|-------|--------|---------|-----|
+| `/health` | GET | Health check | None |
+| `/api/chat` | POST | Bengali agricultural chat | env.AI.run() native |
+| `/api/diagnose` | POST | CABI crop diagnosis | env.AI.run() native |
+| `/api/analyze` | POST | General AI analysis | env.AI.run() native |

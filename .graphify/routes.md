@@ -55,10 +55,10 @@
 | Tool Page | Primary API | Fallback |
 |-----------|-------------|----------|
 | Satellite/NDVI | Simulated (client-side) | None |
-| Soil Analysis | `/api/soil-analysis` (z-ai) | AEZ zone data |
+| Soil Analysis | `/api/soil-analysis` (CF Workers AI) | AEZ zone data |
 | Irrigation | Open-Meteo (via weatherService) | Climate averages |
 | Smart Decision | `/api/smart-decision` | BD_CLIMATE_AVERAGES |
-| Crop Library | `/api/crop-database` (z-ai) | None |
+| Crop Library | `/api/crop-database` (CF Workers AI) | None |
 | Pesticide | Static/local | — |
 | Plant Health | `/api/diagnose` | Offline CABI engine |
 | Crop Calendar | cropCalendar.ts (local) | — |

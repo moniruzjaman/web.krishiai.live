@@ -8,7 +8,7 @@
 - **TypeScript** + **Tailwind CSS 4**
 - **shadcn/ui** — নির্বাচিত UI কম্পোনেন্ট
 - **Leaflet** — ইন্টারেক্টিভ মানচিত্র (OpenStreetMap + Esri Satellite)
-- **z-ai-web-dev-sdk** — AI চ্যাট, VLM নির্ণয়, ও ইমেজ জেনারেশন
+- **Cloudflare Workers AI** — এজ AI ইনফারেন্স (Llama 3 8B, নেটিভ বাইন্ডিং)
 - **Open-Meteo** — কী-মুক্ত আবহাওয়া API
 - **Nominatim** — GPS রিভার্স জিওকোডিং
 
@@ -24,7 +24,7 @@
 | ফসল তথ্যভাণ্ডার | ৭ ক্যাটাগরি, ২০০+ ফসল, AI-চালিত বিস্তারিত তথ্য |
 | ফসল ক্যালেন্ডার | ১০ প্রধান ফসলের মৌসুম ক্যালেন্ডার |
 | স্মার্ট সিদ্ধান্ত | আবহাওয়া ও বাজার ভিত্তিক ফসল সুপারিশ |
-| AI চ্যাট | z-ai-web-dev-sdk চালিত কৃষি সহকারী |
+| AI চ্যাট | Cloudflare Workers AI চালিত কৃষি সহকারী (এজ + REST) |
 
 ## প্রজেক্ট স্ট্রাকচার
 
@@ -70,6 +70,7 @@ src/
 ├── context/
 │   └── LocationContext.tsx    # অ্যাপ-ওয়াইড GPS প্রদানকারী
 └── lib/
+    ├── cloudflareAI.ts        # CF Workers AI ক্লায়েন্ট (গেটওয়ে + REST)
     ├── cabi/
     │   ├── diagnosticEngine.ts  # CABI নির্ণয় ইঞ্জিন
     │   └── bengaliKeywords.ts   # বাংলা কীওয়ার্ড ম্যাপিং
@@ -77,6 +78,8 @@ src/
     ├── cropDiseases.ts       # রোগ ডেটাবেস
     ├── cropPriceService.ts   # ফসল মূল্য সেবা
     └── weatherService.ts     # আবহাওয়া সেবা
+└── workers/
+    └── index.ts              # CF Worker এজ AI গেটওয়ে
 ```
 
 ## শুরু করুন
@@ -94,19 +97,34 @@ bun build && bun start
 
 ## ডিপ্লয়মেন্ট
 
-ভার্সেল-এ ডিপ্লয় করুন — কোনো অতিরিক্ত কনফিগারেশন লাগবে না।
+### ভার্সেল (প্রাথমিক)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/moniruzjaman/web.krishiai.live)
+
+### Cloudflare Workers (এজ AI গেটওয়ে)
+
+```bash
+# গেটওয়ে ডিপ্লয়
+wrangler deploy
+
+# লোকাল ডেভেলপমেন্ট
+wrangler dev
+```
+
+গেটওয়ে স্বয়ংক্রিয়ভাবে ডিপ্লয় হয় GitHub Actions দ্বারা `main` ব্রাঞ্চে push করলে।
 
 ## এনভায়রনমেন্ট ভেরিয়েবল
 
 | ভেরিয়েবল | প্রয়োজন | বিবরণ |
 |-----------|---------|--------|
+| `CF_ACCOUNT_ID` | হ্যাঁ | Cloudflare Account ID |
+| `CF_API_TOKEN` | হ্যাঁ | Cloudflare API Token (Workers AI) |
+| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন https://api.krishiai.live) |
 | `GEMINI_API_KEY` | ঐচ্ছিক | Google Gemini AI (হাইব্রিড ফলব্যাক) |
 | `GROQ_API_KEY` | ঐচ্ছিক | Groq AI (হাইব্রিড ফলব্যাক) |
 | `OPENROUTER_API_KEY` | ঐচ্ছিক | OpenRouter AI (হাইব্রিড ফলব্যাক) |
 
-> সকল AI ফিচার **z-ai-web-dev-sdk** ব্যবহার করে কাজ করে — কোনো API কী ছাড়াই। উপরের কীগুলো ঐচ্ছিক হাইব্রিড ফলব্যাক প্রদানকারী।
+> প্রাথমিক AI প্রদানকারী **Cloudflare Workers AI** (Llama 3 8B Instruct)। এজ গেটওয়ে চালু থাকলে দ্রুত পাথ ব্যবহার হয়, অন্যথায় REST API ফলব্যাক। উপরের অতিরিক্ত কীগুলো হাইব্রিড ফলব্যাক প্রদানকারী।
 
 ## লাইসেন্স
 

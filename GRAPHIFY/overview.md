@@ -17,8 +17,14 @@ Provides crop disease diagnosis, weather forecasts, market prices, news, soil an
 User → Vercel (web.krishiai.live)
          ├── Next.js UI (pages + components)
          └── API Routes (server-side AI gateway)
-              ├── /api/chat       → CF Workers AI (Llama 3 8B)
-              ├── /api/diagnose   → CF Workers AI + Gemini + OpenRouter + Groq + Offline CABI
+              │
+              ├── Path 1: CF Edge Gateway (FAST — native AI binding)
+              │   └── CF_GATEWAY_URL/api/chat → Worker calls env.AI.run()
+              │
+              ├── Path 2: Direct REST (FALLBACK)
+              │   └── api.cloudflare.com/.../ai/run/@cf/meta/llama-3-8b-instruct
+              │
+              ├── /api/diagnose   → CF AI + Gemini + OpenRouter + Groq + Offline CABI
               ├── /api/weather    → Open-Meteo (free, no key)
               ├── /api/market     → DAM live + seasonal fallback
               ├── /api/news       → Google News + .gov.bd RSS + FAO/IRRI
@@ -26,13 +32,19 @@ User → Vercel (web.krishiai.live)
               ├── /api/crop-prices   → cropPriceService simulation
               ├── /api/smart-decision → weather + crop calendar + prices
               └── /api/soil-analysis  → CF Workers AI + USDA classification
+
+CF Workers (Edge AI Gateway)
+         ├── krishiai-gateway worker (api.krishiai.live)
+         ├── Native AI binding → env.AI.run() (no REST + Bearer needed)
+         └── Routes: /api/chat, /api/diagnose, /api/analyze
 ```
 
-## AI Provider
-- **Primary:** Cloudflare Workers AI (Llama 3 8B Instruct)
-- **Env vars:** `CF_ACCOUNT_ID`, `CF_API_TOKEN` (stored in Vercel)
-- **Module:** `src/lib/cloudflareAI.ts` — unified REST client
-- **No CF Pages/Workers deployment** — Vercel calls CF AI via REST API
+## Dual AI Architecture
+- **Edge Path (FAST):** CF Worker Gateway at `CF_GATEWAY_URL` — uses native Workers AI binding, in-process on CF edge, no HTTP round-trip to REST API
+- **REST Path (FALLBACK):** Direct CF Workers AI REST API using `CF_ACCOUNT_ID` + `CF_API_TOKEN`
+- **Routing:** If `CF_GATEWAY_URL` env var is set → gateway first, REST on failure. If not set → REST only.
+- **Module:** `src/lib/cloudflareAI.ts` — dual-path client for Next.js routes
+- **Worker:** `src/workers/index.ts` — standalone CF Worker with native AI binding
 
 ## Key Directories
 | Path | Purpose |
@@ -42,5 +54,6 @@ User → Vercel (web.krishiai.live)
 | `src/context/` | React Context providers (LocationContext) |
 | `src/lib/` | Shared utilities, AI client, crop data |
 | `src/lib/cabi/` | Offline CABI Plantwise diagnostic engine |
+| `src/workers/` | Cloudflare Worker (Edge AI Gateway) |
 | `public/data/` | Static JSON data (AEZ zones, crop categories) |
 | `public/icons/` | PWA icons (192px, 512px) |
