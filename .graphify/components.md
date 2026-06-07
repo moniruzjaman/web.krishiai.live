@@ -1,56 +1,65 @@
-# Components — React Component Reference
+# Components Reference
 
-## Page Components (src/app/)
+## Widget Components (Home Page)
 
-| Page | Lines | Key Features | Data Sources |
-|------|-------|-------------|-------------|
-| `page.tsx` (Home) | 481 | Hero, seasonal tip, stats bar, 6 widgets, 12 tool cards, testimonials, metrics | Mixed |
-| `analyzer/page.tsx` | — | Photo upload + symptom picker → CABI diagnosis | `/api/diagnose` |
-| `chat/page.tsx` | — | AI chat interface | `/api/chat` |
-| `learn/page.tsx` | — | Learning center | — |
-| `profile/page.tsx` | — | User profile, install button | — |
-| `tools/page.tsx` | — | 12 tool cards grid | — |
-| `tools/satellite/page.tsx` | 717 | 3 tabs: NDVI Map, Crop Health, Seasonal Comparison | useLocation, simulated NDVI |
-| `tools/soil/page.tsx` | — | AEZ zone selector + soil sample input | `/api/soil-analysis` |
-| `tools/irrigation/page.tsx` | — | Irrigation advisor | Open-Meteo |
-| `tools/smart-decision/page.tsx` | — | Crop recommendation engine | `/api/smart-decision` |
-| `tools/crop-library/page.tsx` | — | 7 category crop database | `/api/crop-database` |
-| `tools/pesticide/page.tsx` | — | Pesticide guide | — |
-| `tools/plant-health/page.tsx` | — | Plant health diagnostics | — |
-| `tools/crop-calendar/page.tsx` | — | 10-crop calendar with seasons | cropCalendar.ts |
-| `tools/yield/page.tsx` | — | Yield forecast | — |
+### WeatherWidget.tsx
+- Live GPS via LocationContext, 30-min auto-refresh
+- Shows: temp, alerts, agri advisory, UV/dew/pressure/cloud, soil moisture/ET0/GDD
+- Dhaka fallback after 3s if location unavailable
+- WMO weather codes with Bengali descriptions
 
-## Widget Components (src/components/)
+### MapWidget.tsx
+- Wrapper with street/satellite toggle + district badge
+- Dynamic import of InteractiveMap (SSR: false)
+- Height: 300px (mobile) → 360px (sm) → 420px (lg)
 
-| Component | Lines | Props | Dependencies | Key Behavior |
-|-----------|-------|-------|-------------|-------------|
-| `MapWidget.tsx` | 135 | None | useLocation, InteractiveMap (dynamic) | Street/satellite toggle, district badge, 15+ BD markers, locate-me |
-| `InteractiveMap.tsx` | 240 | lat, lon, height | Leaflet (dynamic, ssr:false) | OSM + Esri tiles, user marker + pulse, accuracy circle, category-colored markers |
-| `NDVIMap.tsx` | 244 | lat, lon | Leaflet (dynamic) | 20+ district NDVI circles, seasonal color, legend overlay, Bangladesh border |
-| `WeatherWidget.tsx` | 502 | None | useLocation, /api/weather | Current + hourly + 5-day + agri indices, auto-refresh 30min, Dhaka fallback 3s |
-| `MarketWidget.tsx` | 480 | None | useLocation, /api/market | 6 category tabs, Bengali search, price change badges, PriceTrendBar mini-viz |
-| `NewsWidget.tsx` | — | None | /api/news | Headlines + AI bulletin |
-| `AIChatWidget.tsx` | — | None | /api/chat | Quick chat interface |
-| `PhotoGallery.tsx` | — | None | — | Photo gallery |
-| `InstallPrompt.tsx` | 185 | None | beforeinstallprompt, navigator.standalone | PWA install banner, iOS guide, 7-day dismiss |
-| `TopNavbar.tsx` | — | None | — | App header |
-| `BottomNav.tsx` | — | None | — | 5-tab navigation |
+### InteractiveMap.tsx
+- Leaflet map with 15+ BD agricultural institution markers
+- Categories: extension (green), research (blue), corporation (purple), weather (amber)
+- User location marker with pulse animation + accuracy circle
+- Esri World Imagery satellite toggle
 
-## UI Primitives (src/components/ui/)
-shadcn/ui components: badge, button, card, input, scroll-area, skeleton, sonner, tabs, toast, toaster
+### NDVIMap.tsx
+- Simulated NDVI overlay across 20+ BD districts
+- Seasonal adjustment by month (Boro/Aman/Aus factors)
+- Color-coded circles: bare soil → dense vegetation
+- No real satellite API — uses static simulation
 
-## Context (src/context/)
+### MarketWidget.tsx
+- Displays DAM prices from /api/market
+- Categories: শস্য, সবজি, মসলা, ডাল, অন্যান্য
 
-| Context | Hook | State | Consumers |
-|---------|------|-------|-----------|
-| LocationContext | `useLocation()` | lat, lon, district, upazila, loading, error, permissionStatus | MapWidget, InteractiveMap, NDVIMap, WeatherWidget, MarketWidget, satellite page |
+### NewsWidget.tsx
+- 4 tabs: Headlines, English, Gov, International
+- Sources: Google News RSS, .gov.bd RSS, FAO/IRRI
 
-## Dynamic Import Pattern
+### AIChatWidget.tsx
+- Inline chat widget on home page
+- Connects to /api/chat
 
-All Leaflet components use this pattern to avoid SSR crashes:
-```tsx
-const InteractiveMap = dynamic(() => import('./InteractiveMap'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-[300px] w-full" />
-});
-```
+## Navigation Components
+
+### TopNavbar.tsx
+- App title + logo + notification icon
+
+### BottomNav.tsx
+- 5 tabs: Home, Tools, Chat, Learn, Profile
+
+### ClientShell.tsx
+- SSR-safe wrapper for LocationProvider + InstallPrompt + Toaster
+
+## PWA Components
+
+### InstallPrompt.tsx
+- Detects `beforeinstallprompt` event (Chrome/Edge/Samsung)
+- iOS Safari manual instructions
+- Stores dismissal in localStorage
+- Profile page can trigger install via `getInstallPrompt()`
+
+## Context
+
+### LocationContext.tsx
+- App-wide GPS provider with Nominatim reverse geocoding
+- Permission prompt banner + locate-me floating button
+- Stores last known location in localStorage
+- Dhaka fallback when permission denied
