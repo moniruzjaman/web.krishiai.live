@@ -12,23 +12,8 @@
  * - Crop-specific agricultural advisory
  */
 
-import { NextRequest, NextResponse } from "next/server";
-
-// ── CORS Origin Whitelist ────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null): Record<string, string> {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
@@ -91,7 +76,6 @@ function generateAgriAdvisory(
 ): { advisory: string; advisoryBn: string; urgency: "normal" | "caution" | "alert" } {
   const weatherInfo = WMO[code] || { severity: "clear" };
 
-  // Heavy rain / flood risk
   if (rain > 20 || weatherInfo.severity === "storm") {
     return {
       advisory: "Heavy rain expected. Protect harvested crops, ensure drainage.",
@@ -100,7 +84,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // Heat wave
   if (temp > 38) {
     return {
       advisory: "Extreme heat. Increase irrigation, provide shade for livestock.",
@@ -109,7 +92,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // Cold spell (Rabi season)
   if (temp < 10 && (month <= 2 || month >= 11)) {
     return {
       advisory: "Cold wave risk. Cover seedbeds, protect young plants.",
@@ -118,7 +100,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // High humidity + rain = disease risk
   if (humid > 85 && rain > 0) {
     return {
       advisory: "High humidity with rain — fungal disease risk. Apply preventive fungicide.",
@@ -127,7 +108,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // Dry conditions
   if (soilMoisture !== undefined && soilMoisture < 0.15 && (et0 !== undefined && et0 > 4)) {
     return {
       advisory: "Low soil moisture with high evapotranspiration. Irrigate immediately.",
@@ -136,7 +116,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // Strong wind
   if (wind > 40) {
     return {
       advisory: "Strong winds. Avoid pesticide spraying, secure structures.",
@@ -145,7 +124,6 @@ function generateAgriAdvisory(
     };
   }
 
-  // Normal conditions — seasonal advice
   if (month >= 11 || month <= 2) {
     return {
       advisory: "Good Rabi season weather. Ideal for wheat, mustard, potato cultivation.",
@@ -225,39 +203,30 @@ function generateAlerts(
   return alerts;
 }
 
-// ── Agricultural Index Estimators (fallback for unavailable Open-Meteo fields) ─
-// These estimate soil/agricultural indices from reliable weather parameters.
+// ── Agricultural Index Estimators ─────────────────────────────────────────────
 
-/** Estimate soil moisture (0-1 m³/m³) from precipitation, humidity, and temperature */
 function estimateSoilMoisture(precip: number, humidity: number, _temp: number): number {
-  // Simple model: base from humidity + rain contribution
-  const baseMoisture = (humidity / 100) * 0.25; // 0–0.25 range
-  const rainContribution = Math.min(0.20, precip * 0.008); // Each mm adds ~0.008, max 0.20
+  const baseMoisture = (humidity / 100) * 0.25;
+  const rainContribution = Math.min(0.20, precip * 0.008);
   return Math.min(0.50, baseMoisture + rainContribution);
 }
 
-/** Estimate deep soil moisture (1-3cm, slightly more stable) */
 function estimateSoilMoistureDeep(precip: number, humidity: number): number {
   const shallow = estimateSoilMoisture(precip, humidity, 25);
-  return Math.min(0.55, shallow * 1.15); // Deeper soil retains more
+  return Math.min(0.55, shallow * 1.15);
 }
 
-/** Estimate soil temperature from air temperature */
 function estimateSoilTemp(airTemp: number): number {
-  // Soil temp is typically 2-4°C below air temp in Bangladesh
   return Math.round((airTemp - 3) * 10) / 10;
 }
 
-/** Estimate reference evapotranspiration (mm/day) using simplified Hargreaves */
 function estimateET0(temp: number, humidity: number, wind: number): number {
-  // Simplified ET0: based on temp, adjusted by humidity and wind
   const baseET = temp > 0 ? 0.0023 * (temp + 17.8) * Math.sqrt(Math.max(0, temp - 0)) : 0;
-  const humidFactor = Math.max(0.4, 1 - (humidity / 200)); // Higher humidity = lower ET
-  const windFactor = 1 + (wind / 100); // Higher wind = higher ET
+  const humidFactor = Math.max(0.4, 1 - (humidity / 200));
+  const windFactor = 1 + (wind / 100);
   return Math.round(baseET * humidFactor * windFactor * 10) / 10;
 }
 
-/** Estimate leaf wetness probability (%) from humidity and precipitation */
 function estimateLeafWetness(humidity: number, precip: number): number {
   if (humidity > 90) return Math.min(95, 70 + precip * 2);
   if (humidity > 80) return Math.min(80, 50 + precip * 2);
@@ -268,10 +237,9 @@ function estimateLeafWetness(humidity: number, precip: number): number {
 
 // ── Main Handler ─────────────────────────────────────────────────────────────
 export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
-    headers: corsHeaders(origin),
+    headers: corsHeaders(request.headers.get("origin")),
   });
 }
 
@@ -281,29 +249,27 @@ const WEATHER_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 // ── Seasonal fallback data ──────────────────────────────────────────────────
 function getSeasonalFallback(city: string, lat: number, lon: number): Record<string, unknown> {
-  // Deterministic pseudo-random based on date + location (no Math.random for SSR consistency)
   const daySeed = new Date().getDate() + Math.round(lat * 10) + Math.round(lon * 10);
   const dRand = (offset: number) => {
     const x = Math.sin(daySeed * 9301 + offset * 49297) * 49297;
-    return x - Math.floor(x); // 0-1
+    return x - Math.floor(x);
   };
 
   const m = new Date().getMonth() + 1;
   const hour = new Date().getHours();
   const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
 
-  // Bangladesh seasonal temperature ranges
   let baseTemp, feelTemp, humid, rain, code, wind;
-  if (m >= 11 || m <= 2) { // Winter
+  if (m >= 11 || m <= 2) {
     baseTemp = hour >= 6 && hour <= 17 ? 25 + dRand(0) * 5 : 14 + dRand(1) * 5;
     feelTemp = baseTemp - 2; humid = 65 + dRand(2) * 15; rain = dRand(3) * 2; code = 0; wind = 5 + dRand(4) * 8;
-  } else if (m >= 3 && m <= 5) { // Spring/Pre-monsoon
+  } else if (m >= 3 && m <= 5) {
     baseTemp = hour >= 6 && hour <= 17 ? 32 + dRand(0) * 6 : 24 + dRand(1) * 4;
     feelTemp = baseTemp + 3; humid = 60 + dRand(2) * 20; rain = dRand(3) * 10; code = 1; wind = 8 + dRand(4) * 12;
-  } else if (m >= 6 && m <= 9) { // Monsoon
+  } else if (m >= 6 && m <= 9) {
     baseTemp = hour >= 6 && hour <= 17 ? 30 + dRand(0) * 4 : 26 + dRand(1) * 3;
     feelTemp = baseTemp + 4; humid = 80 + dRand(2) * 15; rain = 5 + dRand(3) * 30; code = 61; wind = 10 + dRand(4) * 15;
-  } else { // Autumn
+  } else {
     baseTemp = hour >= 6 && hour <= 17 ? 30 + dRand(0) * 4 : 22 + dRand(1) * 4;
     feelTemp = baseTemp + 1; humid = 70 + dRand(2) * 15; rain = dRand(3) * 8; code = 2; wind = 6 + dRand(4) * 10;
   }
@@ -376,22 +342,20 @@ export async function GET(request: NextRequest) {
   const lon = parseFloat(searchParams.get("lon") || "90.4125");
   const city = searchParams.get("city") || "ঢাকা";
 
-  // Validate lat/lon ranges
   if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "অবৈধ অক্ষাংশ/দ্রাঘিমাংশ", city },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, origin }
     );
   }
 
-  // Return cached data if available and fresh
   const now = Date.now();
   const cacheKey = `${lat},${lon}`;
   const cached = weatherCache.get(cacheKey);
   if (cached && now - cached.timestamp < WEATHER_CACHE_TTL) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ...cached.data, city, lat, lon },
-      { headers: { "Cache-Control": "public, s-maxage=300", ...corsHeaders(origin) } }
+      { origin, headers: { "Cache-Control": "public, s-maxage=300" } }
     );
   }
 
@@ -433,7 +397,6 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("timezone", "Asia/Dhaka");
     url.searchParams.set("forecast_days", "6");
 
-    // AbortSignal.timeout fallback for Node < 17.3
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
     const signal = AbortSignal.timeout
@@ -447,21 +410,21 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // Open-Meteo rate limited or down — use seasonal fallback
       const fallback = getSeasonalFallback(city, lat, lon);
       weatherCache.set(cacheKey, { data: fallback, timestamp: now });
-      return NextResponse.json(fallback, {
-        headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+      return corsNextResponse(fallback, {
+        origin,
+        headers: { "Cache-Control": "public, s-maxage=600" },
       });
     }
 
     const data = await response.json();
-    // Check for API-level errors (rate limit, etc.)
     if (data.error) {
       const fallback = getSeasonalFallback(city, lat, lon);
       weatherCache.set(cacheKey, { data: fallback, timestamp: now });
-      return NextResponse.json(fallback, {
-        headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+      return corsNextResponse(fallback, {
+        origin,
+        headers: { "Cache-Control": "public, s-maxage=600" },
       });
     }
 
@@ -471,7 +434,6 @@ export async function GET(request: NextRequest) {
 
     const DAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
 
-    // Build hourly forecast (next 24 hours from now)
     const currentDate = new Date();
     const currentHourIndex = hr.time.findIndex((t: string) => new Date(t) >= currentDate);
     const hourlyForecast: HourlyForecast[] = [];
@@ -488,7 +450,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Generate weather alerts
     const alerts = generateAlerts(
       c.weather_code,
       c.temperature_2m,
@@ -497,7 +458,6 @@ export async function GET(request: NextRequest) {
       c.relative_humidity_2m
     );
 
-    // Generate agricultural advisory
     const month = new Date().getMonth() + 1;
     const advisory = generateAgriAdvisory(
       c.weather_code,
@@ -510,7 +470,6 @@ export async function GET(request: NextRequest) {
       month
     );
 
-    // Calculate sunrise/sunset in Bengali
     const formatTime = (isoStr: string) => {
       const d = new Date(isoStr);
       const h = d.getHours();
@@ -523,7 +482,6 @@ export async function GET(request: NextRequest) {
 
     const weatherData = {
       ok: true,
-      // Current conditions
       temp: c.temperature_2m,
       feel: c.apparent_temperature,
       humid: c.relative_humidity_2m,
@@ -536,23 +494,19 @@ export async function GET(request: NextRequest) {
       city,
       lat,
       lon,
-      // New: atmospheric data
       uvIndex: c.uv_index,
       dewPoint: c.dew_point_2m,
       pressure: c.surface_pressure,
       cloudCover: c.cloud_cover,
-      // Agricultural indices (estimated from available data)
       soilMoisture: estimateSoilMoisture(c.precipitation, c.relative_humidity_2m, c.temperature_2m),
       soilMoistureDeep: estimateSoilMoistureDeep(c.precipitation, c.relative_humidity_2m),
       soilTemp: estimateSoilTemp(c.temperature_2m),
       et0: estimateET0(c.temperature_2m, c.relative_humidity_2m, c.wind_speed_10m),
       leafWetness: estimateLeafWetness(c.relative_humidity_2m, c.precipitation),
-      gdd: Math.max(0, c.temperature_2m - 0), // GDD base 0°C
-      // Sun times
+      gdd: Math.max(0, c.temperature_2m - 0),
       sunrise: formatTime(dl.sunrise[0]),
       sunset: formatTime(dl.sunset[0]),
       uvMax: dl.uv_index_max[0],
-      // 5-day forecast (with precip probability)
       forecast: dl.time.slice(1, 6).map((t: string, i: number) => ({
         day: DAYS[new Date(t).getDay()],
         max: dl.temperature_2m_max[i + 1],
@@ -562,30 +516,26 @@ export async function GET(request: NextRequest) {
         precipSum: dl.precipitation_sum[i + 1],
         windMax: dl.wind_speed_10m_max[i + 1],
       })),
-      // Hourly forecast (next 24h)
       hourly: hourlyForecast,
-      // Alerts
       alerts,
-      // Agricultural advisory
       advisory,
       source: "Open-Meteo · BMD",
     };
 
-    // Cache successful response
     weatherCache.set(cacheKey, { data: weatherData, timestamp: now });
 
-    return NextResponse.json(weatherData, {
+    return corsNextResponse(weatherData, {
+      origin,
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
-        ...corsHeaders(origin),
       },
     });
   } catch (e) {
-    // Network error, timeout, etc — use seasonal fallback
     const fallback = getSeasonalFallback(city, lat, lon);
     weatherCache.set(cacheKey, { data: fallback, timestamp: now });
-    return NextResponse.json(fallback, {
-      headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) },
+    return corsNextResponse(fallback, {
+      origin,
+      headers: { "Cache-Control": "public, s-maxage=600" },
     });
   }
 }

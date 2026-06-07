@@ -7,7 +7,8 @@
  * GET params: lat, lon, city
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 import { CROP_CALENDAR } from "@/lib/cropCalendar";
 import { simulateCurrentPrice, compareCropProfitability } from "@/lib/cropPriceService";
 import {
@@ -24,20 +25,8 @@ import {
 } from "@/lib/weatherService";
 import type { ParsedForecast } from "@/lib/weatherService";
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -97,12 +86,6 @@ function getRecommendationReason(c: CropDetail): string {
   return "মিশ্র সংকেত";
 }
 
-// ── OPTIONS handler ──────────────────────────────────────────────────────────
-export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
-}
-
 // ── Cache ────────────────────────────────────────────────────────────────────
 const decisionCache = new Map<string, { data: Record<string, unknown>; timestamp: number }>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -115,26 +98,22 @@ export async function GET(request: NextRequest) {
   const lon = parseFloat(searchParams.get("lon") || "90.356");
   const city = searchParams.get("city") || "ঢাকা";
 
-  // Validate lat/lon ranges
   if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "অবৈধ অক্ষাংশ/দ্রাঘিমাংশ", city },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, origin }
     );
   }
 
-  // Return cached if fresh
   const now = Date.now();
   const cacheKey = `${lat},${lon}`;
   const cached = decisionCache.get(cacheKey);
   if (cached && now - cached.timestamp < CACHE_TTL) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ...cached.data, city, lat, lon },
       {
-        headers: {
-          "Cache-Control": "public, s-maxage=300",
-          ...corsHeaders(origin),
-        },
+        origin,
+        headers: { "Cache-Control": "public, s-maxage=300" },
       }
     );
   }
@@ -225,14 +204,14 @@ export async function GET(request: NextRequest) {
     // Cache
     decisionCache.set(cacheKey, { data: result, timestamp: now });
 
-    return NextResponse.json(result, {
+    return corsNextResponse(result, {
+      origin,
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=300",
-        ...corsHeaders(origin),
       },
     });
   } catch (error) {
-    return NextResponse.json(
+    return corsNextResponse(
       {
         ok: false,
         error: "বিশ্লেষণ ব্যর্থ — পরে আবার চেষ্টা করুন",
@@ -240,7 +219,7 @@ export async function GET(request: NextRequest) {
         lat,
         lon,
       },
-      { status: 500, headers: corsHeaders(origin) }
+      { status: 500, origin }
     );
   }
 }

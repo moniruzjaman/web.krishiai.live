@@ -5,7 +5,8 @@
  * System prompt: Full CABI Plantwise Ready Reckoner + Exclusion Logic embedded
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse, handleOptions } from "@/lib/cors";
 import { diagnoseOffline } from "@/lib/cabi/diagnosticEngine";
 import { translateSymptomsToEnglish } from "@/lib/cabi/bengaliKeywords";
 
@@ -491,26 +492,11 @@ async function tryOpenRouter(messages: Array<{ role: string; content: string | A
   return { text: data?.choices?.[0]?.message?.content || "No response.", provider: "OpenRouter Qwen-VL" };
 }
 
-// ─── CORS ────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
-    headers: corsHeaders(request.headers.get("origin")),
+    headers: corsHeaders(request.headers.get("origin"), ["POST"]),
   });
 }
 
@@ -556,17 +542,17 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
       if (!mimeMatch || !ALLOWED_MIME_TYPES.includes(mimeMatch[1])) {
-        return NextResponse.json(
+        return corsNextResponse(
           { ok: false, error: "অবৈধ ছবি ফরম্যাট — শুধুমাত্র JPEG, PNG, WebP, GIF গ্রহণযোগ্য" },
-          { status: 400, headers: corsHeaders(origin) }
+          { status: 400, origin }
         );
       }
       // Validate size
       const sizeInBytes = Math.ceil((image.length - image.indexOf(",") - 1) * 0.75);
       if (sizeInBytes > 10 * 1024 * 1024) {
-        return NextResponse.json(
+        return corsNextResponse(
           { ok: false, error: "ছবি অত্যন্ত বড় (সর্বোচ্চ ১০ মেগাবাইট)" },
-          { status: 400, headers: corsHeaders(origin) }
+          { status: 400, origin }
         );
       }
       userContent.push({ type: "image_url", image_url: { url: image } });
@@ -605,9 +591,9 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     // 2. Fallback 1: Gemini 2.5 Flash
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return NextResponse.json(
+        return corsNextResponse(
           { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, headers: corsHeaders(origin) }
+          { status: 503, origin }
         );
       }
       try {
@@ -622,9 +608,9 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     // 3. Fallback 2: OpenRouter Qwen-VL
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return NextResponse.json(
+        return corsNextResponse(
           { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, headers: corsHeaders(origin) }
+          { status: 503, origin }
         );
       }
       try {
@@ -639,9 +625,9 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     // 4. Fallback 3: Groq text-only
     if (!resultText) {
       if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return NextResponse.json(
+        return corsNextResponse(
           { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, headers: corsHeaders(origin) }
+          { status: 503, origin }
         );
       }
       try {
@@ -722,7 +708,7 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
 
     const elapsed = Date.now() - startTime;
 
-    return NextResponse.json({
+    return corsNextResponse({
       ok: true,
       provider,
       elapsed_ms: elapsed,
@@ -731,17 +717,18 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
       english: englishSection,
       json: structuredJson,
     }, {
-      headers: corsHeaders(origin),
+      origin,
+      methods: ["POST"],
     });
 
   } catch (e) {
     console.error("[diagnose] Unexpected error:", e);
-    return NextResponse.json(
+    return corsNextResponse(
       {
         ok: false,
         error: "রোগ নির্ণয় সেবা এখন উপলব্ধ নয়। কিছুক্ষণ পর আবার চেষ্টা করুন।",
       },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }

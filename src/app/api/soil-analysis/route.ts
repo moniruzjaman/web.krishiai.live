@@ -10,7 +10,8 @@
  * Returns results in Bengali.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 // ── AEZ Data ──────────────────────────────────────────────────────────────────
 const AEZ_ZONES = [
@@ -63,24 +64,11 @@ function classifyUSDA(sand: number, silt: number, clay: number): string {
   return "Loam (দোআঁশ মাটি)";
 }
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
-
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(request.headers.get("origin"), ["GET", "POST"]),
+  });
 }
 
 // ── GET: AEZ Zone Analysis ────────────────────────────────────────────────────
@@ -88,17 +76,17 @@ export async function GET(request: NextRequest) {
   const origin = request.headers.get("origin");
   const aezId = request.nextUrl.searchParams.get("aezId");
   if (!aezId) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "aezId প্যারামিটার প্রয়োজন" },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, origin }
     );
   }
 
   const zone = AEZ_ZONES.find((z) => z.id === Number(aezId));
   if (!zone) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "অবৈধ AEZ জোন ID" },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, origin }
     );
   }
 
@@ -122,7 +110,6 @@ export async function GET(request: NextRequest) {
 
     let analysis = "";
 
-    // 1. Primary: Cloudflare Workers AI
     try {
       const { cfAIChat } = await import("@/lib/cloudflareAI");
       const cfResult = await cfAIChat(systemPrompt, userPrompt, {
@@ -134,7 +121,6 @@ export async function GET(request: NextRequest) {
       console.warn("[soil-analysis:GET] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Offline fallback: Static AEZ soil info
     if (!analysis) {
       analysis = `AEZ জোন ${zone.id} "${zone.bn}" — মৃত্তিকা বিশ্লেষণ\n\nএই জোনের মাটি সাধারণত পলি থেকে পলি দোআঁশ প্রকারের। জৈব পদার্থের পরিমাণ মাঝারি। বন্যার ঝুঁকি অঞ্চলভেদে ভিন্ন।\n\nউপযুক্ত ফসল: ধান, গম, সরিষা, আলু (মৌসুম অনুযায়ী)।\nসার সুপারিশ: BARC গাইডলাইন অনুযায়ী মাটি পরীক্ষার পর সার প্রয়োগ করুন।\n\nবিস্তারিত তথ্যের জন্য নিকটস্থ SRDI অফিসে যোগাযোগ করুন।`;
     }
@@ -143,22 +129,25 @@ export async function GET(request: NextRequest) {
       analysis = "বিশ্লেষণ এখন উপলব্ধ নয়। পরে আবার চেষ্টা করুন।";
     }
 
-    return NextResponse.json({
-      ok: true,
-      zone,
-      analysis,
-      sources: [
-        "SRDI — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট",
-        "BARC — বাংলাদেশ কৃষি গবেষণা পরিষদ সার সুপারিশ গাইডলাইন",
-        "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
-        "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
-      ],
-    }, { headers: corsHeaders(origin) });
+    return corsNextResponse(
+      {
+        ok: true,
+        zone,
+        analysis,
+        sources: [
+          "SRDI — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট",
+          "BARC — বাংলাদেশ কৃষি গবেষণা পরিষদ সার সুপারিশ গাইডলাইন",
+          "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
+          "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
+        ],
+      },
+      { origin }
+    );
   } catch (e) {
     console.error("AEZ analysis error:", e);
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "AI বিশ্লেষণ এখন উপলব্ধ নয়", analysis: null },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }
@@ -171,9 +160,9 @@ export async function POST(request: NextRequest) {
     const { sand, silt, clay, organicMatter, aezId } = body;
 
     if (sand == null || silt == null || clay == null) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: "বালি, পলি ও কাদার শতাংশ প্রয়োজন" },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
@@ -184,22 +173,19 @@ export async function POST(request: NextRequest) {
     const total = sandNum + siltNum + clayNum;
 
     if (Math.abs(total - 100) > 5) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: `বালি + পলি + কাদা = ${total}% হতে হবে ১০০% (±৫% সহনশীলতা)` },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
     const usdaClass = classifyUSDA(sandNum, siltNum, clayNum);
-
     const zone = aezId ? AEZ_ZONES.find((z) => z.id === Number(aezId)) : null;
     const aezContext = zone
       ? `এই মাটি নমুনা AEZ জোন ${zone.id} "${zone.name}" (${zone.bn}) এলাকা থেকে সংগৃহীত।`
       : "";
 
-    const omContext = omNum != null
-      ? `জৈব পদার্থ: ${omNum}%`
-      : "জৈব পদার্থের তথ্য দেওয়া হয়নি।";
+    const omContext = omNum != null ? `জৈব পদার্থ: ${omNum}%` : "জৈব পদার্থের তথ্য দেওয়া হয়নি।";
 
     const systemPrompt = `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। USDA মাটি শ্রেণিবিন্যাস পদ্ধতির উপর দক্ষ। তোমার পরামর্শ SRDI, BARC, BRRI, BARI-এর মান অনুযায়ী হবে। বাংলায় উত্তর দাও। সংক্ষিপ্ত কিন্তু তথ্যপূর্ণ উত্তর দাও।`;
 
@@ -224,7 +210,6 @@ ${aezContext}
 
     let analysis = "";
 
-    // 1. Primary: Cloudflare Workers AI
     try {
       const { cfAIChat } = await import("@/lib/cloudflareAI");
       const cfResult = await cfAIChat(systemPrompt, userPrompt, {
@@ -236,31 +221,33 @@ ${aezContext}
       console.warn("[soil-analysis:POST] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Offline fallback: USDA classification-based analysis
     if (!analysis) {
       const zoneNote = zone ? ` AEZ জোন ${zone.id} "${zone.bn}" অঞ্চলের।` : "";
       analysis = `মাটি নমুনা বিশ্লেষণ\n\nUSDA শ্রেণিবিন্যাস: ${usdaClass}\nগঠন: বালি ${sandNum}%, পলি ${siltNum}%, কাদা ${clayNum}%${omNum != null ? `, জৈব পদার্থ ${omNum}%` : ""}${zoneNote}\n\nএই মাটির জল ধারণ ক্ষমতা ও বায়ু চলাচল USDA শ্রেণিবিন্যাস অনুযায়ী নির্ধারিত।\nউপযুক্ত ফসল ও সারের মাত্রার জন্য BARC গাইডলাইন ও নিকটস্থ SRDI অফিসে যোগাযোগ করুন।`;
     }
 
-    return NextResponse.json({
-      ok: true,
-      composition: { sand: sandNum, silt: siltNum, clay: clayNum, organicMatter: omNum },
-      usdaClassification: usdaClass,
-      zone: zone || null,
-      analysis,
-      sources: [
-        "SRDI — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট",
-        "BARC — বাংলাদেশ কৃষি গবেষণা পরিষদ সার সুপারিশ গাইডলাইন",
-        "USDA — মার্কিন যুক্তরাষ্ট্রের কৃষি বিভাগ মাটি শ্রেণিবিন্যাস",
-        "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
-        "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
-      ],
-    }, { headers: corsHeaders(origin) });
+    return corsNextResponse(
+      {
+        ok: true,
+        composition: { sand: sandNum, silt: siltNum, clay: clayNum, organicMatter: omNum },
+        usdaClassification: usdaClass,
+        zone: zone || null,
+        analysis,
+        sources: [
+          "SRDI — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট",
+          "BARC — বাংলাদেশ কৃষি গবেষণা পরিষদ সার সুপারিশ গাইডলাইন",
+          "USDA — মার্কিন যুক্তরাষ্ট্রের কৃষি বিভাগ মাটি শ্রেণিবিন্যাস",
+          "BRRI — বাংলাদেশ ধান গবেষণা ইনস্টিটিউট",
+          "BARI — বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট",
+        ],
+      },
+      { origin }
+    );
   } catch (e) {
     console.error("Soil sample analysis error:", e);
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "AI বিশ্লেষণ এখন উপলব্ধ নয়" },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }

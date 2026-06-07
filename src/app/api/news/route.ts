@@ -10,7 +10,8 @@
  * Falls back to seasonal calendar entries if all sources fail.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface NewsItem {
@@ -1148,21 +1149,6 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
   }
 }
 
-// ── CORS headers ─────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null): Record<string, string> {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -1173,9 +1159,7 @@ export async function GET(request: NextRequest) {
   // Check cache (auto-invalidate on day change or after 30 min)
   if (!forceRefresh && !dayChanged && cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
     const origin = request.headers.get("origin");
-    return NextResponse.json(cachedResponse, {
-      headers: corsHeaders(origin),
-    });
+    return corsNextResponse(cachedResponse, { origin });
   }
 
   const ctx = bdAgriContext();
@@ -1339,11 +1323,11 @@ export async function GET(request: NextRequest) {
   cachedDate = today;
 
   const origin = request.headers.get("origin");
-  return NextResponse.json(response, { headers: corsHeaders(origin) });
+  return corsNextResponse(response, { origin });
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
     headers: corsHeaders(request.headers.get("origin")),
   });

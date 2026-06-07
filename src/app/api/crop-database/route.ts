@@ -1,23 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-
-// ── CORS ────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
+  return new Response(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
 }
 
 // In-memory cache
@@ -47,18 +32,18 @@ export async function GET(request: NextRequest) {
     .join(" ");
 
   if (!VALID_CATEGORIES.includes(category)) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "Invalid category" },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, origin }
     );
   }
 
   // Check cache
   const cached = categoryCache.get(category);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: true, category, crops: cached.data },
-      { headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) } }
+      { origin, headers: { "Cache-Control": "public, s-maxage=600" } }
     );
   }
 
@@ -78,9 +63,9 @@ Return ONLY the JSON array, no other text.`;
         [
           {
             role: "system",
-            content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations."
+            content: "You are a Bangladesh agriculture expert. Return ONLY valid JSON arrays. No markdown fences. No explanations.",
           },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt },
         ],
         { temperature: 0.7, maxTokens: 3000 }
       );
@@ -139,22 +124,22 @@ Return ONLY the JSON array, no other text.`;
     // Add IDs
     const cropsWithIds = crops.map((crop: any, index: number) => ({
       ...crop,
-      id: `${category.toLowerCase().replace(/\s+/g, '-')}-${index}`,
+      id: `${category.toLowerCase().replace(/\s+/g, "-")}-${index}`,
       category,
     }));
 
     // Cache the result
     categoryCache.set(category, { data: cropsWithIds, timestamp: Date.now() });
 
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: true, category, crops: cropsWithIds },
-      { headers: { "Cache-Control": "public, s-maxage=600", ...corsHeaders(origin) } }
+      { origin, headers: { "Cache-Control": "public, s-maxage=600" } }
     );
   } catch (error: any) {
     console.error("[crop-database] Error:", error.message);
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "ফসল তথ্য লোড হয়নি। আবার চেষ্টা করুন।", crops: [] },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }

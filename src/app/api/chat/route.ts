@@ -6,28 +6,13 @@
  * Offline fallback when AI is unavailable.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-
-// ── CORS ────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
-    headers: corsHeaders(request.headers.get("origin")),
+    headers: corsHeaders(request.headers.get("origin"), ["POST"]),
   });
 }
 
@@ -75,26 +60,26 @@ export async function POST(request: NextRequest) {
     const { messages } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: "messages প্রয়োজন" },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
     if (messages.length > MAX_MESSAGES) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: `সর্বোচ্চ ${MAX_MESSAGES} টি বার্তা পাঠানো যায়` },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
     // Validate message content lengths
     for (const msg of messages) {
       if (msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
-        return NextResponse.json(
-          { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
-          { status: 400, headers: corsHeaders(origin) }
-        );
+      return corsNextResponse(
+        { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
+        { status: 400, origin }
+      );
       }
     }
 
@@ -147,21 +132,22 @@ ${seasonContext}`;
       reply = `দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। বর্তমানে ${seasonName} মৌসুম চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।`;
     }
 
-    return NextResponse.json({
+    return corsNextResponse({
       ok: true,
       reply,
       model: model || "fallback",
     }, {
-      headers: corsHeaders(origin),
+      origin,
+      methods: ["POST"],
     });
   } catch (e) {
-    return NextResponse.json(
+    return corsNextResponse(
       {
         ok: false,
         error: "AI সহকারী এখন উপলব্ধ নয়",
         reply: "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। কিছুক্ষণ পর আবার চেষ্টা করুন।",
       },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }

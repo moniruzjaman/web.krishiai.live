@@ -10,7 +10,8 @@
  *   - compare: "true" to get profitability comparison
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 import {
   simulateCurrentPrice,
   getAllCropPrices,
@@ -19,24 +20,8 @@ import {
   getTrendDisplay,
 } from "@/lib/cropPriceService";
 
-// ── CORS ────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
-
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
     headers: corsHeaders(request.headers.get("origin")),
   });
@@ -60,8 +45,9 @@ export async function GET(request: NextRequest) {
   // Check cache (only for full listing, not single crop)
   const now = Date.now();
   if (!cropParam && !compareParam && cachedPrices && now - cachedPricesAt < PRICES_CACHE_TTL) {
-    return NextResponse.json(cachedPrices, {
-      headers: { "Cache-Control": "public, s-maxage=300", ...corsHeaders(origin) },
+    return corsNextResponse(cachedPrices, {
+      origin,
+      headers: { "Cache-Control": "public, s-maxage=300" },
     });
   }
 
@@ -70,15 +56,15 @@ export async function GET(request: NextRequest) {
     if (cropParam) {
       const priceData = simulateCurrentPrice(cropParam, currentMonth);
       if (!priceData) {
-        return NextResponse.json(
-          { ok: false, error: `"${cropParam}" ফসলের মূল্য তথ্য পাওয়া যায়নি` },
-          { status: 404, headers: corsHeaders(origin) }
-        );
+      return corsNextResponse(
+        { ok: false, error: `"${cropParam}" ফসলের মূল্য তথ্য পাওয়া যায়নি` },
+        { status: 404, origin }
+      );
       }
 
       const trend = getTrendDisplay(priceData.trend);
 
-      return NextResponse.json(
+      return corsNextResponse(
         {
           ok: true,
           price: priceData,
@@ -92,20 +78,20 @@ export async function GET(request: NextRequest) {
           },
           month: currentMonth,
         },
-        { headers: corsHeaders(origin) }
+        { origin }
       );
     }
 
     // Profitability comparison
     if (compareParam) {
       const profitability = compareCropProfitability(currentMonth);
-      return NextResponse.json(
+      return corsNextResponse(
         {
           ok: true,
           profitability,
           month: currentMonth,
         },
-        { headers: corsHeaders(origin) }
+        { origin }
       );
     }
 
@@ -131,17 +117,17 @@ export async function GET(request: NextRequest) {
     cachedPrices = result;
     cachedPricesAt = now;
 
-    return NextResponse.json(result, {
+    return corsNextResponse(result, {
+      origin,
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
-        ...corsHeaders(origin),
       },
     });
   } catch (e) {
     console.error("[crop-prices] Error:", e);
-    return NextResponse.json(
+    return corsNextResponse(
       { ok: false, error: "মূল্য তথ্য লোড করতে সমস্যা হয়েছে" },
-      { status: 500, headers: corsHeaders(origin) }
+      { status: 500, origin }
     );
   }
 }
