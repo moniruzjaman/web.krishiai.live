@@ -15,7 +15,9 @@
  */
 
 // ── Type Definitions ─────────────────────────────────────────────────────────
-import type { ExportedHandler } from "@cloudflare/workers-types";
+// Cloudflare Worker types — using explicit interface for Env only.
+// We avoid ExportedHandler<Env> typing due to global Request/Response vs
+// CF Request/Response type conflicts in @cloudflare/workers-types v4.
 
 interface Env {
   AI: Ai; // Workers AI binding (auto-injected by wrangler)
@@ -170,7 +172,7 @@ function handleHealth(): Response {
 
 async function handleChat(request: Request, env: Env): Promise<Response> {
   const origin = request.headers.get("origin");
-  const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
+  const headers: Record<string, string> = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
     const body = (await request.json()) as { messages?: ChatMessage[] };
@@ -356,7 +358,7 @@ async function handleAnalyze(request: Request, env: Env): Promise<Response> {
 // ── Router ───────────────────────────────────────────────────────────────────
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -398,4 +400,4 @@ export default {
       }
     );
   },
-} satisfies ExportedHandler<Env>;
+};
