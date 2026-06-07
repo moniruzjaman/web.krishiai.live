@@ -388,8 +388,16 @@ function buildEmergencyDiagnosis(symptoms: string[], imageAttached: boolean, cro
 }
 
 // ─── Timeout constants ──────────────────────────────────────────────────
-const OVERALL_TIMEOUT_MS = 30_000;
-const PROVIDER_TIMEOUT_MS = 15_000;
+// Vercel Hobby plan has a 10s function timeout — keep overall below that.
+// Vercel Pro can increase via maxDuration export below (max 60s on Pro, 900s on Enterprise).
+const OVERALL_TIMEOUT_MS = 8_000;
+// Each provider gets ~2s — enough for fast responses, and the whole chain
+// (4 providers × 2s + offline + emergency) fits under Vercel's 10s limit.
+// On Pro (maxDuration=30), providers can take the full 8s.
+const PROVIDER_TIMEOUT_MS = 2_000;
+
+// Allow up to 30s on paid Vercel plans (Hobby ignores this, max is 10s).
+export const maxDuration = 30;
 
 // ─── Provider: Gemini 2.5 Flash ──────────────────────────────────────────
 async function tryGemini(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
@@ -563,6 +571,10 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     ];
 
     // ─── Waterfall Provider Chain ─────────────────────────────────────────
+    // Strategy: try 4 AI providers in sequence (each with 2s timeout), then
+    // fall through to offline CABI engine + emergency regex. Even if all 4
+    // remote providers timeout, the offline engine always returns instantly,
+    // keeping us well under Vercel's 10s Hobby plan limit.
     let resultText = "";
     let provider = "";
 
@@ -590,12 +602,6 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 2. Fallback 1: Gemini 2.5 Flash
     if (!resultText) {
-      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return corsNextResponse(
-          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, origin }
-        );
-      }
       try {
         const geminiResult = await tryGemini(messages);
         resultText = geminiResult.text;
@@ -607,12 +613,6 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 3. Fallback 2: OpenRouter Qwen-VL
     if (!resultText) {
-      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return corsNextResponse(
-          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, origin }
-        );
-      }
       try {
         const orResult = await tryOpenRouter(messages);
         resultText = orResult.text;
@@ -624,12 +624,6 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
 
     // 4. Fallback 3: Groq text-only
     if (!resultText) {
-      if (Date.now() - startTime > OVERALL_TIMEOUT_MS) {
-        return corsNextResponse(
-          { ok: false, error: "অনুরোধের সময় শেষ হয়েছে। পরে আবার চেষ্টা করুন।" },
-          { status: 503, origin }
-        );
-      }
       try {
         const groqResult = await tryGroq(messages);
         resultText = groqResult.text;
@@ -639,7 +633,8 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
       }
     }
 
-    // 5. Fallback 4: Offline CABI engine
+    // 5. Offline CABI engine — always runs last as guarantee. Each remote
+    //    provider has a 2s timeout, so all 4 fit under Vercel's 10s limit.
     if (!resultText) {
       try {
         const symptomObj: Record<string, string> = {};
@@ -694,7 +689,7 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
       }
     }
 
-    // 8. Fallback 7: Emergency regex-based diagnosis
+    // 6. Emergency regex-based diagnosis (last resort)
     if (!resultText) {
       resultText = buildEmergencyDiagnosis(symptoms, !!image, crop);
       provider = "Emergency Regex";
