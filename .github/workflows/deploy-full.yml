@@ -2,7 +2,7 @@ name: KrishiAI — Validate & Deploy CF Gateway
 
 on:
   push:
-    branches: [main, production, production-v2]
+    branches: [main, production, production-v2, v3.0.0]
   pull_request:
     branches: [main]
 
@@ -41,7 +41,7 @@ jobs:
   # ── Deploy: CF Workers AI Gateway ──────────────────────────────────────────
   deploy-cloudflare-gateway:
     needs: validate
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v3.0.0'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -58,11 +58,12 @@ jobs:
       - name: Deploy Cloudflare Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           bun x wrangler deploy
 
       - name: Gateway Deployment Summary
         run: |
           echo "✅ KrishiAI Edge AI Gateway deployed successfully"
-          echo "Endpoint: https://webkrishiailive.${{ vars.CF_ACCOUNT_ID }}.workers.dev"
+          echo "Worker name: krishiai-gateway"
           echo "Custom domain: https://api.krishiai.live (if route configured)"
