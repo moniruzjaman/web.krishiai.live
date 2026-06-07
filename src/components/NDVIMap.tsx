@@ -76,7 +76,7 @@ function ndviToColor(ndvi: number): string {
 
 export default function NDVIMap({ center, ndviValue }: NDVIMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<unknown>(null);
+  const mapInstanceRef = useRef<{ remove: () => void; setView: (center: [number, number], zoom: number, options?: { animate?: boolean }) => void; getZoom: () => number } | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -214,7 +214,7 @@ export default function NDVIMap({ center, ndviValue }: NDVIMapProps) {
     return () => {
       cancelled = true;
       if (mapInstanceRef.current) {
-        (mapInstanceRef.current as { remove: () => void }).remove();
+        mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
@@ -225,7 +225,7 @@ export default function NDVIMap({ center, ndviValue }: NDVIMapProps) {
     if (!mapInstanceRef.current) return;
     // The map is initialized once; just pan to new center
     import("leaflet").then((L) => {
-      const map = mapInstanceRef.current as L.Map | null;
+      const map = mapInstanceRef.current as ReturnType<typeof L.map> | null;
       if (!map) return;
       map.setView(center, map.getZoom(), { animate: true });
     });

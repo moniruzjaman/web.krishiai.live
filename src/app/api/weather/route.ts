@@ -21,16 +21,10 @@ const ALLOWED_ORIGINS = [
   "https://web.krishiai.live",
 ];
 
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
-  return ALLOWED_ORIGINS.includes(origin);
-}
-
 function corsHeaders(origin: string | null): Record<string, string> {
-  const accessControl = isAllowedOrigin(origin) ? (origin ?? "*") : "*";
+  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
   return {
-    "Access-Control-Allow-Origin": accessControl,
+    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };

@@ -11,7 +11,8 @@ interface SymptomInput {
   [key: string]: string | string[];
 }
 
-interface TranslatedSymptoms extends SymptomInput {
+interface TranslatedSymptoms {
+  [key: string]: string | string[] | Record<string, string>;
   _englishText: string;
   _translated: Record<string, string>;
 }

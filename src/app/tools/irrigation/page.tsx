@@ -12,7 +12,10 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { Suspense } from "react";
 import { useLocation } from "@/context/LocationContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 // ── Crop water requirements (mm per growth stage) ────────────────────────────
 const CROP_WATER = [
@@ -74,6 +77,16 @@ const TECHNIQUES = [
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function IrrigationPage() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <IrrigationPageContent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function IrrigationPageContent() {
   const { location } = useLocation();
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   const [area, setArea] = useState("1");

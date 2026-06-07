@@ -9,8 +9,11 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { Suspense } from "react";
 import { useLocation } from "@/context/LocationContext";
 import ReactMarkdown from "react-markdown";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 // ── AEZ Zones Data ────────────────────────────────────────────────────────────
 const BANGLADESH_AEZS = [
@@ -186,6 +189,16 @@ function AnalysisSkeleton() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function SoilPage() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <SoilPageContent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function SoilPageContent() {
   const { location } = useLocation();
   const [activeTab, setActiveTab] = useState<"aez" | "calculator" | "fertilizer">("aez");
 

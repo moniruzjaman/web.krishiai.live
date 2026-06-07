@@ -12,7 +12,10 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
+import { Suspense } from "react";
 import { useLocation } from "@/context/LocationContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 // ── Map yield crop IDs to API crop names ──────────────────────────────────────
 const CROP_NAME_TO_API: Record<string, string> = {
@@ -92,6 +95,16 @@ const SEASON_CALENDAR = [
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function YieldPage() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <YieldPageContent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function YieldPageContent() {
   const { location } = useLocation();
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   const [area, setArea] = useState("1");

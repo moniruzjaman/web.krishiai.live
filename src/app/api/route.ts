@@ -8,10 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 function corsHeaders(origin: string | null) {
-  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") ||
-    ["https://krishiai.live", "https://www.krishiai.live", "https://web.krishiai.live"].includes(origin || "");
+  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") ||
+    ["https://krishiai.live", "https://www.krishiai.live", "https://web.krishiai.live"].includes(origin));
   return {
-    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
+    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };

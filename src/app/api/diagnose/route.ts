@@ -499,9 +499,9 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin: string | null) {
-  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
+  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
   return {
-    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
+    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
@@ -552,8 +552,17 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     ];
 
     if (image && typeof image === "string") {
+      // Validate MIME type — only allow image types
+      const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
+      if (!mimeMatch || !ALLOWED_MIME_TYPES.includes(mimeMatch[1])) {
+        return NextResponse.json(
+          { ok: false, error: "অবৈধ ছবি ফরম্যাট — শুধুমাত্র JPEG, PNG, WebP, GIF গ্রহণযোগ্য" },
+          { status: 400, headers: corsHeaders(origin) }
+        );
+      }
       // Validate size
-      const sizeInBytes = Math.ceil((image.length - "data:image/".length) * 0.75);
+      const sizeInBytes = Math.ceil((image.length - image.indexOf(",") - 1) * 0.75);
       if (sizeInBytes > 10 * 1024 * 1024) {
         return NextResponse.json(
           { ok: false, error: "ছবি অত্যন্ত বড় (সর্বোচ্চ ১০ মেগাবাইট)" },

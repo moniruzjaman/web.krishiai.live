@@ -21,8 +21,21 @@ import MarketWidget from "@/components/MarketWidget";
 import NewsWidget from "@/components/NewsWidget";
 import AIChatWidget from "@/components/AIChatWidget";
 
+// ── Tool type ──────────────────────────────────────────────────────────────────
+interface Tool {
+  icon: string;
+  title: string;
+  cat: string;
+  catColor: string;
+  bg: string;
+  desc: string;
+  features: string[];
+  url: string;
+  comingSoon?: boolean;
+}
+
 // ── Tools data (enhanced with descriptions and features) ──────────────────────
-const TOOLS = [
+const TOOLS: Tool[] = [
   {
     icon: "🔬",
     title: "ফসল রোগ নির্ণয়",
@@ -421,11 +434,12 @@ export default function HomePage() {
             {TOOLS.map((t, i) => (
               <a
                 key={i}
-                href={(t as Record<string, unknown>).comingSoon ? undefined : t.url}
+                href={t.comingSoon ? undefined : t.url}
+                {...(t.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className={`flex items-start gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3.5 hover:border-green-300 dark:hover:border-green-600 hover:bg-green-50/30 dark:hover:bg-green-900/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 card-shadow group no-underline ${
-                  (t as Record<string, unknown>).comingSoon ? "opacity-60 cursor-default" : "cursor-pointer"
+                  t.comingSoon ? "opacity-60 cursor-default" : "cursor-pointer"
                 }`}
-                onClick={(e) => (t as Record<string, unknown>).comingSoon && e.preventDefault()}
+                onClick={(e) => t.comingSoon && e.preventDefault()}
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200"
@@ -441,7 +455,7 @@ export default function HomePage() {
                     >
                       {t.cat}
                     </span>
-                    {(t as Record<string, unknown>).comingSoon ? (
+                    {t.comingSoon ? (
                       <span className="text-[8px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">শীঘ্রই</span>
                     ) : (
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
@@ -465,7 +479,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end flex-shrink-0 mt-1">
-                  {(t as Record<string, unknown>).comingSoon ? null : (
+                  {t.comingSoon ? null : (
                     <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors group-hover:translate-x-0.5 duration-200">
                       →
                     </span>

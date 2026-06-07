@@ -211,6 +211,14 @@ export default function SatellitePage() {
       </div>
 
       <div className="px-4 pt-5 pb-24">
+        {/* ── SIMULATED DATA DISCLAIMER ──────────────────────────────────── */}
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 mb-4 flex items-center gap-2">
+          <span className="text-sm">⚠️</span>
+          <p className="text-[10px] text-amber-800 leading-relaxed">
+            <strong>সিমুলেটেড ডেটা:</strong> সকল NDVI, বৃষ্টির সম্ভাবনা ও মাটির আর্দ্রতা মান গাণিতিক মডেল থেকে তৈরি — বাস্তব স্যাটেলাইট বা আবহাওয়া স্টেশন ডেটা নয়।
+          </p>
+        </div>
+
         {/* ── Info Cards ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-2.5 mb-4">
           {/* NDVI Value */}
@@ -344,11 +352,11 @@ export default function SatellitePage() {
               </div>
             </div>
 
-            {/* Data source note */}
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-start gap-2">
-              <span className="text-sm">ℹ️</span>
-              <div className="text-[10px] text-gray-500 leading-relaxed">
-                বাংলাদেশের মৌসুমী প্যাটার্ন (বোরো, আউশ, আমন) অনুসারে সিমুলেটেড NDVI ডেটা। কোনো API কী প্রয়োজন নেই — সম্পূর্ণ বিনামূল্যে। বাস্তব-সময়ের Sentinel-2 ডেটার জন্য Copernicus Browser ব্যবহার করুন।
+            {/* Data source note — PROMINENT DISCLAIMER */}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 flex items-start gap-2">
+              <span className="text-lg flex-shrink-0">⚠️</span>
+              <div className="text-[11px] text-amber-800 leading-relaxed">
+                <strong>সিমুলেটেড ডেটা — বাস্তব স্যাটেলাইট ডেটা নয়।</strong> বাংলাদেশের মৌসুমী প্যাটার্ন (বোরো, আউশ, আমন) অনুসারে গাণিতিক মডেল থেকে তৈরি। বাস্তব-সময়ের Sentinel-2 ডেটার জন্য <a href="https://apps.sentinel-hub.com/eo-browser/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-amber-900">Copernicus EO Browser</a> ব্যবহার করুন।
               </div>
             </div>
           </div>

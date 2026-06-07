@@ -27,13 +27,9 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin: string | null) {
-  const allowed =
-    !origin ||
-    origin.includes("localhost") ||
-    origin.includes("127.0.0.1") ||
-    ALLOWED_ORIGINS.includes(origin);
+  const allowed = !!origin && (origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin));
   return {
-    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
+    "Access-Control-Allow-Origin": allowed ? origin : "https://krishiai.live",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
@@ -118,6 +114,9 @@ export async function GET(request: NextRequest) {
 
     const result = {
       ok: true,
+      isSimulated: true,
+      disclaimer: "অনুমানিত মূল্য — DAM লাইভ ডেটা উপলব্ধ নয়। এই মূল্যগুলো মৌসুমী প্যাটার্ন ও ঐতিহাসিক তথ্যের ভিত্তিতে সিমুলেটেড।",
+      disclaimerEn: "Estimated prices — DAM live data unavailable. Prices are simulated based on seasonal patterns and historical reference data.",
       prices: allPrices,
       summary: {
         total: allPrices.length,
