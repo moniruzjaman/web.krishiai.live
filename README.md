@@ -15,7 +15,7 @@
 ## মূল ফিচার
 
 | ফিচার | বিবরণ |
-|--------|--------|
+| -------- | --------- |
 | ফসল রোগ নির্ণয় | CABI Plantwise পদ্ধতিতে AI নির্ণয়, বহু-প্রদানকারী জলপ্রপাত |
 | লাইভ আবহাওয়া | Open-Meteo ভিত্তিক আবহাওয়া ও কৃষি পরামর্শ |
 | কৃষি মানচিত্র | ১৫+ প্রতিষ্ঠান, স্যাটেলাইট ভিউ, ব্যবহারকারী লোকেশন |
@@ -28,7 +28,7 @@
 
 ## প্রজেক্ট স্ট্রাকচার
 
-```
+```text
 src/
 ├── app/
 │   ├── page.tsx              # হোম পেজ (হিরো, ড্যাশবোর্ড, টুলস)
@@ -80,7 +80,7 @@ src/
     └── weatherService.ts     # আবহাওয়া সেবা
 └── workers/
     └── index.ts              # CF Worker এজ AI গেটওয়ে
-```
+```text
 
 ## শুরু করুন
 
@@ -116,10 +116,10 @@ wrangler dev
 ## এনভায়রনমেন্ট ভেরিয়েবল
 
 | ভেরিয়েবল | প্রয়োজন | বিবরণ |
-|-----------|---------|--------|
+| ----------- | --------- | --------- |
 | `CF_ACCOUNT_ID` | হ্যাঁ | Cloudflare Account ID |
 | `CF_API_TOKEN` | হ্যাঁ | Cloudflare API Token (Workers AI) |
-| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন https://webkrishiailive.krishiai.live) |
+| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন <https://webkrishiailive.krishiai.live>) |
 | `GEMINI_API_KEY` | ঐচ্ছিক | Google Gemini AI (হাইব্রিড ফলব্যাক) |
 | `GROQ_API_KEY` | ঐচ্ছিক | Groq AI (হাইব্রিড ফলব্যাক) |
 | `OPENROUTER_API_KEY` | ঐচ্ছিক | OpenRouter AI (হাইব্রিড ফলব্যাক) |
