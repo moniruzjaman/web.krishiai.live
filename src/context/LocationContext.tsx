@@ -228,19 +228,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setShowPrompt(true);
     }
 
-    // Try to auto-detect location on mount
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        await processPosition(pos);
-      },
-      () => {
-        // Failed — use stored or fallback
-        const stored = getStoredLocation();
-        setLocation(stored || DHAKA_FALLBACK);
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
+    // Don't auto-request on mount — wait for user interaction via banner or locate-me button.
+    // Use stored location as initial fallback so widgets have data immediately.
+    const stored = getStoredLocation();
+    if (stored) {
+      setLocation(stored);
+    }
+    setLoading(false);
 
     return () => {
       if (watchIdRef.current !== null) {

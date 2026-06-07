@@ -11,6 +11,10 @@ const PRECACHE_URLS = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/logo.svg",
+  "/leaflet.css",
+  "/marker-icon.png",
+  "/marker-icon-2x.png",
+  "/marker-shadow.png",
 ];
 
 self.addEventListener("install", (event) => {

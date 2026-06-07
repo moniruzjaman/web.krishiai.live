@@ -1,5 +1,5 @@
 /**
- * KrishiAI — Rate Limiting & Security Middleware
+ * KrishiAI — Rate Limiting & Security Proxy
  *
  * In-memory IP-based rate limiter for API routes.
  * Uses a sliding window counter with per-IP tracking.
@@ -139,8 +139,8 @@ function getClientIP(request: NextRequest): string {
   return "unknown";
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
-export function middleware(request: NextRequest) {
+// ── Proxy ─────────────────────────────────────────────────────────────────────
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only apply to API routes

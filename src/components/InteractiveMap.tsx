@@ -74,21 +74,21 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
     import("leaflet").then((L) => {
       if (cancelled || !mapRef.current) return;
 
-      // Import CSS
+      // Import CSS (local copy for PWA offline support)
       const existingLink = document.querySelector('link[href*="leaflet"]');
       if (!existingLink) {
         const linkEl = document.createElement("link");
         linkEl.rel = "stylesheet";
-        linkEl.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        linkEl.href = "/leaflet.css";
         document.head.appendChild(linkEl);
       }
 
-      // Fix Leaflet default icon issue
+      // Fix Leaflet default icon issue (use local copies for PWA offline)
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
       L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconRetinaUrl: "/marker-icon-2x.png",
+        iconUrl: "/marker-icon.png",
+        shadowUrl: "/marker-shadow.png",
       });
 
       if (!mapRef.current) return;
