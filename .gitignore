@@ -19,8 +19,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env files — NEVER commit credentials
+# env files — NEVER commit credentials (but .env.example is safe)
 .env*
+!.env.example
 
 # vercel
 .vercel

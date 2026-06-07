@@ -2,7 +2,7 @@
  * Crop-Specific Disease Database for Bangladesh
  * Converted from cabi-diagnosis/src/data/cropDiseases.js
  *
- * Covers the top 10 Bangladesh crops with 5 diseases each (50 diseases total).
+ * Covers the top 15 Bangladesh crops with 5 diseases each (75 diseases total).
  * Symptom arrays are in Bengali for matching against user symptom chips.
  */
 
@@ -173,6 +173,56 @@ export const CROP_DISEASES: Record<string, CropDiseases> = {
       { name: 'Maize Rust', nameBn: 'ভুট্টার মরচে রোগ', cause: 'fungal', pathogen: 'Puccinia sorghi', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতায় কমলা-বাদামি পাউডার', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে'], conditions: 'Cool moist, 16-25°C, dew', recommendations: ['প্রোপিকোনাজোল স্প্রে', 'প্রতিরোধী জাত লাগান', 'আগাছা পরিষ্কার রাখুন', 'সুষম সার ব্যবহার করুন'], severity: 'moderate', season: ['Rabi'] },
       { name: 'Stalk Rot', nameBn: 'ভুট্টার কান্ড পচা রোগ', cause: 'fungal', pathogen: 'Fusarium moniliforme / Macrophomina phaseolina', symptoms: ['কান্ডের গোড়া পচে কালো বা বাদামি', 'কাণ্ড ভেঙে', 'গাছ নেতিয়ে', 'গাছ মরছে', 'শিকড় কালো ও পচা'], conditions: 'Hot dry after wet period, 28-35°C, stress', recommendations: ['প্রতিরোধী জাত লাগান', 'সুষম সার ও সেচ নিশ্চিত করুন', 'সঠিক দূরত্বে চাষ করুন', 'ফসল আবর্তন করুন', 'কার্বেন্ডাজিম মাটিতে প্রয়োগ'], severity: 'severe', season: ['Kharif', 'Rabi'] }
     ]
+  },
+  'পেঁয়াজ': {
+    en: 'Onion',
+    diseases: [
+      { name: 'Purple Blotch', nameBn: 'পেঁয়াজের পার্পল ব্লটচ রোগ', cause: 'fungal', pathogen: 'Alternaria porri', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতায় বেগুনি-বাদামি দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা শুকিয়ে', 'পাতার ডগায় মারা যাওয়া'], conditions: 'Warm humid, 25-30°C, rain or heavy dew', recommendations: ['ম্যানকোজেব বা ক্লোরোথ্যালোনিল স্প্রে', 'প্রতিরোধী জাত লাগান (বারি পেঁয়াজ-১)', 'সঠিক দূরত্বে চাষ করুন', 'সুষম সার ও সেচ দিন', 'ফসল আবর্তন করুন'], severity: 'severe', season: ['Rabi'] },
+      { name: 'Stemphylium Blight', nameBn: 'পেঁয়াজের স্টেমফাইলিয়াম ব্লাইট', cause: 'fungal', pathogen: 'Stemphylium vesicarium', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতায় ছোট হলুদ দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা শুকিয়ে', 'ফলন কম'], conditions: 'Warm wet, 20-28°C, prolonged leaf wetness', recommendations: ['প্রোপিকোনাজোল বা ম্যানকোজেব স্প্রে', 'সঠিক সময়ে বপন করুন', 'ঘন লাগানো এড়িয়ে চলুন', 'ফসল আবর্তন করুন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Downy Mildew', nameBn: 'পেঁয়াজের ডাউনি মিলডিউ', cause: 'fungal', pathogen: 'Peronospora destructor', symptoms: ['পাতায় সাদা গুঁড়া', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'পাতা শুকিয়ে'], conditions: 'Cool wet, 10-20°C, fog, dew', recommendations: ['মেটালাক্সিল+মানকোজেব স্প্রে', 'সঠিক দূরত্বে চাষ করুন', 'বীজ শোধন করুন', 'ফসল আবর্তন করুন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Onion Thrips', nameBn: 'পেঁয়াজের থ্রিপস', cause: 'insect', pathogen: 'Thrips tabaci', symptoms: ['পাতায় রূপালি দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'পোকা দেখা যাচ্ছে', 'ফলন কম'], conditions: 'Hot dry, 25-35°C', recommendations: ['ফিপ্রোনিল বা স্পাইনোসাড স্প্রে', 'নীম তেল স্প্রে', 'নীল আঠালো ফাঁদ ব্যবহার', 'পরিষ্কার চাষ ও আগাছা দমন'], severity: 'severe', season: ['Rabi'] },
+      { name: 'Basal Rot', nameBn: 'পেঁয়াজের গোড়া পচা রোগ', cause: 'fungal', pathogen: 'Fusarium oxysporum f.sp. cepae', symptoms: ['কান্ডের গোড়া পচে কালো বা বাদামি', 'গাছ হলুদ হয়ে মরছে', 'পাতা হলুদ হয়ে যাচ্ছে', 'শিকড় কালো ও পচা', 'কন্দ পচা'], conditions: 'Warm soil, 25-30°C, waterlogged', recommendations: ['কার্বেন্ডাজিম দিয়ে বীজ শোধন', 'ফসল আবর্তন করুন (3-4 বছর)', 'জল নিষ্কাশন উন্নত করুন', 'প্রতিরোধী জাত লাগান'], severity: 'moderate', season: ['Rabi'] }
+    ]
+  },
+  'রসুন': {
+    en: 'Garlic',
+    diseases: [
+      { name: 'Purple Blotch', nameBn: 'রসুনের পার্পল ব্লটচ রোগ', cause: 'fungal', pathogen: 'Alternaria porri', symptoms: ['পাতায় বেগুনি-বাদামি দাগ', 'পাতায় বাদামি গোলাকার দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা শুকিয়ে'], conditions: 'Warm humid, 25-30°C', recommendations: ['ম্যানকোজেব স্প্রে', 'প্রতিরোধী জাত লাগান', 'সঠিক দূরত্বে চাষ করুন', 'সুষম সার দিন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Stemphylium Blight', nameBn: 'রসুনের স্টেমফাইলিয়াম ব্লাইট', cause: 'fungal', pathogen: 'Stemphylium vesicarium', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা শুকিয়ে', 'ফলন কম'], conditions: 'Warm wet, 20-28°C', recommendations: ['প্রোপিকোনাজোল স্প্রে', 'সঠিক সময়ে বপন', 'ফসল আবর্তন করুন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Garlic Rust', nameBn: 'রসুনের মরচে রোগ', cause: 'fungal', pathogen: 'Puccinia allii', symptoms: ['পাতায় কমলা-বাদামি পাউডার', 'পাতায় বাদামি গোলাকার দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'ফলন কম'], conditions: 'Cool moist, 15-22°C', recommendations: ['প্রোপিকোনাজোল স্প্রে', 'প্রতিরোধী জাত লাগান', 'সুষম সার দিন', 'ফসল আবর্তন করুন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'White Rot', nameBn: 'রসুনের সাদা পচা রোগ', cause: 'fungal', pathogen: 'Sclerotium cepivorum', symptoms: ['কান্ডের গোড়ায় সাদা তুলার মত ছত্রাক', 'পাতা হলুদ হয়ে যাচ্ছে', 'গাছ মরছে', 'শিকড় পচা', 'কন্দ পচা'], conditions: 'Cool moist soil, 15-20°C', recommendations: ['কার্বেন্ডাজিম মাটিতে প্রয়োগ', 'আক্রান্ত গাছ তুলে পুড়ে ফেলুন', 'ফসল আবর্তন করুন', 'বীজ শোধন করুন'], severity: 'severe', season: ['Rabi'] },
+      { name: 'Garlic Mosaic', nameBn: 'রসুনের মোজাইক রোগ', cause: 'viral', pathogen: 'Garlic common latent virus (GarCLV)', symptoms: ['পাতায় মোজাইক', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'গাছ বামন', 'ফলন কম'], conditions: 'Aphid vectors, 20-25°C, vegetative propagation', recommendations: ['জাব পোকা নিয়ন্ত্রণ করুন', 'রোগমুক্ত বীজ ব্যবহার', 'আক্রান্ত গাছ সরিয়ে ফেলুন', 'প্রতিরোধী জাত লাগান'], severity: 'moderate', season: ['Rabi'] }
+    ]
+  },
+  'মরিচ': {
+    en: 'Chili',
+    diseases: [
+      { name: 'Anthracnose', nameBn: 'মরিচের অ্যানথ্রাকনোজ রোগ', cause: 'fungal', pathogen: 'Colletotrichum capsici', symptoms: ['ফলে দাগ', 'ফল পচে যাচ্ছে, কালো বা বাদামি দাগ', 'ফলে গোলাকার কনকেভ দাগ', 'পাতায় বাদামি গোলাকার দাগ', 'ফল শুকিয়ে'], conditions: 'Warm wet, 25-30°C, rain splash', recommendations: ['ম্যানকোজেব বা কার্বেন্ডাজিম স্প্রে', 'আক্রান্ত ফল তাড়াতাড়ি তুলে ফেলুন', 'ফসল আবর্তন করুন', 'বীজ শোধন করুন', 'সঠিক দূরত্বে চাষ করুন'], severity: 'severe', season: ['Kharif', 'Rabi'] },
+      { name: 'Chili Leaf Curl', nameBn: 'মরিচের পাতা কুঁকড়ানো রোগ', cause: 'viral', pathogen: 'Chili leaf curl virus (ChiLCV)', symptoms: ['পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'পাতা হলুদ হয়ে যাচ্ছে', 'গাছ বামন', 'ফল বিকৃত', 'ফুল ঝরা'], conditions: 'Whitefly vectors, 25-35°C, dry weather', recommendations: ['সাদা মাছি নিয়ন্ত্রণ করুন (হলুদ ফাঁদ)', 'প্রতিরোধী জাত লাগান (বারি মরিচ-১)', 'আক্রান্ত চারা সরিয়ে ফেলুন', 'নেট হাউসে চাষ করুন'], severity: 'severe', season: ['Kharif'] },
+      { name: 'Bacterial Wilt', nameBn: 'মরিচের ব্যাকটেরিয়াল উইল্ট', cause: 'bacterial', pathogen: 'Ralstonia solanacearum', symptoms: ['গাছ হঠাৎ শুকিয়ে মারা যাচ্ছে', 'পাতা হলুদ হয়ে যাচ্ছে', 'কান্ড কাটলে ভেতরে বাদামি তরল', 'গাছ নেতিয়ে', 'শিকড় পচা'], conditions: 'Hot wet, 28-35°C', recommendations: ['প্রতিরোধী জাত লাগান', 'ফসল আবর্তন (3-4 বছর)', 'জল নিষ্কাশন উন্নত করুন', 'আক্রান্ত গাছ তুলে চুন দিয়ে পুড়ে ফেলুন'], severity: 'severe', season: ['Kharif', 'Rabi'] },
+      { name: 'Cercospora Leaf Spot', nameBn: 'মরিচের সারকোস্পোরা পাতায় দাগ', cause: 'fungal', pathogen: 'Cercospora capsici', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতায় ছোট গোলাকার ধূসর দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'ফলন কম'], conditions: 'Warm humid, 25-30°C', recommendations: ['ম্যানকোজেব স্প্রে', 'ফসল আবর্তন করুন', 'আক্রান্ত পাতা সরিয়ে ফেলুন', 'সুষম সার দিন'], severity: 'moderate', season: ['Kharif', 'Rabi'] },
+      { name: 'Powdery Mildew', nameBn: 'মরিচের পাউডারি মিলডিউ', cause: 'fungal', pathogen: 'Leveillula taurica', symptoms: ['পাতায় সাদা গুঁড়া', 'পাতার নিচে সাদা ছত্রাক', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'ফলন কম'], conditions: 'Warm dry, 20-30°C, cool nights', recommendations: ['সালফার বা ডাইনোক্যাপ স্প্রে', 'ঘন লাগানো এড়িয়ে চলুন', 'সঠিক দূরত্বে চাষ করুন', 'প্রতিরোধী জাত লাগান'], severity: 'moderate', season: ['Rabi'] }
+    ]
+  },
+  'মসুর ডাল': {
+    en: 'Lentil',
+    diseases: [
+      { name: 'Stemphylium Blight', nameBn: 'মসুর ডালের স্টেমফাইলিয়াম ব্লাইট', cause: 'fungal', pathogen: 'Stemphylium botryosum', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতার কিনারা পুড়ে যাওয়ার মতো বাদামি', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'শীষ শুকিয়ে যাওয়া'], conditions: 'Cool wet, 15-25°C, fog', recommendations: ['ম্যানকোজেব স্প্রে', 'প্রতিরোধী জাত লাগান (বারি মসুর-৭)', 'সঠিক সময়ে বপন করুন', 'ফসল আবর্তন করুন'], severity: 'severe', season: ['Rabi'] },
+      { name: 'Rust', nameBn: 'মসুর ডালের মরচে রোগ', cause: 'fungal', pathogen: 'Uromyces viciae-fabae', symptoms: ['পাতায় কমলা-বাদামি পাউডার', 'পাতায় বাদামি গোলাকার দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'দানা ছোট'], conditions: 'Cool moist, 15-22°C, dew', recommendations: ['প্রোপিকোনাজোল স্প্রে', 'প্রতিরোধী জাত লাগান', 'সঠিক সময়ে বপন', 'সুষম সার দিন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Anthracnose', nameBn: 'মসুর ডালের অ্যানথ্রাকনোজ', cause: 'fungal', pathogen: 'Colletotrichum truncatum', symptoms: ['কান্ডে বাদামি দাগ', 'পাতায় বাদামি গোলাকার দাগ', 'পাতা হলুদ হয়ে যাচ্ছে', 'কাণ্ড ভেঙে', 'গাছ মরছে'], conditions: 'Warm wet, 20-28°C', recommendations: ['কার্বেন্ডাজিম বা থাইরাম দিয়ে বীজ শোধন', 'ফসল আবর্তন করুন', 'প্রতিরোধী জাত লাগান', 'সুষম সার ব্যবহার'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Ascochyta Blight', nameBn: 'মসুর ডালের অ্যাসকোকাইটা ব্লাইট', cause: 'fungal', pathogen: 'Ascochyta lentis', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'কান্ডে বাদামি পট্টি', 'পাতা হলুদ হয়ে যাচ্ছে', 'শীষ চিটা', 'দানা ছোট'], conditions: 'Cool wet, 15-22°C, rain', recommendations: ['থাইরাম দিয়ে বীজ শোধন', 'প্রতিরোধী জাত লাগান', 'ফসল আবর্তন করুন', 'সঠিক সময়ে বপন'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Fusarium Wilt', nameBn: 'মসুর ডালের ফিউজেরিয়াম উইল্ট', cause: 'fungal', pathogen: 'Fusarium oxysporum f.sp. lentis', symptoms: ['পাতা হলুদ হয়ে যাচ্ছে', 'গাছ নেতিয়ে', 'গাছ মরছে', 'পাতা শুকিয়ে', 'শিকড় পচা'], conditions: 'Warm soil, 25-30°C', recommendations: ['প্রতিরোধী জাত লাগান (বারি মসুর-৬)', 'ফসল আবর্তন করুন', 'ট্রাইকোডার্মা মাটিতে প্রয়োগ', 'বীজ শোধন করুন'], severity: 'moderate', season: ['Rabi'] }
+    ]
+  },
+  'পান': {
+    en: 'Betel Leaf',
+    diseases: [
+      { name: 'Leaf Spot', nameBn: 'পানের পাতায় দাগ রোগ', cause: 'fungal', pathogen: 'Colletotrichum capsici / Phytophthora parasitica', symptoms: ['পাতায় বাদামি গোলাকার দাগ', 'পাতায় তেলতেলে', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ঝরে', 'পাতায় ছিদ্র'], conditions: 'Warm humid, 25-30°C, rain splash, poor ventilation', recommendations: ['বোর্দো মিশ্রণ (1%) স্প্রে', 'কপার অক্সিক্লোরাইড স্প্রে', 'সঠিক নিষ্কাশন ও বায়ু চলাচল নিশ্চিত করুন', 'আক্রান্ত পাতা ছেঁটে ফেলুন'], severity: 'severe', season: ['Kharif', 'Rabi'] },
+      { name: 'Bacterial Leaf Spot', nameBn: 'পানের ব্যাকটেরিয়াল পাতায় দাগ', cause: 'bacterial', pathogen: 'Xanthomonas axonopodis', symptoms: ['পাতায় তেলতেলে', 'পাতায় ছোট গোলাকার দাগ', 'পাতার কিনারা হলুদ-বাদামি', 'পাতা হলুদ হয়ে যাচ্ছে'], conditions: 'Warm wet, 25-30°C, rain', recommendations: ['স্ট্রেপটোসাইক্লিন+কপার অক্সিক্লোরাইড স্প্রে', 'আক্রান্ত পাতা সরিয়ে ফেলুন', 'বরজের বায়ু চলাচল উন্নত করুন', 'জল নিষ্কাশন নিশ্চিত করুন'], severity: 'moderate', season: ['Kharif'] },
+      { name: 'Foot Rot', nameBn: 'পানের গোড়া পচা রোগ', cause: 'fungal', pathogen: 'Phytophthora parasitica', symptoms: ['কান্ডের গোড়া পচে কালো বা বাদামি', 'গাছ নেতিয়ে', 'পাতা হলুদ হয়ে যাচ্ছে', 'গাছ মরছে', 'শিকড় পচা'], conditions: 'Hot wet, 28-32°C, waterlogged', recommendations: ['মেটালাক্সিল+মানকোজেব মাটিতে প্রয়োগ', 'জল নিষ্কাশন উন্নত করুন', 'আক্রান্ত লতা কেটে পুড়ে ফেলুন', 'সুস্থ চারা লাগান'], severity: 'severe', season: ['Kharif'] },
+      { name: 'Powdery Mildew', nameBn: 'পানের পাউডারি মিলডিউ', cause: 'fungal', pathogen: 'Oidium sp.', symptoms: ['পাতায় সাদা গুঁড়া', 'পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'পাতা হলুদ হয়ে যাচ্ছে', 'পাতা ছোট হয়ে যাচ্ছে'], conditions: 'Warm dry, 20-28°C, poor air circulation', recommendations: ['সালফার বা ডাইনোক্যাপ স্প্রে', 'বরজের বায়ু চলাচল উন্নত করুন', 'ঘন লতা ছেঁটে ফেলুন', 'নীম তেল স্প্রে'], severity: 'moderate', season: ['Rabi'] },
+      { name: 'Viral Disease', nameBn: 'পানের ভাইরাস রোগ', cause: 'viral', pathogen: 'Betel vine virus', symptoms: ['পাতায় মোজাইক', 'পাতা কুঁকড়িয়ে ও বাঁকিয়ে যাচ্ছে', 'পাতা ছোট হয়ে যাচ্ছে', 'গাছ বামন', 'পাতা হলুদ হয়ে যাচ্ছে'], conditions: 'Insect vectors (aphids, whitefly), 20-30°C', recommendations: ['জাব ও সাদা মাছি নিয়ন্ত্রণ করুন', 'আক্রান্ত লতা কেটে ধ্বংস করুন', 'রোগমুক্ত চারা ব্যবহার করুন', 'নেট ব্যবহার করুন'], severity: 'moderate', season: ['Year-round'] }
+    ]
   }
 };
 
@@ -180,13 +230,16 @@ export const CROP_DISEASES: Record<string, CropDiseases> = {
 export const CROP_NAME_MAP: Record<string, string> = {
   'ধান': 'ধান', 'পাট': 'পাট', 'আলু': 'আলু', 'টমেটো': 'টমেটো',
   'বেগুন': 'বেগুন', 'সরিষা': 'সরিষা', 'কলা': 'কলা', 'আম': 'আম',
-  'গম': 'গম', 'ভুট্টা': 'ভুট্টা',
+  'গম': 'গম', 'ভুট্টা': 'ভুট্টা', 'পেঁয়াজ': 'পেঁয়াজ', 'রসুন': 'রসুন',
+  'মরিচ': 'মরিচ', 'মসুর ডাল': 'মসুর ডাল', 'পান': 'পান',
   'Rice': 'ধান', 'Jute': 'পাট', 'Potato': 'আলু', 'Tomato': 'টমেটো',
   'Brinjal': 'বেগুন', 'Mustard': 'সরিষা', 'Banana': 'কলা', 'Mango': 'আম',
-  'Wheat': 'গম', 'Maize': 'ভুট্টা',
+  'Wheat': 'গম', 'Maize': 'ভুট্টা', 'Onion': 'পেঁয়াজ', 'Garlic': 'রসুন',
+  'Chili': 'মরিচ', 'Lentil': 'মসুর ডাল', 'Betel Leaf': 'পান',
   'rice': 'ধান', 'jute': 'পাট', 'potato': 'আলু', 'tomato': 'টমেটো',
   'brinjal': 'বেগুন', 'mustard': 'সরিষা', 'banana': 'কলা', 'mango': 'আম',
-  'wheat': 'গম', 'maize': 'ভুট্টা',
+  'wheat': 'গম', 'maize': 'ভুট্টা', 'onion': 'পেঁয়াজ', 'garlic': 'রসুন',
+  'chili': 'মরিচ', 'lentil': 'মসুর ডাল', 'betel': 'পান',
 };
 
 /** Resolve a crop name to the CROP_DISEASES key */
