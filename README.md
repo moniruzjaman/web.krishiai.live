@@ -119,7 +119,7 @@ wrangler dev
 |-----------|---------|--------|
 | `CF_ACCOUNT_ID` | হ্যাঁ | Cloudflare Account ID |
 | `CF_API_TOKEN` | হ্যাঁ | Cloudflare API Token (Workers AI) |
-| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন https://api.krishiai.live) |
+| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন https://webkrishiailive.krishiai.live) |
 | `GEMINI_API_KEY` | ঐচ্ছিক | Google Gemini AI (হাইব্রিড ফলব্যাক) |
 | `GROQ_API_KEY` | ঐচ্ছিক | Groq AI (হাইব্রিড ফলব্যাক) |
 | `OPENROUTER_API_KEY` | ঐচ্ছিক | OpenRouter AI (হাইব্রিড ফলব্যাক) |

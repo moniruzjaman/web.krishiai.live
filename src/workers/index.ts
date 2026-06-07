@@ -15,6 +15,7 @@
  */
 
 // ── Type Definitions ─────────────────────────────────────────────────────────
+import type { ExportedHandler } from "@cloudflare/workers-types";
 
 interface Env {
   AI: Ai; // Workers AI binding (auto-injected by wrangler)

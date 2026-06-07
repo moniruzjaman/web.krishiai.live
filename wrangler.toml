@@ -10,7 +10,7 @@
 # Dev:     wrangler dev
 # ──────────────────────────────────────────────────────────────────────────────
 
-name = "web.krishiai.live"
+name = "krishiai-gateway"
 main = "src/workers/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = []
