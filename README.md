@@ -8,7 +8,7 @@
 - **TypeScript** + **Tailwind CSS 4**
 - **shadcn/ui** — নির্বাচিত UI কম্পোনেন্ট
 - **Leaflet** — ইন্টারেক্টিভ মানচিত্র (OpenStreetMap + Esri Satellite)
-- **Cloudflare Workers AI** — এজ AI ইনফারেন্স (Llama 3 8B, নেটিভ বাইন্ডিং)
+- **Cloudflare Workers AI** — এজ AI ইনফারেন্স (Llama 3 8B, REST API)
 - **Open-Meteo** — কী-মুক্ত আবহাওয়া API
 - **Nominatim** — GPS রিভার্স জিওকোডিং
 
@@ -24,7 +24,7 @@
 | ফসল তথ্যভাণ্ডার | ৭ ক্যাটাগরি, ২০০+ ফসল, AI-চালিত বিস্তারিত তথ্য |
 | ফসল ক্যালেন্ডার | ১০ প্রধান ফসলের মৌসুম ক্যালেন্ডার |
 | স্মার্ট সিদ্ধান্ত | আবহাওয়া ও বাজার ভিত্তিক ফসল সুপারিশ |
-| AI চ্যাট | Cloudflare Workers AI চালিত কৃষি সহকারী (এজ + REST) |
+| AI চ্যাট | Cloudflare Workers AI চালিত কৃষি সহকারী (REST) |
 
 ## প্রজেক্ট স্ট্রাকচার
 
@@ -33,6 +33,7 @@ src/
 ├── app/
 │   ├── page.tsx              # হোম পেজ (হিরো, ড্যাশবোর্ড, টুলস)
 │   ├── layout.tsx            # রুট লেআউট + LocationProvider
+│   ├── offline/              # PWA অফলাইন ফলব্যাক পেজ
 │   ├── analyzer/             # CABI রোগ নির্ণয় পেজ
 │   ├── chat/                 # AI চ্যাট পেজ
 │   ├── api/
@@ -69,8 +70,8 @@ src/
 │   └── ui/                   # shadcn/ui কম্পোনেন্ট (9টি ব্যবহৃত)
 ├── context/
 │   └── LocationContext.tsx    # অ্যাপ-ওয়াইড GPS প্রদানকারী
-└── lib/
-    ├── cloudflareAI.ts        # CF Workers AI ক্লায়েন্ট (গেটওয়ে + REST)
+    └── lib/
+    ├── cloudflareAI.ts        # CF Workers AI ক্লায়েন্ট (REST)
     ├── cabi/
     │   ├── diagnosticEngine.ts  # CABI নির্ণয় ইঞ্জিন
     │   └── bengaliKeywords.ts   # বাংলা কীওয়ার্ড ম্যাপিং
@@ -78,8 +79,8 @@ src/
     ├── cropDiseases.ts       # রোগ ডেটাবেস
     ├── cropPriceService.ts   # ফসল মূল্য সেবা
     └── weatherService.ts     # আবহাওয়া সেবা
-└── workers/
-    └── index.ts              # CF Worker এজ AI গেটওয়ে
+├── proxy.ts                  # API রেট লিমিটার (middleware.ts এর পরিবর্তে)
+└── middleware.ts              # সরানো হয়েছে (proxy.ts নামান্তরিত)
 ```text
 
 ## শুরু করুন
@@ -101,17 +102,10 @@ bun build && bun start
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/moniruzjaman/web.krishiai.live)
 
-### Cloudflare Workers (এজ AI গেটওয়ে)
-
-```bash
-# গেটওয়ে ডিপ্লয়
-wrangler deploy
-
-# লোকাল ডেভেলপমেন্ট
-wrangler dev
-```
-
-গেটওয়ে স্বয়ংক্রিয়ভাবে ডিপ্লয় হয় GitHub Actions দ্বারা `main` ব্রাঞ্চে push করলে।
+### PWA & Service Worker
+- কাস্টম সার্ভিস ওয়ার্কার (`public/sw.js`) — ৩ স্তরের ক্যাশিং (স্ট্যাটিক ক্যাশ-ফার্স্ট, API নেটওয়ার্ক-ফার্স্ট, ন্যাভিগেশন অফলাইন ফলব্যাক)
+- অফলাইন ফলব্যাক পেজ (`/offline`)
+- Leaflet CSS ও আইকন লোকালি `/public/` থেকে সার্ভ করা (PWA অফলাইন সাপোর্টের জন্য)
 
 ## এনভায়রনমেন্ট ভেরিয়েবল
 
@@ -119,12 +113,11 @@ wrangler dev
 | ----------- | --------- | --------- |
 | `CF_ACCOUNT_ID` | হ্যাঁ | Cloudflare Account ID |
 | `CF_API_TOKEN` | হ্যাঁ | Cloudflare API Token (Workers AI) |
-| `CF_GATEWAY_URL` | ঐচ্ছিক | এজ গেটওয়ে URL (যেমন <https://webkrishiailive.krishiai.live>) |
 | `GEMINI_API_KEY` | ঐচ্ছিক | Google Gemini AI (হাইব্রিড ফলব্যাক) |
 | `GROQ_API_KEY` | ঐচ্ছিক | Groq AI (হাইব্রিড ফলব্যাক) |
 | `OPENROUTER_API_KEY` | ঐচ্ছিক | OpenRouter AI (হাইব্রিড ফলব্যাক) |
 
-> প্রাথমিক AI প্রদানকারী **Cloudflare Workers AI** (Llama 3 8B Instruct)। এজ গেটওয়ে চালু থাকলে দ্রুত পাথ ব্যবহার হয়, অন্যথায় REST API ফলব্যাক। উপরের অতিরিক্ত কীগুলো হাইব্রিড ফলব্যাক প্রদানকারী।
+> প্রাথমিক AI প্রদানকারী **Cloudflare Workers AI** (Llama 3 8B Instruct) — সরাসরি REST API ব্যবহার করে (CF Worker গেটওয়ে সরানো হয়েছে)।
 
 ## লাইসেন্স
 

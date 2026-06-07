@@ -23,11 +23,10 @@
 | `@radix-ui/react-tabs` | ^1.1.12 | Tab navigation (shadcn) | Could build custom |
 | `@radix-ui/react-toast` | ^1.2.14 | Toast primitive (shadcn) | Redundant with sonner |
 
-## Dev Dependencies (9)
+## Dev Dependencies (8)
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `@cloudflare/workers-types` | ^4 | TypeScript types for CF Workers (src/workers/) |
 | `@tailwindcss/postcss` | ^4 | PostCSS plugin for Tailwind 4 |
 | `@types/react` | ^19 | React TypeScript types |
 | `@types/react-dom` | ^19 | React DOM TypeScript types |
@@ -40,11 +39,11 @@
 
 ## Important Notes
 
-- **No `z-ai-web-dev-sdk`**: Removed. AI calls go through Cloudflare Workers AI (REST or edge gateway)
+- **No `z-ai-web-dev-sdk`**: Removed. AI calls go through Cloudflare Workers AI (REST only, gateway removed)
 - **No `@react-leaflet`**: Maps use plain Leaflet via dynamic import (SSR-safe)
 - **No `axios`**: All fetches use native `fetch()`
 - **No `framer-motion`**: Animations via Tailwind CSS only
 - **No `swr`/`react-query`**: Data fetching uses useState + useEffect
-- **No `next-pwa`**: PWA handled via manifest + manual install prompt
+- **No `next-pwa`**: PWA uses custom sw.js + manifest + manual install prompt
+- **No `@cloudflare/workers-types`**: Removed along with CF Worker (src/workers/) and wrangler
 - **Redundancy**: `@radix-ui/react-toast` + `sonner` both installed; sonner is what's actually used
-- **CF Worker types**: `@cloudflare/workers-types` provides `ExportedHandler`, `Ai` etc. for the worker in `src/workers/`

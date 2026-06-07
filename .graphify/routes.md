@@ -5,6 +5,7 @@
 | Route | File | Key Features |
 |-------|------|-------------|
 | `/` | `src/app/page.tsx` | Hero + 6 live widgets + 12 tool cards + testimonials |
+| `/offline` | `src/app/offline/page.tsx` | PWA offline fallback (Bengali, DAE hotline, retry button) |
 | `/analyzer` | `src/app/analyzer/page.tsx` | Photo upload + symptom selection → AI diagnosis |
 | `/chat` | `src/app/chat/page.tsx` | Full AI chat interface |
 | `/learn` | `src/app/learn/page.tsx` | Learning center |

@@ -4,8 +4,8 @@
 - **Name**: KrishiAI (কৃষি AI)
 - **URL**: https://web.krishiai.live
 - **Repo**: moniruzjaman/web.krishiai.live
-- **Branches**: main, production, production-v2 (all synced)
-- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1) + CF Workers (global edge)
+- **Production branch**: v4.0
+- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (iad1)
 
 ## Source Tree
 
@@ -33,8 +33,8 @@ src/
 │   │   └── yield/page.tsx         # Yield forecast
 │   └── api/
 │       ├── route.ts            # API health/info endpoint
-│       ├── chat/route.ts       # AI chat (CF Workers AI: gateway → REST → offline fallback)
-│       ├── diagnose/route.ts   # CABI diagnosis (5-provider waterfall: CF AI → Gemini → OpenRouter → Groq → Offline)
+│       ├── chat/route.ts       # AI chat (CF Workers AI: REST → offline fallback)
+│       ├── diagnose/route.ts   # CABI diagnosis (8-provider waterfall: z-ai-vlm → CF AI → Gemini → OpenRouter → Groq → z-ai → Offline → Regex)
 │       ├── weather/route.ts    # Open-Meteo proxy with agri indices
 │       ├── market/route.ts     # DAM live + seasonal fallback prices
 │       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin
@@ -57,7 +57,7 @@ src/
 │   ├── PhotoGallery.tsx        # Home page photo gallery
 │   └── ui/                     # shadcn/ui primitives
 ├── context/
-│   └── LocationContext.tsx     # App-wide GPS provider (useLocation hook, Nominatim, Dhaka fallback)
+│   └── LocationContext.tsx     # App-wide GPS provider (useLocation hook, Nominatim, Dhaka fallback, no auto-grant on mount)
 ├── hooks/
 │   └── use-toast.ts            # Toast hook
 ├── lib/
@@ -66,30 +66,33 @@ src/
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
 │   ├── weatherService.ts       # Open-Meteo integration, crop scoring, disease pressure, irrigation
-│   ├── cloudflareAI.ts         # CF Workers AI dual-path client (gateway + REST) for Next.js routes
+│   ├── cloudflareAI.ts         # CF Workers AI REST client for Next.js routes (gateway path removed)
 │   └── cabi/
 │       ├── bengaliKeywords.ts  # Bengali→English symptom translation
 │       └── diagnosticEngine.ts # Offline CABI diagnosis engine
-└── workers/
-    └── index.ts                # CF Worker: Edge AI Gateway (native env.AI binding, CORS, /api/chat, /api/diagnose, /api/analyze)
+├── proxy.ts                    # API rate limiter (10/20/60 rpm per IP, replaces middleware.ts)
+├── middleware.ts               # REMOVED — renamed to proxy.ts (Next.js 16)
 
 public/
-├── manifest.json               # PWA manifest (Bengali, standalone, portrait)
+├── sw.js                       # Service worker (3-tier caching: static cache-first, API network-first, nav offline fallback)
+├── manifest.json               # PWA manifest (Bengali, standalone, portrait, scope, display_override, edge_side_panel)
 ├── icons/                      # icon-192.png, icon-512.png
 ├── logo.svg
 ├── robots.txt
+├── leaflet.css                 # Local copy for PWA offline support
+├── marker-icon.png             # Local Leaflet marker icon
+├── marker-icon-2x.png          # Local Leaflet hi-res marker icon
+├── marker-shadow.png           # Local Leaflet marker shadow
 ├── data/                       # aez-zones.json, crop-categories.json, usda-textures.json
 ├── disease/                    # ~60 CABI disease reference images
 ├── deficiency/                 # ~24 nutrient deficiency reference images
 └── pest/                       # ~25 pest reference images
 
 Config files:
-├── wrangler.toml               # CF Worker config (name, main, ai binding, vars, limits)
-├── tsconfig.json               # Next.js TypeScript config (excludes src/workers)
-├── tsconfig.worker.json        # CF Worker TypeScript config (@cloudflare/workers-types)
-├── next.config.ts              # Next.js config (standalone, ignoreBuildErrors)
-├── vercel.json                 # Vercel deploy config (bun, hkg1, security headers)
-└── .github/workflows/deploy-full.yml  # CI/CD: validate + deploy CF Worker
+├── next.config.ts              # Next.js config (standalone, CORS headers, SW headers)
+├── vercel.json                 # Vercel deploy config (bun, security headers)
+├── proxy.ts                    # API rate limiter (replaces middleware.ts)
+└── .github/workflows/deploy-full.yml  # REMOVED — no CF Worker to deploy
 ```
 
 ## Route Table (25+ routes)
@@ -99,6 +102,7 @@ Config files:
 | `/` | Page | GET | — | Mixed |
 | `/analyzer` | Page | GET | — | — |
 | `/chat` | Page | GET | — | — |
+| `/offline` | Page | GET | — | Static offline fallback |
 | `/learn` | Page | GET | — | — |
 | `/profile` | Page | GET | — | — |
 | `/tools` | Page | GET | — | — |
@@ -112,8 +116,8 @@ Config files:
 | `/tools/crop-calendar` | Page | GET | — | cropCalendar.ts |
 | `/tools/yield` | Page | GET | — | — |
 | `/api` | API | GET | 300s | Static info |
-| `/api/chat` | API | POST | no-store | CF Workers AI (gateway → REST → offline) |
-| `/api/diagnose` | API | POST | no-store | 5-provider waterfall |
+| `/api/chat` | API | POST | no-store | CF Workers AI (REST → offline) |
+| `/api/diagnose` | API | POST | no-store | 8-provider waterfall |
 | `/api/weather` | API | GET | 600s | Open-Meteo + seasonal fallback |
 | `/api/market` | API | GET | 3600s | DAM live + seasonal fallback |
 | `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI |
@@ -122,11 +126,16 @@ Config files:
 | `/api/soil-analysis` | API | GET/POST | no-store | CF Workers AI + AEZ/USDA |
 | `/api/smart-decision` | API | GET | 600s | Open-Meteo + cropPriceService |
 
-## CF Worker Routes (Edge AI Gateway)
+## Proxy (Rate Limiter)
 
-| Route | Method | Purpose | AI |
-|-------|--------|---------|-----|
-| `/health` | GET | Health check | None |
-| `/api/chat` | POST | Bengali agricultural chat | env.AI.run() native |
-| `/api/diagnose` | POST | CABI crop diagnosis | env.AI.run() native |
-| `/api/analyze` | POST | General AI analysis | env.AI.run() native |
+| Export | Path | Purpose |
+|--------|------|---------|
+| `proxy()` | `src/proxy.ts` | IP-based rate limiter for API routes (replaces deprecated middleware.ts) |
+
+## Service Worker (public/sw.js)
+
+| Strategy | Scope | Behavior |
+|----------|-------|----------|
+| Cache-first | `_next/static/*`, `.css`, `.js`, `.png`, icons, Leaflet assets | Serve from cache, fetch on miss |
+| Network-first | `/api/*` | Fetch from network, cache on success, serve cached on failure |
+| Network-first | Navigation requests | Fetch HTML, cache on success, serve `/offline` on failure |

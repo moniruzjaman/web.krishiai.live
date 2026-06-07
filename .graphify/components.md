@@ -25,14 +25,15 @@
 | Component | Lines | Props | Dependencies | Key Behavior |
 |-----------|-------|-------|-------------|-------------|
 | `MapWidget.tsx` | 135 | None | useLocation, InteractiveMap (dynamic) | Street/satellite toggle, district badge, 15+ BD markers, locate-me |
-| `InteractiveMap.tsx` | 240 | lat, lon, height | Leaflet (dynamic, ssr:false) | OSM + Esri tiles, user marker + pulse, accuracy circle, category-colored markers |
-| `NDVIMap.tsx` | 244 | lat, lon | Leaflet (dynamic) | 20+ district NDVI circles, seasonal color, legend overlay, Bangladesh border |
+| `InteractiveMap.tsx` | 240 | lat, lon, height | Leaflet (dynamic, ssr:false, local CSS/icons) | OSM + Esri tiles, user marker + pulse, accuracy circle, category-colored markers |
+| `NDVIMap.tsx` | 244 | lat, lon | Leaflet (dynamic, local CSS/icons) | 20+ district NDVI circles, seasonal color, legend overlay, Bangladesh border |
 | `WeatherWidget.tsx` | 502 | None | useLocation, /api/weather | Current + hourly + 5-day + agri indices, auto-refresh 30min, Dhaka fallback 3s |
 | `MarketWidget.tsx` | 480 | None | useLocation, /api/market | 6 category tabs, Bengali search, price change badges, PriceTrendBar mini-viz |
 | `NewsWidget.tsx` | — | None | /api/news | Headlines + AI bulletin |
 | `AIChatWidget.tsx` | — | None | /api/chat | Quick chat interface |
 | `PhotoGallery.tsx` | — | None | — | Photo gallery |
 | `InstallPrompt.tsx` | 185 | None | beforeinstallprompt, navigator.standalone | PWA install banner, iOS guide, 7-day dismiss |
+| `ClientShell.tsx` | — | None | Service Worker + InstallPrompt | Registers /sw.js on mount, renders InstallPrompt via dynamic import |
 | `TopNavbar.tsx` | — | None | — | App header |
 | `BottomNav.tsx` | — | None | — | 5-tab navigation |
 
@@ -43,7 +44,7 @@ shadcn/ui components: badge, button, card, input, scroll-area, skeleton, sonner,
 
 | Context | Hook | State | Consumers |
 |---------|------|-------|-----------|
-| LocationContext | `useLocation()` | lat, lon, district, upazila, loading, error, permissionStatus | MapWidget, InteractiveMap, NDVIMap, WeatherWidget, MarketWidget, satellite page |
+| LocationContext | `useLocation()` | lat, lon, district, upazila, loading, error, permissionStatus (no auto-grant on mount) | MapWidget, InteractiveMap, NDVIMap, WeatherWidget, MarketWidget, satellite page |
 
 ## Dynamic Import Pattern
 

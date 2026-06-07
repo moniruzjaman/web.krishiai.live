@@ -31,8 +31,8 @@ LocationContext (src/context/LocationContext.tsx)
 
 ## Permission Handling
 
-- **First visit**: LocationContext auto-requests geolocation on mount
-- **Permission prompt**: Custom Bengali UI shown if `permissionStatus === 'prompt'`
+- **First visit**: LocationContext does NOT auto-request geolocation on mount (prevents double-prompt confusion)
+- **Permission trigger**: User must click permission banner or locate-me button to trigger `getCurrentPosition`
 - **Denied**: Silently falls back to Dhaka, shows locate-me button to retry
 - **Granted**: Stores position, watchPosition for updates
 - **Permission change**: Listens via `navigator.permissions.query({ name: 'geolocation' })` onchange event

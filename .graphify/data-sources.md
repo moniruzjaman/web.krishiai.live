@@ -6,7 +6,7 @@
 |--------|-----|---------|----------|
 | Open-Meteo | `api.open-meteo.com/v1/forecast` | `/api/weather`, `/api/smart-decision`, WeatherWidget | Seasonal fallback data by month |
 | Nominatim | `nominatim.openstreetmap.org/reverse` | LocationContext | Dhaka (23.685, 90.356) |
-| OpenStreetMap | `tile.openstreetmap.org` | MapWidget, InteractiveMap | None (CDN) |
+| OpenStreetMap | `tile.openstreetmap.org` | MapWidget, InteractiveMap | Local Leaflet CSS/icons in /public/ |
 | Esri Satellite | `server.arcgisonline.com/ArcGIS/rest/services` | InteractiveMap satellite layer | OSM street layer |
 | Google News RSS | `news.google.com/rss/search` | `/api/news` | Curated seasonal advisories |
 | DAM Live | `market.dam.gov.bd/api/commodity-price` | `/api/market` | DAM reference + seasonal simulation |
@@ -18,7 +18,7 @@
 
 | Provider | How Used | Key Required | Priority |
 |----------|----------|-------------|----------|
-| **Cloudflare Workers AI** (Llama 3 8B) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis`, `/api/diagnose`, `/api/news` bulletin | Built-in token in `cloudflareAI.ts` | **Primary for all AI** |
+| **Cloudflare Workers AI** (Llama 3 8B) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis`, `/api/diagnose`, `/api/news` bulletin | `CF_API_TOKEN` in Vercel env | **Primary for all AI** |
 | z-ai-web-dev-sdk (chat) | `/api/chat`, `/api/crop-database`, `/api/soil-analysis`, `/api/news` | No (built-in) | Fallback |
 | z-ai-web-dev-sdk (VLM) | `/api/diagnose` vision | No (built-in) | 1st in waterfall |
 | Gemini 2.5 Flash | `/api/diagnose` | `GEMINI_API_KEY` env | 3rd in waterfall |
@@ -34,16 +34,17 @@
 - **Utility**: `callCloudflareAI()` (full response), `cfAIChat()` (simple system+user), `cfAIChatFull()` (chat with history)
 - **Timeout**: 15s default, configurable per call
 - **Fallback**: If env vars not set, throws error and routes fall through to z-ai-web-dev-sdk
+- **No edge gateway**: CF Worker gateway was removed. All requests go through direct REST API.
 
-## Fallback Chain for Diagnosis
+## Fallback Chain for Diagnosis (8 providers)
 
 ```
-1. z-ai-vlm (GLM-4V-Plus, vision)     → best for image analysis
-2. CF Workers AI (Llama 3 8B, text)    → primary text diagnosis
-3. Gemini 2.5 Flash (vision)           → if env key set
-4. OpenRouter Qwen-VL (vision)         → if env key set
-5. Groq Llama 4 Scout (text-only)      → if env key set
-6. z-ai-text (GLM text)                → text-only fallback
+1. z-ai-vlm (GLM-4V-Plus, vision)     → best for image analysis (built-in, no key)
+2. CF Workers AI (Llama 3 8B, text)    → primary text diagnosis (CF_API_TOKEN)
+3. Gemini 2.5 Flash (vision)           → if GEMINI_API_KEY set
+4. OpenRouter Qwen-VL (vision)         → if OPENROUTER_API_KEY set
+5. Groq Llama 4 Scout (text-only)      → if GROQ_API_KEY set
+6. z-ai-text (GLM text)                → text-only fallback (built-in, no key)
 7. Offline CABI Engine                 → pure algorithmic, no API
 8. Emergency Regex                     → keyword matching, always available
 ```
@@ -72,6 +73,6 @@
 
 1. **In-memory (per serverless instance)**: Each API route maintains its own `Map` with TTL
 2. **Vercel CDN**: Static assets immutable, API routes use `s-maxage` headers
-3. **Cloudflare KV** (gateway): Route-specific TTL, falls back to per-isolate memory
-4. **Browser**: Standard HTTP caching via Cache-Control headers
+3. **Browser**: Standard HTTP caching via Cache-Control headers
+4. **Service Worker** (`public/sw.js`): 3-tier caching (static cache-first, API network-first, navigation network-first → offline)
 5. **Nominatim**: Geocode results cached in localStorage (24h TTL)

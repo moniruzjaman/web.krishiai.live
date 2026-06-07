@@ -18,12 +18,14 @@
 - Categories: extension (green), research (blue), corporation (purple), weather (amber)
 - User location marker with pulse animation + accuracy circle
 - Esri World Imagery satellite toggle
+- Uses local Leaflet CSS (`/leaflet.css`) and icons (`/marker-icon*.png`) for PWA offline
 
 ### NDVIMap.tsx
 - Simulated NDVI overlay across 20+ BD districts
 - Seasonal adjustment by month (Boro/Aman/Aus factors)
 - Color-coded circles: bare soil → dense vegetation
 - No real satellite API — uses static simulation
+- Uses local Leaflet CSS (`/leaflet.css`) and fixed icon URLs for PWA offline
 
 ### MarketWidget.tsx
 - Displays DAM prices from /api/market
@@ -47,6 +49,8 @@
 
 ### ClientShell.tsx
 - SSR-safe wrapper for LocationProvider + InstallPrompt + Toaster
+- Registers service worker (`/sw.js`) on mount
+- Dynamically imports InstallPrompt with `ssr: false`
 
 ## PWA Components
 
