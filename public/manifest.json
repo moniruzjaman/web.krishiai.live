@@ -3,7 +3,9 @@
   "short_name": "KrishiAI",
   "description": "বাংলাদেশের কৃষকদের জন্য AI-চালিত স্মার্ট কৃষি সেবা",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#1b4332",
   "theme_color": "#1b4332",
   "orientation": "portrait-primary",
@@ -24,5 +26,8 @@
     }
   ],
   "screenshots": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

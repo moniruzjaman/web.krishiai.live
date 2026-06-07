@@ -1,19 +1,8 @@
 /**
  * Cloudflare Workers AI — Shared Utility Module
  *
- * ⚠️ FOR NEXT.JS API ROUTES ONLY — Do NOT import into src/workers/.
- * The CF Worker (src/workers/index.ts) has its own self-contained AI logic
- * using the native Workers AI binding. This module uses process.env which
- * does not exist in the Workers runtime.
- *
- * Dual-path AI client:
- *   Path 1 (FAST): CF Worker Gateway — calls the deployed edge worker
- *     at CF_GATEWAY_URL. The worker uses native AI binding (no REST + Bearer).
- *     Faster because AI binding is in-process on CF's edge.
- *
- *   Path 2 (FALLBACK): Direct REST API — calls CF Workers AI REST endpoint
- *     directly using CF_ACCOUNT_ID + CF_API_TOKEN.
- *     Used when gateway is unavailable or for local development.
+ * Calls Cloudflare Workers AI REST API directly from Next.js API routes.
+ * No edge gateway needed — Vercel handles security, routing, and rate limiting.
  *
  * Default model: @cf/meta/llama-3-8b-instruct
  *
@@ -22,47 +11,28 @@
  *   const reply = await callCloudflareAI(messages, { temperature: 0.7 });
  */
 
-// ── Configuration ─────────────────────────────────────────────────────────────
-
-/** Deployed CF Worker gateway URL (e.g., https://webkrishiailive.xxx.workers.dev or https://webkrishiailive.krishiai.live) */
-const CF_GATEWAY_URL = process.env.CF_GATEWAY_URL || "";
-
-/** Direct REST API credentials (fallback path) */
 const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID || "";
 const CF_API_TOKEN = process.env.CF_API_TOKEN || "";
 const CF_BASE_URL = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run`;
 
-// Available models
 export const CF_MODELS = {
-  /** Fast, capable general-purpose model — good for chat, analysis, summaries */
   LLAMA3_8B: "@cf/meta/llama-3-8b-instruct",
-  /** Larger model for more complex reasoning — if available on account */
   LLAMA3_70B: "@cf/meta/llama-3-70b-instruct",
-  /** Mistral model for structured output */
   MISTRAL_7B: "@cf/mistral/mistral-7b-instruct",
 } as const;
 
 export type CFModel = (typeof CF_MODELS)[keyof typeof CF_MODELS];
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 export interface CFMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
 
 export interface CFCallOptions {
-  /** Model to use (default: llama-3-8b-instruct) */
   model?: CFModel;
-  /** Temperature 0-2 (default: 0.7) */
   temperature?: number;
-  /** Max tokens to generate (default: 1000) */
   maxTokens?: number;
-  /** Timeout in milliseconds (default: 15000) */
   timeout?: number;
-  /** Force direct REST path (skip gateway) */
-  forceDirect?: boolean;
-  /** Route to use on gateway: /api/chat, /api/diagnose, /api/analyze */
-  gatewayRoute?: string;
 }
 
 export interface CFResponse {
@@ -77,62 +47,7 @@ export interface CFResponse {
   };
 }
 
-// ── Path 1: Gateway Call ──────────────────────────────────────────────────────
-
-async function callViaGateway(
-  messages: CFMessage[],
-  options: CFCallOptions = {}
-): Promise<CFResponse> {
-  const {
-    gatewayRoute = "/api/chat",
-    timeout = 15000,
-  } = options;
-
-  const url = `${CF_GATEWAY_URL}${gatewayRoute}`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    const result = await response.json() as {
-      ok?: boolean;
-      reply?: string;
-      model?: string;
-      provider?: string;
-      error?: string;
-    };
-
-    if (!response.ok || !result.ok || !result.reply) {
-      throw new Error(result?.error || `Gateway HTTP ${response.status}`);
-    }
-
-    return {
-      ok: true,
-      reply: result.reply,
-      model: result.model || "gateway",
-      provider: result.provider || "CF Workers AI (Edge Gateway)",
-    };
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Gateway request timed out");
-    }
-    throw error;
-  }
-}
-
-// ── Path 2: Direct REST API Call ──────────────────────────────────────────────
-
-async function callViaREST(
+export async function callCloudflareAI(
   messages: CFMessage[],
   options: CFCallOptions = {}
 ): Promise<CFResponse> {
@@ -148,12 +63,7 @@ async function callViaREST(
   }
 
   const url = `${CF_BASE_URL}/${model}`;
-
-  const body = {
-    messages,
-    temperature,
-    max_tokens: maxTokens,
-  };
+  const body = { messages, temperature, max_tokens: maxTokens };
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -180,8 +90,6 @@ async function callViaREST(
       throw new Error(errMsg);
     }
 
-    // Cloudflare Workers AI returns: { result: { response: "..." }, success: true, ... }
-    // Or for chat completions: { result: { choices: [{ message: { content: "..." } }] } }
     let reply = "";
     const r = result?.result as Record<string, unknown> | undefined;
 
@@ -200,7 +108,7 @@ async function callViaREST(
       ok: true,
       reply,
       model,
-      provider: "Cloudflare Workers AI (REST)",
+      provider: "Cloudflare Workers AI",
       usage: (r?.usage || result?.usage) as CFResponse["usage"],
     };
   } catch (error) {
@@ -212,42 +120,6 @@ async function callViaREST(
   }
 }
 
-// ── Main Function ─────────────────────────────────────────────────────────────
-
-/**
- * Call Cloudflare Workers AI with a list of messages.
- *
- * Routing logic:
- *   1. If CF_GATEWAY_URL is set and forceDirect is false → use edge gateway (fast)
- *   2. Otherwise → fall back to direct REST API
- *
- * Returns a structured response or throws on error.
- */
-export async function callCloudflareAI(
-  messages: CFMessage[],
-  options: CFCallOptions = {}
-): Promise<CFResponse> {
-  // Path 1: Edge Gateway (preferred when available)
-  if (CF_GATEWAY_URL && !options.forceDirect) {
-    try {
-      return await callViaGateway(messages, options);
-    } catch (e) {
-      console.warn(
-        "[callCloudflareAI] Gateway failed, falling back to REST:",
-        e instanceof Error ? e.message : String(e)
-      );
-      // Fall through to REST
-    }
-  }
-
-  // Path 2: Direct REST API (fallback)
-  return callViaREST(messages, options);
-}
-
-/**
- * Convenience: Call CF AI with system + user prompt.
- * Returns just the reply string, or null on error.
- */
 export async function cfAIChat(
   systemPrompt: string,
   userPrompt: string,
@@ -268,10 +140,6 @@ export async function cfAIChat(
   }
 }
 
-/**
- * Convenience: Call CF AI with full message history (for chat).
- * Returns the full CFResponse or null on error.
- */
 export async function cfAIChatFull(
   messages: CFMessage[],
   options: CFCallOptions = {}

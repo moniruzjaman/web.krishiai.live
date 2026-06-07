@@ -1,7 +1,7 @@
 /**
  * /api/chat — KrishiAI Chat API
  *
- * Uses Cloudflare Workers AI (Llama 3 8B) for AI-powered agricultural chat.
+ * Uses Cloudflare Workers AI for AI-powered agricultural chat.
  * Provides Bengali-first responses with agricultural context.
  * Offline fallback when AI is unavailable.
  */
@@ -110,7 +110,6 @@ ${seasonContext}`;
     let reply = "";
     let model = "";
 
-    // 1. Primary: Cloudflare Workers AI (Llama 3 8B Instruct)
     try {
       const { cfAIChatFull } = await import("@/lib/cloudflareAI");
       const cfResult = await cfAIChatFull(chatMessages, {
@@ -125,7 +124,7 @@ ${seasonContext}`;
       console.warn("[chat] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
     }
 
-    // 2. Offline fallback: Season-aware generic response
+    // Fallback: Season-aware generic response
     if (!reply) {
       const m = new Date().getMonth() + 1;
       const seasonName = m >= 11 || m <= 2 ? "রবি" : m <= 5 ? "বোরো/প্রাক-খরিফ" : m <= 8 ? "খরিফ/আমন" : "আমন/রবি প্রস্তুতি";
