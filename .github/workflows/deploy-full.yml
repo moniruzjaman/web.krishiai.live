@@ -35,6 +35,9 @@ jobs:
           test -f src/workers/index.ts || { echo "❌ Worker entry point not found"; exit 1; }
           echo "✅ Cloudflare Worker config and entry point are present"
 
+      - name: Type-check Cloudflare Worker
+        run: bun x tsc --noEmit --project tsconfig.worker.json
+
   # ── Deploy: CF Workers AI Gateway ──────────────────────────────────────────
   deploy-cloudflare-gateway:
     needs: validate
@@ -52,14 +55,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Install Wrangler
-        run: bun add -d wrangler
-
       - name: Deploy Cloudflare Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          bunx wrangler deploy
+          bun x wrangler deploy
 
       - name: Gateway Deployment Summary
         run: |

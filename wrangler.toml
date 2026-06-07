@@ -36,7 +36,7 @@ DEFAULT_MODEL = "@cf/meta/llama-3-8b-instruct"
 
 # ── Limits ────────────────────────────────────────────────────────────────────
 [limits]
-cpu_ms = 5000
+cpu_ms = 30000
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 # Wrangler bundles the worker entry point automatically.
