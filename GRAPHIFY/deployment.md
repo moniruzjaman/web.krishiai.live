@@ -9,7 +9,7 @@
 - **Env vars:** Set `CF_ACCOUNT_ID`, `CF_API_TOKEN`, and optionally `CF_GATEWAY_URL` in Vercel dashboard
 
 ## Cloudflare Workers (Edge AI Gateway)
-- **Worker name:** krishiai-gateway
+- **Worker name:** webkrishiailive
 - **Entry point:** `src/workers/index.ts`
 - **Config:** `wrangler.toml`
 - **AI binding:** Native `env.AI.run()` (no REST + Bearer token)
@@ -58,7 +58,7 @@ git push origin production-v2
 After deployment, verify:
 1. `https://web.krishiai.live` loads
 2. `/api` health check returns `{"ok":true}`
-3. CF Worker health: `https://krishiai-gateway.<account>.workers.dev/health`
+3. CF Worker health: `https://webkrishiailive.<account>.workers.dev/health`
 4. Weather widget shows data (Open-Meteo)
 5. Chat widget responds (CF Workers AI)
 6. Map loads with markers (OpenStreetMap/Leaflet)

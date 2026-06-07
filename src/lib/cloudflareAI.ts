@@ -24,7 +24,7 @@
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-/** Deployed CF Worker gateway URL (e.g., https://krishiai-gateway.xxx.workers.dev or https://api.krishiai.live) */
+/** Deployed CF Worker gateway URL (e.g., https://webkrishiailive.xxx.workers.dev or https://webkrishiailive.krishiai.live) */
 const CF_GATEWAY_URL = process.env.CF_GATEWAY_URL || "";
 
 /** Direct REST API credentials (fallback path) */

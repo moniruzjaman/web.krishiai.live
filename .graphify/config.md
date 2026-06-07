@@ -17,7 +17,7 @@
 - **API Headers**: CORS (Access-Control-Allow-Origin: *), allowed methods
 
 ### wrangler.toml
-- **Worker name**: krishiai-gateway
+- **Worker name**: webkrishiailive
 - **Entry point**: `src/workers/index.ts`
 - **AI binding**: `[ai]` section with `binding = "AI"`
 - **Compatibility date**: 2024-12-01
@@ -61,7 +61,7 @@
 | Platform | What | Region |
 |----------|------|--------|
 | Vercel | Next.js app (all routes) | hkg1 |
-| Cloudflare Workers | Edge AI gateway (krishiai-gateway) | Global edge |
+| Cloudflare Workers | Edge AI gateway (webkrishiailive) | Global edge |
 | GitHub | Source repo (moniruzjaman/web.krishiai.live) | — |
 
 ### Vercel Build Flow
@@ -71,7 +71,7 @@ bun install → bun run build → .next/standalone output
 
 ### CF Worker Deploy Flow
 ```
-GitHub Actions (main push) → bun install → wrangler deploy → krishiai-gateway.worker.dev
+GitHub Actions (main push) → bun install → wrangler deploy → webkrishiailive.worker.dev
 ```
 
 ## Caddyfile

@@ -64,5 +64,5 @@ jobs:
       - name: Gateway Deployment Summary
         run: |
           echo "✅ KrishiAI Edge AI Gateway deployed successfully"
-          echo "Endpoint: https://krishiai-gateway.${{ vars.CF_ACCOUNT_ID }}.workers.dev"
+          echo "Endpoint: https://webkrishiailive.${{ vars.CF_ACCOUNT_ID }}.workers.dev"
           echo "Custom domain: https://api.krishiai.live (if route configured)"

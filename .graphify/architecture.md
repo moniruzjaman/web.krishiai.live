@@ -21,7 +21,7 @@
    ┌─────────────┐ ┌──────────────┐  ┌──────────────────┐
    │ Vercel Edge │ │ Vercel       │  │ CF Worker        │
    │ (Static)    │ │ Server API   │  │ Edge AI Gateway  │
-   │ Pages/Assets│ │ Routes       │  │ (krishiai-gateway│
+   │ Pages/Assets│ │ Routes       │     │ (webkrishiailive│
    └─────────────┘ └────┬─────────┘  │  .workers.dev)   │
                         │            │  Native AI binding│
                         │            └────────┬──────────┘

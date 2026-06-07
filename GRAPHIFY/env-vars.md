@@ -9,7 +9,7 @@
 ## Optional (AI routing)
 | Variable | Purpose | Notes |
 |----------|---------|-------|
-| `CF_GATEWAY_URL` | Edge gateway URL (enables fast path) | e.g., `https://api.krishiai.live` or `https://krishiai-gateway.xxx.workers.dev` |
+| `CF_GATEWAY_URL` | Edge gateway URL (enables fast path) | e.g., `https://webkrishiailive.krishiai.live` or `https://webkrishiailive.xxx.workers.dev` |
 
 ## Optional (enhance diagnose waterfall)
 | Variable | Purpose | Provider |

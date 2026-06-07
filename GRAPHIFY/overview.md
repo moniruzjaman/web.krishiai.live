@@ -34,7 +34,7 @@ User → Vercel (web.krishiai.live)
               └── /api/soil-analysis  → CF Workers AI + USDA classification
 
 CF Workers (Edge AI Gateway)
-         ├── krishiai-gateway worker (api.krishiai.live)
+          ├── webkrishiailive worker (webkrishiailive.krishiai.live)
          ├── Native AI binding → env.AI.run() (no REST + Bearer needed)
          └── Routes: /api/chat, /api/diagnose, /api/analyze
 ```
