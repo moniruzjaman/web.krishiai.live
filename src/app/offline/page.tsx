@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "অফলাইন — KrishiAI",
-};
+import { useEffect } from "react";
 
 export default function OfflinePage() {
+  useEffect(() => {
+    document.title = "অফলাইন — KrishiAI";
+  }, []);
   return (
     <div className="flex flex-col items-center justify-center min-h-[80dvh] px-6 text-center">
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
