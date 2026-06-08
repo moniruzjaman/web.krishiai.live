@@ -1,7 +1,7 @@
 /**
  * /api/diagnose — CABI Plantwise Diagnosis API
  *
- * Multi-provider waterfall: CF Workers AI → Gemini → OpenRouter → Groq → Offline → Emergency
+ * Multi-provider waterfall via quota-aware AI client: Gemini → OpenRouter → Groq → Offline → Emergency
  * System prompt: Full CABI Plantwise Ready Reckoner + Exclusion Logic embedded
  */
 
@@ -388,118 +388,13 @@ function buildEmergencyDiagnosis(symptoms: string[], imageAttached: boolean, cro
 }
 
 // ─── Timeout constants ──────────────────────────────────────────────────
-// Vercel Hobby plan has a 10s function timeout — keep overall below that.
-// Vercel Pro can increase via maxDuration export below (max 60s on Pro, 900s on Enterprise).
+// Overall timeout for the handler
 const OVERALL_TIMEOUT_MS = 8_000;
-// Each provider gets ~2s — enough for fast responses, and the whole chain
-// (4 providers × 2s + offline + emergency) fits under Vercel's 10s limit.
-// On Pro (maxDuration=30), providers can take the full 8s.
-const PROVIDER_TIMEOUT_MS = 2_000;
 
 // Allow up to 30s on paid Vercel plans (Hobby ignores this, max is 10s).
 export const maxDuration = 30;
 
-// ─── Provider: Gemini 2.5 Flash ──────────────────────────────────────────
-async function tryGemini(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
-
-  const lastMsg = messages[messages.length - 1];
-  const content = Array.isArray(lastMsg.content) ? lastMsg.content : [{ type: "text", text: lastMsg.content as string }];
-
-  const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
-  for (const block of content) {
-    if (block.type === "image_url" && block.image_url?.url) {
-      const dataUrl = block.image_url.url;
-      const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
-      if (match) {
-        parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
-      }
-    } else if (block.type === "text" && block.text) {
-      parts.push({ text: block.text });
-    }
-  }
-
-  const body = {
-    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{ role: "user", parts }],
-    generationConfig: { maxOutputTokens: 3000, temperature: 0.3 },
-  };
-
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `Gemini HTTP ${res.status}`);
-
-  const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("\n") || "No response.";
-  return { text, provider: "Gemini 2.5 Flash" };
-}
-
-// ─── Provider: Groq Llama 4 Scout ────────────────────────────────────────
-async function tryGroq(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
-
-  // Strip images for text-only model
-  const textMessages = messages.map(m => ({
-    role: m.role,
-    content: Array.isArray(m.content)
-      ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
-      : m.content,
-  }));
-
-  const body = {
-    model: "meta-llama/llama-4-scout-17b-16e-instruct",
-    max_tokens: 3000,
-    temperature: 0.3,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...textMessages],
-  };
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `Groq HTTP ${res.status}`);
-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: "Groq Llama 4 Scout" };
-}
-
-// ─── Provider: OpenRouter ────────────────────────────────────────────────
-async function tryOpenRouter(messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<{ text: string; provider: string }> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("skip"); // Quiet skip — key not configured
-
-  const body = {
-    model: "qwen/qwen2.5-vl-72b-instruct:free",
-    max_tokens: 3000,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-  };
-
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://web.krishiai.live",
-      "X-Title": "KrishiAI CABI Diagnosis",
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-
-  const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data?.error?.message || `OpenRouter HTTP ${res.status}`);
-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: "OpenRouter Qwen-VL" };
-}
-
+// ─── Provider functions removed — now handled by @/lib/ai-client ────────
 
 export async function OPTIONS(request: NextRequest) {
   return new Response(null, {
@@ -571,66 +466,32 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
     ];
 
     // ─── Waterfall Provider Chain ─────────────────────────────────────────
-    // Strategy: try 4 AI providers in sequence (each with 2s timeout), then
-    // fall through to offline CABI engine + emergency regex. Even if all 4
-    // remote providers timeout, the offline engine always returns instantly,
-    // keeping us well under Vercel's 10s Hobby plan limit.
+    // Strategy: try quota-aware AI client (Gemini → OpenRouter → Groq), then
+    // fall through to offline CABI engine + emergency regex. Even if all
+    // remote providers timeout, the offline engine always returns instantly.
     let resultText = "";
     let provider = "";
 
-    // 1. Primary: Cloudflare Workers AI (Llama 3 8B)
+    // 1. Quota-aware AI client with provider fallback (Gemini → OpenRouter → Groq)
     try {
       if (overallTimeout.aborted) throw new Error("Overall timeout");
-      const { callCloudflareAI } = await import("@/lib/cloudflareAI");
+      const { callAI } = await import("@/lib/ai-client");
       const textMessages = messages.map(m => ({
         role: m.role as "system" | "user" | "assistant",
         content: Array.isArray(m.content)
           ? m.content.filter(b => b.type === "text").map(b => b.text || "").join("\n")
           : (m.content as string),
       }));
-      const cfResult = await callCloudflareAI(
+      const result = await callAI(
         [{ role: "system", content: SYSTEM_PROMPT }, ...textMessages],
-        { temperature: 0.3, maxTokens: 3000, timeout: PROVIDER_TIMEOUT_MS }
+        { feature: "diagnose", temperature: 0.3, maxTokens: 3000 }
       );
-      if (cfResult.ok && cfResult.reply) {
-        resultText = cfResult.reply;
-        provider = "Cloudflare Workers AI (Llama 3 8B)";
+      if (result.provider !== "offline" && result.provider !== "quota-exceeded" && result.text) {
+        resultText = result.text;
+        provider = result.provider;
       }
     } catch (e) {
-      console.warn("[diagnose] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
-    }
-
-    // 2. Fallback 1: Gemini 2.5 Flash
-    if (!resultText) {
-      try {
-        const geminiResult = await tryGemini(messages);
-        resultText = geminiResult.text;
-        provider = geminiResult.provider;
-      } catch (e) {
-        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] Gemini failed:", e instanceof Error ? e.message : String(e)); }
-      }
-    }
-
-    // 3. Fallback 2: OpenRouter Qwen-VL
-    if (!resultText) {
-      try {
-        const orResult = await tryOpenRouter(messages);
-        resultText = orResult.text;
-        provider = orResult.provider;
-      } catch (e) {
-        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] OpenRouter failed:", e instanceof Error ? e.message : String(e)); }
-      }
-    }
-
-    // 4. Fallback 3: Groq text-only
-    if (!resultText) {
-      try {
-        const groqResult = await tryGroq(messages);
-        resultText = groqResult.text;
-        provider = groqResult.provider;
-      } catch (e) {
-        if (e instanceof Error && e.message === "skip") { /* quiet skip */ } else { console.warn("[diagnose] Groq failed:", e instanceof Error ? e.message : String(e)); }
-      }
+      console.warn("[diagnose] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     // 5. Offline CABI engine — always runs last as guarantee. Each remote

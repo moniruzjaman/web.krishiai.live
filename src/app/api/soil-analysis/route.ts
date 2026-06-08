@@ -1,7 +1,7 @@
 /**
  * /api/soil-analysis — AEZ Soil Analysis API
  *
- * Uses Cloudflare Workers AI for AI-powered soil analysis.
+ * Uses Supabase + AI Provider Fallback for AI-powered soil analysis.
  * Supports two modes:
  *   1. GET ?aezId=28 → AEZ zone soil analysis
  *   2. POST { sand, silt, clay, organicMatter?, aezId? } → Sample analysis with USDA classification
@@ -111,14 +111,15 @@ export async function GET(request: NextRequest) {
     let analysis = "";
 
     try {
-      const { cfAIChat } = await import("@/lib/cloudflareAI");
-      const cfResult = await cfAIChat(systemPrompt, userPrompt, {
+      const { aiChat } = await import("@/lib/ai-client");
+      const result = await aiChat(systemPrompt, userPrompt, {
+        feature: "soil_analysis",
         temperature: 0.6,
         maxTokens: 2000,
       });
-      if (cfResult) analysis = cfResult;
+      if (result.provider !== "offline" && result.text) analysis = result.text;
     } catch (e) {
-      console.warn("[soil-analysis:GET] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[soil-analysis:GET] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     if (!analysis) {
@@ -211,14 +212,15 @@ ${aezContext}
     let analysis = "";
 
     try {
-      const { cfAIChat } = await import("@/lib/cloudflareAI");
-      const cfResult = await cfAIChat(systemPrompt, userPrompt, {
+      const { aiChat } = await import("@/lib/ai-client");
+      const result = await aiChat(systemPrompt, userPrompt, {
+        feature: "soil_analysis",
         temperature: 0.6,
         maxTokens: 2000,
       });
-      if (cfResult) analysis = cfResult;
+      if (result.provider !== "offline" && result.text) analysis = result.text;
     } catch (e) {
-      console.warn("[soil-analysis:POST] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[soil-analysis:POST] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     if (!analysis) {

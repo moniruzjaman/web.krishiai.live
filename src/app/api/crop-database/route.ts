@@ -56,10 +56,10 @@ Return ONLY the JSON array, no other text.`;
 
     let crops;
 
-    // 1. Primary: Cloudflare Workers AI
+    // 1. Primary: Quota-aware AI client
     try {
-      const { callCloudflareAI } = await import("@/lib/cloudflareAI");
-      const cfResult = await callCloudflareAI(
+      const { callAI } = await import("@/lib/ai-client");
+      const result = await callAI(
         [
           {
             role: "system",
@@ -67,16 +67,16 @@ Return ONLY the JSON array, no other text.`;
           },
           { role: "user", content: prompt },
         ],
-        { temperature: 0.7, maxTokens: 3000 }
+        { feature: "crop_database", temperature: 0.7, maxTokens: 3000 }
       );
-      if (cfResult.ok && cfResult.reply) {
-        const jsonMatch = cfResult.reply.match(/\[[\s\S]*\]/);
+      if (result.provider !== "offline" && result.text) {
+        const jsonMatch = result.text.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           crops = JSON.parse(jsonMatch[0]);
         }
       }
     } catch (e) {
-      console.warn("[crop-database] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[crop-database] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     // 2. Offline fallback: Static crop database

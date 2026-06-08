@@ -6,7 +6,7 @@
  * 2. Google News RSS with `site:gov.bd` queries → government-sourced articles
  * 3. Curated seasonal advisories from DAE/BRRI/BARI/BADC as fallback
  *
- * Also generates AI daily bulletin using Cloudflare Workers AI.
+ * Also generates AI daily bulletin using Supabase + AI Provider Fallback.
  * Falls back to seasonal calendar entries if all sources fail.
  */
 
@@ -1029,7 +1029,7 @@ function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[
   return [...base, ...(monthlyExtras[m] || [])];
 }
 
-// ── AI Daily Bulletin using Cloudflare Workers AI ──────────────
+// ── AI Daily Bulletin using Quota-Aware AI Client ──────────────
 async function generateDailyBulletin(
   ctx: ReturnType<typeof bdAgriContext>,
   newsHeadlines: NewsItem[]
@@ -1060,16 +1060,19 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
 
     let text: string | null = null;
 
-    // 1. Primary: Cloudflare Workers AI
+    // 1. Primary: Quota-aware AI client
     try {
-      const { cfAIChat } = await import("@/lib/cloudflareAI");
-      text = await cfAIChat(
+      const { aiChat } = await import("@/lib/ai-client");
+      const result = await aiChat(
         "তুমি বাংলাদেশের কৃষি বিশেষজ্ঞ। বাংলায় সংক্ষিপ্ত বুলেটিন তৈরি করো। কোনো markdown ব্যবহার করো না।",
         prompt,
-        { temperature: 0.7, maxTokens: 800 }
+        { feature: "news_bulletin", temperature: 0.7, maxTokens: 800 }
       );
+      if (result.provider !== "offline" && result.text) {
+        text = result.text;
+      }
     } catch (e) {
-      console.warn("[news:bulletin] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[news:bulletin] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     // 2. Fallback: static seasonal bulletin
