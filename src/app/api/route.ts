@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     {
       ok: true,
       service: "KrishiAI API",
-      version: "3.2.0",
+      version: "4.0.0",
       description: "বাংলাদেশের কৃষকদের জন্য AI-চালিত কৃষি প্ল্যাটফর্ম",
       endpoints: {
         "/api/weather": "আবহাওয়া তথ্য — Open-Meteo (hourly, daily, agri indices, alerts)",
@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
           bengaliFirst: true,
           agriculturalContext: true,
           dynamicSeasonAwareness: true,
-          cloudflareWorkersAI: true,
+          supabaseQuotaTier: true,
+          aiProviderFallback: true,
           maxMessages: 20,
           maxMessageLength: 5000,
         },

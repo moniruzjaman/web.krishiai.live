@@ -1,9 +1,9 @@
 /**
  * /api/chat — KrishiAI Chat API
  *
- * Uses Cloudflare Workers AI (Llama 3 8B) for AI-powered agricultural chat.
+ * Uses Supabase + AI Provider Fallback (Gemini → OpenRouter → Groq → Offline)
+ * for AI-powered agricultural chat with quota-tier management.
  * Provides Bengali-first responses with agricultural context.
- * Offline fallback when AI is unavailable.
  */
 
 import { NextRequest } from "next/server";
@@ -109,20 +109,24 @@ ${seasonContext}`;
 
     let reply = "";
     let model = "";
+    let provider = "";
 
-    // 1. Primary: Cloudflare Workers AI (Llama 3 8B Instruct)
+    // 1. Quota-aware AI client with provider fallback
     try {
-      const { cfAIChatFull } = await import("@/lib/cloudflareAI");
-      const cfResult = await cfAIChatFull(chatMessages, {
-        temperature: 0.7,
-        maxTokens: 1000,
-      });
-      if (cfResult?.ok && cfResult.reply) {
-        reply = cfResult.reply;
-        model = cfResult.model;
+      const { aiChatFull } = await import("@/lib/ai-client");
+      const result = await aiChatFull(chatMessages, { feature: 'chat' });
+      if (result.provider !== 'offline' && result.provider !== 'quota-exceeded') {
+        reply = result.text;
+        model = result.model;
+        provider = result.provider;
+      } else if (result.provider === 'quota-exceeded') {
+        return corsNextResponse(
+          { ok: false, error: result.text },
+          { status: 429, origin }
+        );
       }
     } catch (e) {
-      console.warn("[chat] Cloudflare AI failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[chat] AI client failed:", e instanceof Error ? e.message : String(e));
     }
 
     // 2. Offline fallback: Season-aware generic response
@@ -136,6 +140,7 @@ ${seasonContext}`;
       ok: true,
       reply,
       model: model || "fallback",
+      provider: provider || "fallback",
     }, {
       origin,
       methods: ["POST"],
