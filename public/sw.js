@@ -2,19 +2,24 @@
  * KrishiAI — Service Worker for PWA Offline Support
  *
  * Strategy: Cache-first for static assets, Network-first for API calls
- * Version: 3.0.0
+ * Version: 4.0.1
  */
 
-const CACHE_NAME = 'krishi-v3.0.0';
-const STATIC_CACHE = 'krishi-static-v3.0.0';
-const DYNAMIC_CACHE = 'krishi-dynamic-v3.0.0';
+const CACHE_NAME = 'krishi-v4.0.1';
+const STATIC_CACHE = 'krishi-static-v4.0.1';
+const DYNAMIC_CACHE = 'krishi-dynamic-v4.0.1';
 
 // Static assets to pre-cache on install
 const PRE_CACHE_URLS = [
   '/',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/offline.html',
+  '/chat',
+  '/tools',
+  '/learn',
+  '/profile',
 ];
 
 // Install event — pre-cache shell assets
@@ -79,7 +84,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML pages — Network-first with cache fallback
+  // HTML pages — Network-first with offline fallback
+  if (request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(networkFirstWithOfflineFallback(request, DYNAMIC_CACHE, 3600));
+    return;
+  }
+
+  // Everything else — Network-first with cache fallback
   event.respondWith(networkFirst(request, DYNAMIC_CACHE, 3600));
 });
 
@@ -133,5 +144,25 @@ async function networkFirst(request, cacheName, maxAgeSeconds = 300) {
       status: 503,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+}
+
+async function networkFirstWithOfflineFallback(request, cacheName, maxAgeSeconds = 3600) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    // HTML requests fall back to offline page
+    const offlinePage = await caches.match('/offline.html');
+    if (offlinePage) return offlinePage;
+
+    return new Response('Offline', { status: 503, statusText: 'Offline' });
   }
 }

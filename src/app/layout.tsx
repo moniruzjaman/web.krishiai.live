@@ -1,18 +1,10 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
 import ClientShell from "@/components/ClientShell";
-
-const notoSansBengali = Noto_Sans_Bengali({
-  variable: "--font-bengali",
-  subsets: ["bengali"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -54,8 +46,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap"
+        />
+        <meta name="theme-color" content="#1b4332" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body
-        className={`${notoSansBengali.variable} antialiased bg-background text-foreground`}
+        className="antialiased bg-background text-foreground"
         style={{ fontFamily: "var(--font-bengali), sans-serif" }}
       >
         <LocationProvider>
