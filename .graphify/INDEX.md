@@ -4,8 +4,10 @@
 - **Name**: KrishiAI (কৃষি AI)
 - **URL**: https://web.krishiai.live
 - **Repo**: moniruzjaman/web.krishiai.live
-- **Branches**: main, production, production-v2 (all synced)
-- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1) + CF Workers (global edge)
+- **Branches**: main, v3.0.0
+- **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1)
+- **Backend**: Supabase (auth + DB + quota tracking) | **Mobile**: Expo (separate repo)
+- **Architecture**: Vercel + Supabase — completely free with quota-tier fallback
 
 ## Source Tree
 
@@ -17,7 +19,7 @@ src/
 │   ├── not-found.tsx           # 404 page
 │   ├── globals.css             # Tailwind 4 globals
 │   ├── analyzer/page.tsx       # Disease analyzer (photo upload + symptoms → CABI diagnosis)
-│   ├── chat/page.tsx           # AI chat interface
+│   ├── chat/page.tsx           # AI chat interface (Supabase + AI Provider Fallback)
 │   ├── learn/page.tsx          # Learning center
 │   ├── profile/page.tsx        # User profile + install button
 │   ├── tools/
@@ -32,15 +34,16 @@ src/
 │   │   ├── crop-calendar/page.tsx  # Crop calendar (10 crops, 6 seasons)
 │   │   └── yield/page.tsx         # Yield forecast
 │   └── api/
-│       ├── route.ts            # API health/info endpoint
-│       ├── chat/route.ts       # AI chat (CF Workers AI: gateway → REST → offline fallback)
-│       ├── diagnose/route.ts   # CABI diagnosis (5-provider waterfall: CF AI → Gemini → OpenRouter → Groq → Offline)
+│       ├── route.ts            # API health/info endpoint (v4.0.0)
+│       ├── chat/route.ts       # AI chat (quota-aware: Gemini → OpenRouter → Groq → offline)
+│       ├── diagnose/route.ts   # CABI diagnosis (AI client + offline CABI engine + emergency regex)
 │       ├── weather/route.ts    # Open-Meteo proxy with agri indices
 │       ├── market/route.ts     # DAM live + seasonal fallback prices
 │       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin
-│       ├── crop-database/route.ts # AI-generated crop info (CF Workers AI + static fallback)
+│       ├── alerts/route.ts     # Crop alerts from Supabase
+│       ├── crop-database/route.ts # AI-generated crop info (AI client + static fallback)
 │       ├── crop-prices/route.ts   # Simulated crop prices (DAM/DAE reference)
-│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (CF Workers AI)
+│       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (AI client + static)
 │       └── smart-decision/route.ts # Combined weather+price+season scoring
 ├── components/
 │   ├── TopNavbar.tsx           # Top nav bar
@@ -62,19 +65,26 @@ src/
 │   └── use-toast.ts            # Toast hook
 ├── lib/
 │   ├── utils.ts                # cn() utility
+│   ├── ai-client.ts            # Quota-aware AI client (Gemini → OpenRouter → Groq → offline)
 │   ├── cropCalendar.ts         # 10 crops, 6 seasons, risk alerts, Bengali months
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
 │   ├── weatherService.ts       # Open-Meteo integration, crop scoring, disease pressure, irrigation
-│   ├── cloudflareAI.ts         # CF Workers AI dual-path client (gateway + REST) for Next.js routes
+│   ├── supabase/
+│   │   ├── server.ts           # Server-side Supabase client (cookie auth)
+│   │   ├── client.ts           # Browser-side Supabase client
+│   │   ├── middleware.ts        # Session refresh middleware helper
+│   │   ├── quota.ts            # Quota tracking (checkQuota + logUsage)
+│   │   └── schema.sql          # Full DB schema (profiles, usage_logs, quota_limits, chat_messages, crop_alerts + RLS)
 │   └── cabi/
 │       ├── bengaliKeywords.ts  # Bengali→English symptom translation
-│       └── diagnosticEngine.ts # Offline CABI diagnosis engine
-└── workers/
-    └── index.ts                # CF Worker: Edge AI Gateway (native env.AI binding, CORS, /api/chat, /api/diagnose, /api/analyze)
+│       ├── diagnosticEngine.ts # Offline CABI diagnosis engine
+│       └── resistanceDB.ts     # Pesticide resistance database
+├── middleware.ts               # Next.js middleware (Supabase session refresh)
 
 public/
 ├── manifest.json               # PWA manifest (Bengali, standalone, portrait)
+├── sw.js                       # Service worker for offline support
 ├── icons/                      # icon-192.png, icon-512.png
 ├── logo.svg
 ├── robots.txt
@@ -84,12 +94,65 @@ public/
 └── pest/                       # ~25 pest reference images
 
 Config files:
-├── wrangler.toml               # CF Worker config (name, main, ai binding, vars, limits)
-├── tsconfig.json               # Next.js TypeScript config (excludes src/workers)
-├── tsconfig.worker.json        # CF Worker TypeScript config (@cloudflare/workers-types)
-├── next.config.ts              # Next.js config (standalone, ignoreBuildErrors)
+├── tsconfig.json               # Next.js TypeScript config
+├── next.config.ts              # Next.js config (standalone, reactStrictMode)
 ├── vercel.json                 # Vercel deploy config (bun, hkg1, security headers)
-└── .github/workflows/deploy-full.yml  # CI/CD: validate + deploy CF Worker
+├── .env.example                # Environment variables template (Supabase + AI keys)
+└── .github/workflows/validate.yml  # CI: bun install → lint → build
+```
+
+## Architecture: Vercel + Supabase
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Vercel (Frontend)                         │
+│  Next.js 16 App Router — SSR + Static + API Routes          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────────────┐  │
+│  │  Pages    │  │ Widgets  │  │  API Routes              │  │
+│  │  (28)     │  │ (6)      │  │  chat, diagnose, soil,   │  │
+│  │          │  │          │  │  news, crop-db, weather,   │  │
+│  │          │  │          │  │  market, alerts...         │  │
+│  └──────────┘  └──────────┘  └──────────┬───────────────┘  │
+│                                        │                    │
+│         ┌──────────────────────────────┤                    │
+│         │     ai-client.ts             │                    │
+│         │  Quota-aware AI waterfall    │                    │
+│         │  Gemini→OpenRouter→Groq→Off  │                    │
+│         └──────────┬───────────────────┘                    │
+└────────────────────┼────────────────────────────────────────┘
+                     │
+         ┌───────────┼───────────┐
+         │                       │
+    ┌────▼─────┐          ┌─────▼──────┐
+    │ Supabase │          │ AI APIs    │
+    │          │          │            │
+    │ Auth     │          │ Gemini     │
+    │ DB       │          │ OpenRouter │
+    │ Quota    │          │ Groq       │
+    │ RLS      │          │            │
+    └──────────┘          └────────────┘
+```
+
+## Quota Tier System
+
+| Tier | Chat/day | Diagnose/day | Soil/day | Crop DB/day | News/day |
+|------|----------|-------------|----------|-------------|----------|
+| **Free** (default) | 30 | 15 | 20 | 30 | 50 |
+| **Basic** | 100 | 50 | 80 | 100 | 200 |
+| **Pro** | 500 | 200 | 300 | 500 | 1000 |
+| **Unlimited** | ∞ | ∞ | ∞ | ∞ | ∞ |
+| **Anonymous** | 10 | 5 | 10 | 10 | 20 |
+
+## AI Provider Waterfall
+
+```
+1. Gemini 2.0 Flash ──── primary (fast, free tier generous)
+   ↓ (fails)
+2. OpenRouter ─────────── fallback (Gemini via OR)
+   ↓ (fails)
+3. Groq (Llama 3.1 8B) ─ fast text-only fallback
+   ↓ (fails)
+4. Offline Bengali ───── graceful degradation message
 ```
 
 ## Route Table (25+ routes)
@@ -103,30 +166,32 @@ Config files:
 | `/profile` | Page | GET | — | — |
 | `/tools` | Page | GET | — | — |
 | `/tools/satellite` | Page | GET | — | Simulated NDVI |
-| `/tools/soil` | Page | GET | — | CF Workers AI + AEZ |
+| `/tools/soil` | Page | GET | — | AI client + AEZ |
 | `/tools/irrigation` | Page | GET | — | Open-Meteo |
 | `/tools/smart-decision` | Page | GET | — | Open-Meteo + cropPriceService |
-| `/tools/crop-library` | Page | GET | — | CF Workers AI generated |
+| `/tools/crop-library` | Page | GET | — | AI client generated |
 | `/tools/pesticide` | Page | GET | — | — |
 | `/tools/plant-health` | Page | GET | — | — |
 | `/tools/crop-calendar` | Page | GET | — | cropCalendar.ts |
 | `/tools/yield` | Page | GET | — | — |
-| `/api` | API | GET | 300s | Static info |
-| `/api/chat` | API | POST | no-store | CF Workers AI (gateway → REST → offline) |
-| `/api/diagnose` | API | POST | no-store | 5-provider waterfall |
+| `/api` | API | GET | 300s | Static info (v4.0.0) |
+| `/api/chat` | API | POST | no-store | AI client (Gemini→OR→Groq→offline) |
+| `/api/diagnose` | API | POST | no-store | AI client + CABI offline + emergency regex |
 | `/api/weather` | API | GET | 600s | Open-Meteo + seasonal fallback |
 | `/api/market` | API | GET | 3600s | DAM live + seasonal fallback |
-| `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI |
-| `/api/crop-database` | API | GET | 600s | CF Workers AI + static fallback |
+| `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI bulletin |
+| `/api/alerts` | API | GET | 300s | Supabase crop_alerts |
+| `/api/crop-database` | API | GET | 600s | AI client + static fallback |
 | `/api/crop-prices` | API | GET | 300s | Simulated from DAM/DAE baselines |
-| `/api/soil-analysis` | API | GET/POST | no-store | CF Workers AI + AEZ/USDA |
+| `/api/soil-analysis` | API | GET/POST | no-store | AI client + AEZ/USDA |
 | `/api/smart-decision` | API | GET | 600s | Open-Meteo + cropPriceService |
 
-## CF Worker Routes (Edge AI Gateway)
+## Environment Variables
 
-| Route | Method | Purpose | AI |
-|-------|--------|---------|-----|
-| `/health` | GET | Health check | None |
-| `/api/chat` | POST | Bengali agricultural chat | env.AI.run() native |
-| `/api/diagnose` | POST | CABI crop diagnosis | env.AI.run() native |
-| `/api/analyze` | POST | General AI analysis | env.AI.run() native |
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
+| `GEMINI_API_KEY` | Primary AI provider | Yes |
+| `GROQ_API_KEY` | Text-only AI fallback | Recommended |
+| `OPENROUTER_API_KEY` | Vision-capable AI fallback | Recommended |
