@@ -19,6 +19,7 @@ import {
   useRef,
   useSyncExternalStore,
   useMemo,
+  useEffect,
 } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -365,6 +366,29 @@ export default function ProfilePage() {
     homeChatRaw,
     chatMessagesRaw,
   ]);
+
+  // ── PWA install state ────────────────────────────────────────────────────
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === "undefined") return;
+      const installed =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        (window.navigator as Record<string, unknown>).standalone === true;
+      setIsAppInstalled(installed);
+    };
+    check();
+    const mq = window.matchMedia("(display-mode: standalone)");
+    const handler = () => check();
+    mq.addEventListener("change", handler);
+    window.addEventListener("appinstalled", handler);
+    return () => {
+      mq.removeEventListener("change", handler);
+      window.removeEventListener("appinstalled", handler);
+    };
+  }, []);
 
   // ── Local UI state ───────────────────────────────────────────────────────
   const [isEditingName, setIsEditingName] = useState(false);
@@ -900,27 +924,35 @@ export default function ProfilePage() {
               </div>
 
               {/* Install App */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
-                    <span className="text-base">📲</span>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      অ্যাপ ইনস্টল
+              {!isAppInstalled && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
+                      <span className="text-base">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-700">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </span>
                     </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                      হোম স্ক্রিনে যোগ করুন — দ্রুত অ্যাক্সেস
+                    <div>
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        অ্যাপ ইনস্টল
+                      </div>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                        হোম স্ক্রিনে যোগ করুন — দ্রুত অ্যাক্সেস
+                      </div>
                     </div>
                   </div>
+                  <button
+                    id="krishi-install-btn"
+                    className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+                  >
+                    ইনস্টল করুন
+                  </button>
                 </div>
-                <button
-                  id="krishi-install-btn"
-                  className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
-                >
-                  ইনস্টল করুন
-                </button>
-              </div>
+              )}
             </div>
           </div>
         )}

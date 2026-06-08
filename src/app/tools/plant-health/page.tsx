@@ -11,7 +11,7 @@
  * - All text in Bengali
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   CROP_DISEASES,
@@ -19,6 +19,7 @@ import {
   getCropNames,
   type CropDisease,
 } from "@/lib/cropDiseases";
+import type { DiagnosisImageEntry } from "@/lib/diseaseImages";
 
 // ── Severity colors ───────────────────────────────────────────────────────────
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -35,6 +36,14 @@ const CAUSE_INFO: Record<string, { icon: string; label: string }> = {
   insect: { icon: "🐛", label: "পোকামাকড়" },
   nematode: { icon: "🪱", label: "নিমাটোড" },
   deficiency: { icon: "⚗️", label: "পুষ্টি ঘাটতি" },
+};
+
+// ── Crop aliases for CABI matching ────────────────────────────────────────────
+const CROP_ALIASES: Record<string, string[]> = {
+  "আলু": ["potato"], "টমেটো": ["tomato"], "গম": ["wheat"],
+  "ভুট্টা": ["maize", "corn"], "ধান": ["rice"], "পাট": ["jute"],
+  "বেগুন": ["brinjal"], "সরিষা": ["mustard"], "কলা": ["banana"],
+  "আম": ["mango"],
 };
 
 // ── Crop icons ────────────────────────────────────────────────────────────────
@@ -132,6 +141,34 @@ export default function PlantHealthPage() {
   const [cropFilter, setCropFilter] = useState("সব");
   const [causeFilter, setCauseFilter] = useState("সব");
   const [severityFilter, setSeverityFilter] = useState("সব");
+  const [cabiImages, setCabiImages] = useState<DiagnosisImageEntry[]>([]);
+  const [indexLoaded, setIndexLoaded] = useState(false);
+
+  useEffect(() => {
+    if (indexLoaded) return;
+    fetch("/images/diagnosis-index.json")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.images) setCabiImages(data.images);
+        setIndexLoaded(true);
+      })
+      .catch(() => setIndexLoaded(true));
+  }, [indexLoaded]);
+
+  const getCabiThumb = (diseaseName: string, cropName: string): DiagnosisImageEntry | null => {
+    if (!indexLoaded) return null;
+    const cropKws = cropName ? [cropName.toLowerCase(), ...(CROP_ALIASES[cropName] || [])] : [];
+    const diseaseKws = diseaseName.toLowerCase().split(/[\s_]+/);
+    for (const img of cabiImages) {
+      if (img.type !== "disease") continue;
+      if (cropKws.length > 0 && img.crop) {
+        const ok = cropKws.some((c) => img.crop!.toLowerCase().includes(c) || c.includes(img.crop!.toLowerCase()));
+        if (!ok) continue;
+      }
+      if (img.keywords.some((k) => diseaseKws.includes(k))) return img;
+    }
+    return null;
+  };
 
   // Filter diseases
   const filtered = useMemo(() => {
@@ -436,6 +473,24 @@ export default function PlantHealthPage() {
                     {/* Expanded view */}
                     {isExpanded && (
                       <div className="px-4 pb-4 space-y-3">
+                        {/* CABI reference thumbnail */}
+                        {(() => {
+                          const thumb = getCabiThumb(disease.name, disease.crop);
+                          return thumb ? (
+                            <div className="rounded-lg overflow-hidden border border-gray-200">
+                              <img
+                                src={thumb.src}
+                                alt={thumb.condition || ""}
+                                className="w-full h-32 object-cover"
+                                loading="lazy"
+                              />
+                              <div className="text-[9px] text-gray-500 bg-gray-50 px-2 py-1">
+                                📖 CABI ডায়াগনস্টিক ফিল্ড গাইড — {thumb.condition || thumb.typeLabel}
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+
                         {/* Symptoms */}
                         <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
                           <div className="text-[11px] font-bold text-red-900 mb-1">🩺 লক্ষণসমূহ</div>

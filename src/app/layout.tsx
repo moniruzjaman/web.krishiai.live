@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,6 +13,14 @@ const notoSansBengali = Noto_Sans_Bengali({
   weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#1b4332",
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -38,6 +46,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "KrishiAI",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
   openGraph: {
     title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",

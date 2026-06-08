@@ -1,0 +1,1200 @@
+{
+  "version": 1,
+  "total": 100,
+  "images": [
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg101_image_1_disease_a_rot_xref871_059f8fd5.png",
+      "page": 101,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "a rot",
+      "keywords": [
+        "a",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg101_image_3_disease_a_rot_xref875_b935b088.png",
+      "page": 101,
+      "imageNum": 3,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "a rot",
+      "keywords": [
+        "a",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg109_image_1_disease_classic_canker_xref980_95d8020c.png",
+      "page": 109,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "classic canker",
+      "keywords": [
+        "classic",
+        "canker"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg109_image_2_blueberry_disease_early_canker_xref982_c20c8636.png",
+      "page": 109,
+      "imageNum": 2,
+      "crop": "ব্লুবেরি",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "early canker",
+      "keywords": [
+        "early",
+        "canker",
+        "ব্লুবেরি"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg109_image_3_disease_classic_canker_xref984_73dd9113.png",
+      "page": 109,
+      "imageNum": 3,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "classic canker",
+      "keywords": [
+        "classic",
+        "canker"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg109_image_4_blueberry_disease_early_canker_xref985_69f9e75a.png",
+      "page": 109,
+      "imageNum": 4,
+      "crop": "ব্লুবেরি",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "early canker",
+      "keywords": [
+        "early",
+        "canker",
+        "ব্লুবেরি"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg112_image_2_disease_true_rot_xref1017_a7eb27fa.png",
+      "page": 112,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "true rot",
+      "keywords": [
+        "true",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg112_image_4_disease_classic_rot_xref1020_a5d2df9c.png",
+      "page": 112,
+      "imageNum": 4,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "classic rot",
+      "keywords": [
+        "classic",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg113_image_4_disease_as_rot_xref1030_5a5fadd5.png",
+      "page": 113,
+      "imageNum": 4,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "as rot",
+      "keywords": [
+        "as",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg113_image_6_disease_as_rot_xref1034_84408fc5.png",
+      "page": 113,
+      "imageNum": 6,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "as rot",
+      "keywords": [
+        "as",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg114_image_4_disease_to_rot_xref1045_8d48c79c.png",
+      "page": 114,
+      "imageNum": 4,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "to rot",
+      "keywords": [
+        "to",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg114_image_6_disease_to_rot_xref1049_755281ee.png",
+      "page": 114,
+      "imageNum": 6,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "to rot",
+      "keywords": [
+        "to",
+        "rot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg23_image_21_disease_and_spot_xref252_35891d25.png",
+      "page": 23,
+      "imageNum": 21,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "and spot",
+      "keywords": [
+        "and",
+        "spot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg25_image_1_disease_fungwilt_xref280_6396d5ac.png",
+      "page": 25,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "fungwilt",
+      "keywords": [
+        "fungwilt"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg25_image_2_disease_verticillium_wilt_xref281_bb7c8f0a.png",
+      "page": 25,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "verticillium wilt",
+      "keywords": [
+        "verticillium",
+        "wilt"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg26_image_1_bean_disease_watewilt_xref286_a0f9f8f0.png",
+      "page": 26,
+      "imageNum": 1,
+      "crop": "শিম",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "watewilt",
+      "keywords": [
+        "watewilt",
+        "শিম"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg26_image_4_pepper_disease_and_wilt_xref292_1233a6d6.png",
+      "page": 26,
+      "imageNum": 4,
+      "crop": "মরিচ",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "and wilt",
+      "keywords": [
+        "and",
+        "wilt",
+        "মরিচ"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg27_image_1_potato_disease_bactwilt_xref296_492cfcbe.png",
+      "page": 27,
+      "imageNum": 1,
+      "crop": "আলু",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "bactwilt",
+      "keywords": [
+        "bactwilt",
+        "আলু"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg27_image_2_pepper_disease_leaf_spot_xref298_94f2b3f5.png",
+      "page": 27,
+      "imageNum": 2,
+      "crop": "মরিচ",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "মরিচ"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg27_image_3_potato_disease_this_wilt_xref300_d1aaa20c.png",
+      "page": 27,
+      "imageNum": 3,
+      "crop": "আলু",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "this wilt",
+      "keywords": [
+        "this",
+        "wilt",
+        "আলু"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg27_image_4_pepper_disease_bacterial_wilt_xref302_28de6d7a.png",
+      "page": 27,
+      "imageNum": 4,
+      "crop": "মরিচ",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "bacterial wilt",
+      "keywords": [
+        "bacterial",
+        "wilt",
+        "মরিচ"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg29_image_1_tomato_disease_viruwilt_xref314_11f3172c.png",
+      "page": 29,
+      "imageNum": 1,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "viruwilt",
+      "keywords": [
+        "viruwilt",
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg29_image_2_tomato_disease_spotted_wilt_xref316_60fa1739.png",
+      "page": 29,
+      "imageNum": 2,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "spotted wilt",
+      "keywords": [
+        "spotted",
+        "wilt",
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg30_image_1_corn_disease_insecwilt_xref322_18d7a44c.png",
+      "page": 30,
+      "imageNum": 1,
+      "crop": "ভুট্টা",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "insecwilt",
+      "keywords": [
+        "insecwilt",
+        "ভুট্টা"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg31_image_1_wheat_disease_nutrwilt_xref330_fc320d57.png",
+      "page": 31,
+      "imageNum": 1,
+      "crop": "গম",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "nutrwilt",
+      "keywords": [
+        "nutrwilt",
+        "গম"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg32_image_1_disease_leaf_spot_xref336_33d0c922.png",
+      "page": 32,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg32_image_3_disease_leaf_spot_xref340_561358ae.png",
+      "page": 32,
+      "imageNum": 3,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg35_image_1_tomato_disease_leaf_spot_xref380_a0834169.png",
+      "page": 35,
+      "imageNum": 1,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg35_image_2_pepper_disease_leaf_spot_xref382_e206cc73.png",
+      "page": 35,
+      "imageNum": 2,
+      "crop": "মরিচ",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "মরিচ"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg36_image_1_bean_disease_leaf_spot_xref388_2bb92e06.png",
+      "page": 36,
+      "imageNum": 1,
+      "crop": "শিম",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "শিম"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg36_image_3_citrus_disease_leaf_spot_xref391_a73ea543.png",
+      "page": 36,
+      "imageNum": 3,
+      "crop": "সাইট্রাস",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "সাইট্রাস"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg36_image_4_tomato_disease_spotted_wilt_xref393_9f260dec.png",
+      "page": 36,
+      "imageNum": 4,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "spotted wilt",
+      "keywords": [
+        "spotted",
+        "wilt",
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg38_image_1_disease_leaf_spot_xref405_02984092.png",
+      "page": 38,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg38_image_2_wheat_disease_grey_spot_xref407_d22d66ab.png",
+      "page": 38,
+      "imageNum": 2,
+      "crop": "গম",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "grey spot",
+      "keywords": [
+        "grey",
+        "spot",
+        "গম"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg38_image_3_tomato_disease_y_spot_xref409_28575c39.png",
+      "page": 38,
+      "imageNum": 3,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "y spot",
+      "keywords": [
+        "y",
+        "spot",
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg39_image_1_pepper_disease_leaf_spot_xref412_171fdc4f.png",
+      "page": 39,
+      "imageNum": 1,
+      "crop": "মরিচ",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot",
+        "মরিচ"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg42_image_1_disease_bactcanker_xref453_62b70cf1.png",
+      "page": 42,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "bactcanker",
+      "keywords": [
+        "bactcanker"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg42_image_3_disease_bacterial_canker_xref456_ba36586e.png",
+      "page": 42,
+      "imageNum": 3,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "bacterial canker",
+      "keywords": [
+        "bacterial",
+        "canker"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg43_image_2_disease_xref472_405458cb.png",
+      "page": 43,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg51_image_2_tobacco_disease_downy_mildew_xref551_2ba94d67.png",
+      "page": 51,
+      "imageNum": 2,
+      "crop": "তামাক",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "downy mildew",
+      "keywords": [
+        "downy",
+        "mildew",
+        "তামাক"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg52_image_1_tomato_disease_xref558_40b3d332.png",
+      "page": 52,
+      "imageNum": 1,
+      "crop": "টমেটো",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": [
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg52_image_2_lettuce_disease_xref560_457c3ddd.png",
+      "page": 52,
+      "imageNum": 2,
+      "crop": "লেটুস",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": [
+        "লেটুস"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg55_image_1_potato_disease_xref583_b2068eb8.png",
+      "page": 55,
+      "imageNum": 1,
+      "crop": "আলু",
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": [
+        "আলু"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg55_image_2_disease_xref585_e06145f5.png",
+      "page": 55,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg57_image_1_disease_xref602_32dc8a5e.png",
+      "page": 57,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg60_image_1_disease_xref633_db45b6f6.png",
+      "page": 60,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg60_image_2_disease_xref635_eed60246.png",
+      "page": 60,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg61_image_1_disease_xref646_95920e40.png",
+      "page": 61,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg61_image_2_disease_xref648_3d12b93d.png",
+      "page": 61,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg61_image_3_disease_xref650_61bf90d9.png",
+      "page": 61,
+      "imageNum": 3,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg62_image_1_disease_xref656_467b6968.png",
+      "page": 62,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg93_image_2_disease_cannot_wilt_xref777_478ea060.png",
+      "page": 93,
+      "imageNum": 2,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "cannot wilt",
+      "keywords": [
+        "cannot",
+        "wilt"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg99_image_1_disease_leaf_spot_xref841_0a4c9db7.png",
+      "page": 99,
+      "imageNum": 1,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot"
+      ]
+    },
+    {
+      "src": "/disease/Diagnostic-Field-Guide_pg99_image_6_disease_leaf_spot_xref851_b2d29eec.png",
+      "page": 99,
+      "imageNum": 6,
+      "crop": null,
+      "type": "disease",
+      "typeLabel": "রোগ",
+      "condition": "leaf spot",
+      "keywords": [
+        "leaf",
+        "spot"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_13_deficiency_xref236_a6b47bea.png",
+      "page": 23,
+      "imageNum": 13,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_1_deficiency_xref213_db132e22.png",
+      "page": 23,
+      "imageNum": 1,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_20_deficiency_xref250_60ca7092.png",
+      "page": 23,
+      "imageNum": 20,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_22_deficiency_of_iron_deficiency_xref254_0577998c.png",
+      "page": 23,
+      "imageNum": 22,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": "of iron deficiency",
+      "keywords": [
+        "of",
+        "iron",
+        "deficiency"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_23_deficiency_xref256_3be094fb.png",
+      "page": 23,
+      "imageNum": 23,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_27_deficiency_xref264_eddbf0cd.png",
+      "page": 23,
+      "imageNum": 27,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_28_deficiency_xref266_ffc0d054.png",
+      "page": 23,
+      "imageNum": 28,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_29_deficiency_xref268_a82539ae.png",
+      "page": 23,
+      "imageNum": 29,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg23_image_30_deficiency_xref270_756164c9.png",
+      "page": 23,
+      "imageNum": 30,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg44_image_2_deficiency_xref489_0cabae65.png",
+      "page": 44,
+      "imageNum": 2,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg44_image_3_deficiency_xref491_4931941b.png",
+      "page": 44,
+      "imageNum": 3,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg47_image_1_deficiency_xref509_d9481253.png",
+      "page": 47,
+      "imageNum": 1,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg47_image_2_deficiency_xref511_66d3c916.png",
+      "page": 47,
+      "imageNum": 2,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg47_image_3_wheat_deficiency_xref513_9ab54289.png",
+      "page": 47,
+      "imageNum": 3,
+      "crop": "গম",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": [
+        "গম"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg47_image_4_bean_deficiency_xref515_6e918e30.png",
+      "page": 47,
+      "imageNum": 4,
+      "crop": "শিম",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": [
+        "শিম"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg48_image_1_wheat_deficiency_deficiiron_deficiency_xref521_08cddf88.png",
+      "page": 48,
+      "imageNum": 1,
+      "crop": "গম",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": "deficiiron deficiency",
+      "keywords": [
+        "deficiiron",
+        "deficiency",
+        "গম"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg48_image_2_potato_deficiency_xref523_db5e3c45.png",
+      "page": 48,
+      "imageNum": 2,
+      "crop": "আলু",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": [
+        "আলু"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg48_image_3_wheat_deficiency_iron_deficiency_xref525_6ab04cdf.png",
+      "page": 48,
+      "imageNum": 3,
+      "crop": "গম",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": "iron deficiency",
+      "keywords": [
+        "iron",
+        "deficiency",
+        "গম"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg48_image_4_potato_deficiency_xref527_ae1bb5e9.png",
+      "page": 48,
+      "imageNum": 4,
+      "crop": "আলু",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": [
+        "আলু"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg49_image_1_deficiency_xref531_55909191.png",
+      "page": 49,
+      "imageNum": 1,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg49_image_2_deficiency_xref533_f77d8b5f.png",
+      "page": 49,
+      "imageNum": 2,
+      "crop": null,
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg49_image_3_sugarcane_deficiency_xref535_34b8a7ac.png",
+      "page": 49,
+      "imageNum": 3,
+      "crop": "আখ",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": null,
+      "keywords": [
+        "আখ"
+      ]
+    },
+    {
+      "src": "/deficiency/Diagnostic-Field-Guide_pg49_image_4_potato_deficiency_kumarnitrogen_deficiency_xref537_7f7839a6.png",
+      "page": 49,
+      "imageNum": 4,
+      "crop": "আলু",
+      "type": "deficiency",
+      "typeLabel": "পুষ্টি ঘাটতি",
+      "condition": "kumarnitrogen deficiency",
+      "keywords": [
+        "kumarnitrogen",
+        "deficiency",
+        "আলু"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg105_image_2_pest_or_mite_xref923_3cf2c308.png",
+      "page": 105,
+      "imageNum": 2,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "or mite",
+      "keywords": [
+        "or",
+        "mite"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg108_image_3_pest_xref964_d7267892.png",
+      "page": 108,
+      "imageNum": 3,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg108_image_6_pest_xref970_33045449.png",
+      "page": 108,
+      "imageNum": 6,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg110_image_1_pest_xref991_1bf4871b.png",
+      "page": 110,
+      "imageNum": 1,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg110_image_2_pest_xref992_e50a1774.png",
+      "page": 110,
+      "imageNum": 2,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg110_image_3_tomato_pest_xref994_3912166f.png",
+      "page": 110,
+      "imageNum": 3,
+      "crop": "টমেটো",
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": [
+        "টমেটো"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg110_image_4_pest_xref996_50c9fdcf.png",
+      "page": 110,
+      "imageNum": 4,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg111_image_3_pest_xref1004_a10a7d63.png",
+      "page": 111,
+      "imageNum": 3,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg111_image_4_pest_xref1006_b1736417.png",
+      "page": 111,
+      "imageNum": 4,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg111_image_5_pest_xref1008_9c67af19.png",
+      "page": 111,
+      "imageNum": 5,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg111_image_6_pest_xref1010_7db46fda.png",
+      "page": 111,
+      "imageNum": 6,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg118_image_1_pest_xref1070_a2928122.png",
+      "page": 118,
+      "imageNum": 1,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg15_image_1_pest_or_mite_xref159_18b15e45.png",
+      "page": 15,
+      "imageNum": 1,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "or mite",
+      "keywords": [
+        "or",
+        "mite"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg15_image_2_pest_or_mite_xref161_ecd95c76.png",
+      "page": 15,
+      "imageNum": 2,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "or mite",
+      "keywords": [
+        "or",
+        "mite"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_10_pest_plant_bug_xref194_f5d4c7c0.png",
+      "page": 20,
+      "imageNum": 10,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "plant bug",
+      "keywords": [
+        "plant",
+        "bug"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_11_pest_hoppermite_xref196_85017908.png",
+      "page": 20,
+      "imageNum": 11,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "hoppermite",
+      "keywords": [
+        "hoppermite"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_12_pest_xref198_161b8d3f.png",
+      "page": 20,
+      "imageNum": 12,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_4_pest_xref182_b2aca57e.png",
+      "page": 20,
+      "imageNum": 4,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_6_pest_xref186_bb1d8a08.png",
+      "page": 20,
+      "imageNum": 6,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg20_image_9_pest_planbeetle_xref192_db88b76b.png",
+      "page": 20,
+      "imageNum": 9,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "planbeetle",
+      "keywords": [
+        "planbeetle"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg30_image_3_tobacco_pest_stink_bug_xref326_9a6c0146.png",
+      "page": 30,
+      "imageNum": 3,
+      "crop": "তামাক",
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": "stink bug",
+      "keywords": [
+        "stink",
+        "bug",
+        "তামাক"
+      ]
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg34_image_1_pest_xref370_f541f240.png",
+      "page": 34,
+      "imageNum": 1,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    },
+    {
+      "src": "/pest/Diagnostic-Field-Guide_pg34_image_2_pest_xref372_6b18d6ed.png",
+      "page": 34,
+      "imageNum": 2,
+      "crop": null,
+      "type": "pest",
+      "typeLabel": "পোকামাকড়",
+      "condition": null,
+      "keywords": []
+    }
+  ]
+}

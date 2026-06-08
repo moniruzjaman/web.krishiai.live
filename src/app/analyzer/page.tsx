@@ -20,7 +20,8 @@
 
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import type { DiagnosisImageEntry } from "@/lib/diseaseImages";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface GateResult {
@@ -143,6 +144,14 @@ const SYMPTOM_CATEGORIES = [
 const bn = (n: number | string) =>
   String(Math.round(Number(n))).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
+const CROP_ALIASES: Record<string, string[]> = {
+  "আলু": ["potato"], "টমেটো": ["tomato"], "গম": ["wheat"],
+  "ভুট্টা": ["maize", "corn"], "ধান": ["rice"], "পাট": ["jute"],
+  "বেগুন": ["brinjal"], "সরিষা": ["mustard"], "কলা": ["banana"],
+  "আম": ["mango"], "মরিচ": ["pepper"], "শিম": ["bean"],
+};
+const getCropAliases = (crop: string) => CROP_ALIASES[crop] || [];
+
 const gateStatusColor = (status: string) => {
   if (status === "excluded") return "bg-green-100 text-green-700 border-green-300";
   if (status === "retained" || status === "confirmed") return "bg-red-100 text-red-700 border-red-300";
@@ -208,6 +217,38 @@ export default function CABIDiagnosisPage() {
     elapsed_ms: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cabiImages, setCabiImages] = useState<DiagnosisImageEntry[]>([]);
+  const [indexLoaded, setIndexLoaded] = useState(false);
+
+  useEffect(() => {
+    if (indexLoaded) return;
+    fetch("/images/diagnosis-index.json")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.images) setCabiImages(data.images);
+        setIndexLoaded(true);
+      })
+      .catch(() => setIndexLoaded(true));
+  }, [indexLoaded]);
+
+  const matchingImages: DiagnosisImageEntry[] = [];
+  if (indexLoaded && diagnosisJson?.top_candidates?.length) {
+    const top = diagnosisJson.top_candidates[0];
+    const crop = selectedCrop;
+    const kw = (top.name_en + " " + top.name_bn).toLowerCase();
+    const conditionKw = kw.split(/[\s_]+/);
+    const cropKws = crop ? [crop.toLowerCase(), ...getCropAliases(crop)] : [];
+    matchingImages.push(
+      ...cabiImages.filter((img) => {
+        if (img.type !== "disease") return false;
+        if (cropKws.length > 0 && img.crop) {
+          const ok = cropKws.some((c) => img.crop!.toLowerCase().includes(c) || c.includes(img.crop!.toLowerCase()));
+          if (!ok) return false;
+        }
+        return img.keywords.some((k) => conditionKw.includes(k));
+      })
+    );
+  }
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -569,6 +610,30 @@ export default function CABIDiagnosisPage() {
                       />
                     </div>
                     <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">🔑 {candidate.key_feature}</div>
+
+                    {/* CABI reference image for top candidate */}
+                    {i === 0 && matchingImages.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">
+                          📖 CABI রেফারেন্স ছবি
+                        </div>
+                        <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
+                          {matchingImages.slice(0, 3).map((img, j) => (
+                            <div key={j} className="flex-shrink-0 w-[120px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                              <img
+                                src={img.src}
+                                alt={img.condition || ""}
+                                className="w-full h-[80px] object-cover"
+                                loading="lazy"
+                              />
+                              <div className="text-[8px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 truncate">
+                                {img.condition || img.typeLabel}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
 

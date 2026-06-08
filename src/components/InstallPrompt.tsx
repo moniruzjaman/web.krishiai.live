@@ -1,14 +1,3 @@
-/**
- * InstallPrompt.tsx — PWA Install Banner
- *
- * Features:
- * - Shows a dismissible banner prompting the user to install KrishiAI
- * - Stores deferred prompt globally so profile page button can also trigger install
- * - Detects iOS Safari for manual install instructions
- * - Persists dismissal in localStorage so it's not annoying
- * - Also listens for clicks on #krishi-install-btn (profile page)
- */
-
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -20,8 +9,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISSED_KEY = "krishi_install_dismissed";
 
-// Global store for deferred prompt so other components can trigger install
 let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+let globalInstallListeners: Array<(installed: boolean) => void> = [];
 
 export function getInstallPrompt(): BeforeInstallPromptEvent | null {
   return globalDeferredPrompt;
@@ -29,7 +18,18 @@ export function getInstallPrompt(): BeforeInstallPromptEvent | null {
 
 export function isAppInstalled(): boolean {
   if (typeof window === "undefined") return false;
-  return window.matchMedia("(display-mode: standalone)").matches;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    (window.navigator as Record<string, unknown>).standalone === true
+  );
+}
+
+export function subscribeToInstall(cb: (installed: boolean) => void) {
+  globalInstallListeners.push(cb);
+  return () => {
+    globalInstallListeners = globalInstallListeners.filter((l) => l !== cb);
+  };
 }
 
 export default function InstallPrompt() {
@@ -39,34 +39,27 @@ export default function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (isAppInstalled()) {
       setIsStandalone(true);
       return;
     }
-
-    // Check if previously dismissed
     if (localStorage.getItem(DISMISSED_KEY) === "true") return;
 
-    // Detect iOS Safari (no beforeinstallprompt support)
     const isIOSSafari = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) &&
       /safari/.test(navigator.userAgent.toLowerCase()) &&
       !/crios|fxios/.test(navigator.userAgent.toLowerCase());
     setIsIOS(isIOSSafari);
 
     if (isIOSSafari) {
-      // Show iOS manual install instructions after a short delay
       const t = setTimeout(() => setShowBanner(true), 3000);
       return () => clearTimeout(t);
     }
 
-    // Listen for the beforeinstallprompt event (Chrome, Edge, Samsung Internet)
     const handler = (e: Event) => {
       e.preventDefault();
       const prompt = e as BeforeInstallPromptEvent;
       setDeferredPrompt(prompt);
       globalDeferredPrompt = prompt;
-      // Show banner after a short delay for better UX
       setTimeout(() => setShowBanner(true), 2000);
     };
 
@@ -74,12 +67,24 @@ export default function InstallPrompt() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Listen for appinstalled event
+  useEffect(() => {
+    const handleInstalled = () => {
+      setShowBanner(false);
+      setIsStandalone(true);
+      globalDeferredPrompt = null;
+      setDeferredPrompt(null);
+      globalInstallListeners.forEach((l) => l(true));
+    };
+    window.addEventListener("appinstalled", handleInstalled);
+    return () => window.removeEventListener("appinstalled", handleInstalled);
+  }, []);
+
   // Listen for clicks on the profile page install button
   useEffect(() => {
     const handleProfileInstallClick = async () => {
       const prompt = globalDeferredPrompt;
       if (!prompt) {
-        // No install prompt available — show iOS instructions or info
         const isIOSSafari = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) &&
           /safari/.test(navigator.userAgent.toLowerCase());
         if (isIOSSafari) {
@@ -95,6 +100,8 @@ export default function InstallPrompt() {
         const { outcome } = await prompt.userChoice;
         if (outcome === "accepted") {
           setShowBanner(false);
+          setIsStandalone(true);
+          globalInstallListeners.forEach((l) => l(true));
         }
       } catch {
         // Silently fail
@@ -118,6 +125,8 @@ export default function InstallPrompt() {
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         setShowBanner(false);
+        setIsStandalone(true);
+        globalInstallListeners.forEach((l) => l(true));
       }
     } catch {
       // Silently fail
@@ -142,7 +151,11 @@ export default function InstallPrompt() {
       <div className="max-w-[768px] mx-auto bg-gradient-to-r from-[#1b4332] to-[#2d6a4f] rounded-2xl p-4 shadow-2xl border border-green-600/30">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 text-lg">
-            📲
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-white font-bold text-sm mb-1">
@@ -160,14 +173,14 @@ export default function InstallPrompt() {
                   onClick={(e) => { e.preventDefault(); handleDismiss(); }}
                   className="bg-green-500 hover:bg-green-400 text-white font-bold text-[12px] rounded-full px-4 py-2 transition-colors active:scale-95 shadow-md no-underline"
                 >
-                  বুঝেছি ✓
+                  বুঝেছি
                 </a>
               ) : (
                 <button
                   onClick={handleInstall}
                   className="bg-green-500 hover:bg-green-400 text-white font-bold text-[12px] rounded-full px-4 py-2 transition-colors active:scale-95 shadow-md border-none cursor-pointer"
                 >
-                  📲 ইনস্টল করুন
+                  ইনস্টল করুন
                 </button>
               )}
               <button

@@ -1,11 +1,4 @@
-"use client";
-
-import { useEffect } from "react";
-
 export default function OfflinePage() {
-  useEffect(() => {
-    document.title = "অফলাইন — KrishiAI";
-  }, []);
   return (
     <div className="flex flex-col items-center justify-center min-h-[80dvh] px-6 text-center">
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -34,17 +27,27 @@ export default function OfflinePage() {
         <ul className="text-sm text-muted-foreground space-y-2">
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">•</span>
-            <span>পূর্বে দেখা সংরক্ষিত ফসলের তথ্য দেখুন</span>
+            <span>পূর্বে দেখা পৃষ্ঠাগুলো ব্রাউজ করুন (ক্যাশে থেকে)</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">•</span>
-            <span>স্মার্ট সিদ্ধান্তের পূর্ববর্তী ফলাফল দেখুন</span>
+            <span>সংরক্ষিত কৃষি তথ্য ও টিপস দেখুন</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">•</span>
             <span>DAE হটলাইনে কল করুন: ১৬১২৩</span>
           </li>
         </ul>
+      </div>
+
+      <div className="mt-6 bg-muted rounded-xl p-4 w-full max-w-sm text-sm text-muted-foreground">
+        <p>কানেক্টেড হলে নিচের পৃষ্ঠাগুলো ব্রাউজ করা যাবে:</p>
+        <div className="flex flex-wrap gap-2 mt-2 justify-center">
+          <a href="/" className="text-xs font-semibold text-primary underline underline-offset-2">হোম</a>
+          <a href="/tools" className="text-xs font-semibold text-primary underline underline-offset-2">টুলস</a>
+          <a href="/learn" className="text-xs font-semibold text-primary underline underline-offset-2">শিক্ষা</a>
+          <a href="/profile" className="text-xs font-semibold text-primary underline underline-offset-2">প্রোফাইল</a>
+        </div>
       </div>
 
       <button
