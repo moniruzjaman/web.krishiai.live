@@ -146,7 +146,7 @@ Config files:
 ## AI Provider Waterfall
 
 ```
-1. Gemini 2.0 Flash ──── primary (fast, free tier generous)
+1. Gemini 2.5 Flash ──── primary (fast, free tier generous)
    ↓ (fails)
 2. OpenRouter ─────────── fallback (Gemini via OR)
    ↓ (fails)

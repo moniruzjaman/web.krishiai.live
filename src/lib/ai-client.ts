@@ -42,7 +42,7 @@ async function callGemini(messages: AIMessage[], options: AICallOptions): Promis
     }))
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ async function callGemini(messages: AIMessage[], options: AICallOptions): Promis
     return {
       text,
       provider: 'Gemini',
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       tokensUsed: data?.usageMetadata?.totalTokenCount || 0,
       quotaRemaining: 0 // filled by caller
     }
@@ -94,7 +94,7 @@ async function callOpenRouter(messages: AIMessage[], options: AICallOptions): Pr
         'X-Title': 'KrishiAI'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
+        model: 'google/gemini-2.5-flash-preview-05-20',
         messages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 1024
@@ -114,7 +114,7 @@ async function callOpenRouter(messages: AIMessage[], options: AICallOptions): Pr
     return {
       text,
       provider: 'OpenRouter',
-      model: 'google/gemini-2.0-flash-001',
+      model: 'google/gemini-2.5-flash-preview-05-20',
       tokensUsed: data?.usage?.total_tokens || 0,
       quotaRemaining: 0
     }
