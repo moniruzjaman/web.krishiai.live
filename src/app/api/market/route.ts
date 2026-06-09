@@ -8,7 +8,30 @@
  * 4. Regional price variation data
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
+function corsHeaders(origin: string | null) {
+  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
+  return {
+    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders(request.headers.get("origin")),
+  });
+}
 
 // Bengali numeral converter
 const bn = (n: number | string) =>
@@ -151,7 +174,8 @@ let cachedAt = 0;
 let cachedSource = "DAM (কৃষি বিপণন অধিদপ্তর)";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin");
   const now = Date.now();
 
   // Check cache
@@ -171,6 +195,11 @@ export async function GET() {
       prices: cachedPrices,
       source: cachedSource,
       note: "ঢাকা বিভাগের পাইকারি গড় মূল্য (৳/kg) · DAM",
+    }, {
+      headers: {
+        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
+        ...corsHeaders(origin),
+      },
     });
   }
 
@@ -204,6 +233,7 @@ export async function GET() {
   }, {
     headers: {
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=1800",
+      ...corsHeaders(origin),
     },
   });
 }

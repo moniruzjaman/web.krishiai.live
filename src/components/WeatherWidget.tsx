@@ -10,14 +10,14 @@
  * - Hourly forecast strip (next 24h with precip probability)
  * - 5-day forecast with rain probability
  * - Sunrise/sunset times
- * - GPS-first with Dhaka fallback
+ * - **Live GPS location via shared LocationContext**
  * - Auto-refresh every 30 minutes
  */
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "@/context/LocationContext";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
@@ -125,11 +125,12 @@ const uvLevel = (uv: number) => {
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function WeatherWidget() {
+  const { location, loading: locLoading, permission, requestLocation } = useLocation();
   const [w, setW] = useState<WeatherData | null>(null);
   const [err, setErr] = useState(false);
-  const [locating, setLocating] = useState(true);
   const [showHourly, setShowHourly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const prevCoordsRef = useRef<string>("");
 
   const loadWeather = useCallback(async (lat: number, lon: number, city: string) => {
     const r = await fetch(
@@ -139,64 +140,72 @@ export default function WeatherWidget() {
     return r.json();
   }, []);
 
+  // Load weather when location changes
   useEffect(() => {
+    if (!location) return;
+
+    const coordsKey = `${location.lat.toFixed(2)},${location.lon.toFixed(2)}`;
+    // Skip if we already loaded for these coords
+    if (prevCoordsRef.current === coordsKey && w) return;
+    prevCoordsRef.current = coordsKey;
+
     const load = async () => {
       try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation?.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 60000,
-          });
-        });
-        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, "আপনার অবস্থান");
+        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
+        setErr(false); // Reset error state on successful fetch
         setLastUpdated(new Date());
       } catch {
-        try {
-          const data = await loadWeather(23.8103, 90.4125, "ঢাকা");
-          setW(data);
-          setLastUpdated(new Date());
-        } catch {
-          setErr(true);
-        }
+        setErr(true);
       }
-      setLocating(false);
     };
     load();
+  }, [location, loadWeather]); // removed `w` from deps to prevent re-render loop
 
-    // Auto-refresh every 30 minutes
+  // Auto-refresh every 30 minutes
+  useEffect(() => {
     const interval = setInterval(async () => {
+      if (!location) return;
       try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation?.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 60000,
-          });
-        });
-        const data = await loadWeather(pos.coords.latitude, pos.coords.longitude, w?.city || "ঢাকা");
+        const data = await loadWeather(location.lat, location.lon, location.city || location.district);
         setW(data);
+        setErr(false); // Reset error state on successful auto-refresh
         setLastUpdated(new Date());
-      } catch { /* ignore */ }
+      } catch { /* ignore auto-refresh errors */ }
     }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [loadWeather, w?.city]);
+  }, [location, loadWeather]);
+
+  // Retry handler for error state
+  const handleRetry = useCallback(() => {
+    if (!location) return;
+    setErr(false);
+    prevCoordsRef.current = ""; // Force refetch
+    loadWeather(location.lat, location.lon, location.city || location.district)
+      .then((data) => { setW(data); setLastUpdated(new Date()); })
+      .catch(() => setErr(true));
+  }, [location, loadWeather]);
 
   if (err) {
     return (
       <div className="bg-white rounded-[14px] border border-red-200 p-4 text-center text-sm text-red-500 card-shadow">
-        ⚠️ আবহাওয়া তথ্য লোড হয়নি
+        <div>⚠️ আবহাওয়া তথ্য লোড হয়নি</div>
+        <button
+          onClick={handleRetry}
+          className="mt-2 text-[11px] font-bold bg-red-100 text-red-600 px-3 py-1 rounded-full border-none cursor-pointer hover:bg-red-200 transition-colors"
+        >
+          আবার চেষ্টা করুন
+        </button>
       </div>
     );
   }
 
-  if (!w || locating) {
+  if (!w || locLoading) {
     return (
       <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] p-4 flex items-center justify-center gap-2 text-white/80 text-sm">
         <span className="inline-block animate-spin-slow">📍</span>
-        অবস্থান নির্ধারণ হচ্ছে…
+        {locLoading ? "অবস্থান নির্ধারণ হচ্ছে…" : "আবহাওয়া লোড হচ্ছে…"}
       </div>
     );
   }
@@ -231,8 +240,11 @@ export default function WeatherWidget() {
         {/* ── TOP: City + Temp + Sun times ──────────────────────────────── */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <div className="text-[11px] text-white/60 font-semibold">
+            <div className="text-[11px] text-white/60 font-semibold flex items-center gap-1.5">
               📍 {w.city}
+              {permission === "granted" && (
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block" title="লাইভ লোকেশন" />
+              )}
             </div>
             <div className="text-[42px] sm:text-[56px] font-bold leading-none mb-1">
               {bn(w.temp)}°C
@@ -274,7 +286,7 @@ export default function WeatherWidget() {
           {[
             ["💧", "আর্দ্রতা", `${bn(w.humid)}%`],
             ["💨", "বায়ু", `${bn(w.wind)} km/h`],
-            ["🌧️", "বৃষ্টি", `${w.rain.toFixed(1)} mm`],
+            ["🌧️", "বৃষ্টি", `${(w.rain ?? 0).toFixed(1)} mm`],
             ["🌡️", "অনুভব", `${bn(w.feel)}°`],
           ].map(([ic, lbl, val], i) => (
             <div key={i} className="flex flex-col items-center gap-0.5">

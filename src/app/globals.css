@@ -112,6 +112,11 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes slide-up {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .animate-pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
@@ -122,6 +127,10 @@
 
 .animate-slide-in {
   animation: slide-in-bottom 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
 }
 
 /* ── Horizontal scroll containers ────────────────────────────────────────── */
@@ -192,4 +201,19 @@
 /* ── Card shadow utility ─────────────────────────────────────────────────── */
 .card-shadow {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Scrollbar-none utility (hides scrollbar while keeping scroll) ────── */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Scroll snap alignment for horizontal scroll containers ──────────── */
+.scroll-snap-align-start {
+  scroll-snap-align: start;
 }

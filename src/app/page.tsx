@@ -8,8 +8,6 @@
  * - Testimonials carousel
  * - Metrics with trend indicators
  * - Ecosystem tools with descriptions and features
- * - CTA Banner
- * - Rich footer with navigation links
  */
 
 "use client";
@@ -138,28 +136,6 @@ const METRICS = [
   { value: "৮.৭ টি", label: "প্রতিদিন পরামর্শ", trend: "↑", trendColor: "text-green-600" },
   { value: "১৪%", label: "খরচ সাশ্রয়", trend: "↑", trendColor: "text-green-600" },
   { value: "৫১ মি+", label: "ব্যবহারকারী", trend: "↑", trendColor: "text-green-600" },
-];
-
-// ── Footer links ──────────────────────────────────────────────────────────────
-const FOOTER_LINKS = [
-  { title: "সরকারি পোর্টাল", links: [
-    { name: "কৃষি মন্ত্রণালয়", url: "https://moa.gov.bd" },
-    { name: "DAE", url: "https://dae.gov.bd" },
-    { name: "BRRI", url: "https://brri.gov.bd" },
-    { name: "BARI", url: "https://bari.gov.bd" },
-  ]},
-  { title: "সেবাসমূহ", links: [
-    { name: "আবহাওয়া", url: "https://bmd.gov.bd" },
-    { name: "বাজার মূল্য", url: "https://market.dam.gov.bd" },
-    { name: "কৃষি ঋণ", url: "https://bangladesh.gov.bd" },
-    { name: "বীজ বিতরণ", url: "https://badc.gov.bd" },
-  ]},
-  { title: "কৃষি AI", links: [
-    { name: "আমাদের সম্পর্কে", url: "#" },
-    { name: "যোগাযোগ", url: "#" },
-    { name: "গোপনীয়তা নীতি", url: "#" },
-    { name: "শর্তাবলী", url: "#" },
-  ]},
 ];
 
 // ── Main Page ────────────────────────────────────────────────────────────────
@@ -411,68 +387,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ═══ BANNER ════════════════════════════════════════════════════════════ */}
-      <section className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] px-4 py-10 sm:px-6 sm:py-14">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="text-5xl mb-4">🇧🇩</div>
-          <h3 className="text-white text-xl sm:text-2xl font-extrabold leading-tight mb-3">
-            বিজয়ের কৃষি তার
-            <br />
-            বাংলাদেশের কৃষকদের জন্য
-          </h3>
-          <p className="text-white/70 text-sm leading-relaxed mb-6 max-w-md mx-auto">
-            দেশের ১ কোটি ৭৩ লক্ষ কৃষক পরিবারের জন্য আধুনিক কৃষি প্রযুক্তি
-            সুলভ করাই আমাদের লক্ষ্য।
-          </p>
-          <button className="bg-white text-[#1b4332] font-bold text-sm rounded-full px-8 py-3 hover:bg-green-50 transition-colors shadow-lg active:scale-95">
-            এখনই শুরু করুন →
-          </button>
-        </div>
-      </section>
-
-      {/* ═══ FOOTER ════════════════════════════════════════════════════════════ */}
-      <footer className="bg-[#0f2b1d] px-4 py-8 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Footer navigation */}
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            {FOOTER_LINKS.map((section, i) => (
-              <div key={i}>
-                <div className="text-[11px] font-bold text-white/80 mb-2">
-                  {section.title}
-                </div>
-                <div className="space-y-1.5">
-                  {section.links.map((link, li) => (
-                    <a
-                      key={li}
-                      href={link.url}
-                      target={link.url.startsWith("http") ? "_blank" : undefined}
-                      rel={link.url.startsWith("http") ? "noopener noreferrer" : undefined}
-                      className="block text-[10px] text-white/40 hover:text-white/70 transition-colors no-underline"
-                    >
-                      {link.name}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div className="text-[11px] text-white/40">
-              © {new Date().getFullYear()} KrishiAI — বাংলাদেশের কৃষকদের জন্য
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-white/30">
-              <span>🌿 টেকসই কৃষি</span>
-              <span>·</span>
-              <span>🤖 AI-চালিত</span>
-              <span>·</span>
-              <span>🇧🇩 বাংলাদেশ</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

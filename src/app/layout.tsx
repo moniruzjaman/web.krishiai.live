@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import TopNavbar from "@/components/TopNavbar";
+import BottomNav from "@/components/BottomNav";
+import { LocationProvider } from "@/context/LocationContext";
 
 const notoSansBengali = Noto_Sans_Bengali({
   variable: "--font-bengali",
@@ -47,7 +50,16 @@ export default function RootLayout({
         className={`${notoSansBengali.variable} antialiased bg-background text-foreground`}
         style={{ fontFamily: "var(--font-bengali), sans-serif" }}
       >
-        {children}
+        <LocationProvider>
+          {/* Mobile shell — max-width centered, sticky nav */}
+          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white relative">
+            <TopNavbar />
+            <main className="flex-1 pb-16">
+              {children}
+            </main>
+            <BottomNav />
+          </div>
+        </LocationProvider>
         <Toaster />
       </body>
     </html>

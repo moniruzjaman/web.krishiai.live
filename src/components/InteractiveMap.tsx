@@ -6,7 +6,9 @@
  * - Satellite map layer option (Esri World Imagery)
  * - Category-colored markers with popup info
  * - District crop zone highlights
- * - User location marker
+ * - User location marker with pulse animation
+ * - Locate-me control button
+ * - Auto-center on user location
  */
 
 "use client";
@@ -56,11 +58,20 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
+  const userMarkerRef = useRef<unknown>(null);
+  // Store center as ref to avoid re-initializing map on every parent re-render
+  const centerRef = useRef(center);
+  centerRef.current = center;
 
+  // Initialize map — only once on mount
   useEffect(() => {
     if (!mapRef.current) return;
 
+    let cancelled = false;
+
     import("leaflet").then((L) => {
+      if (cancelled || !mapRef.current) return;
+
       // Import CSS
       const existingLink = document.querySelector('link[href*="leaflet"]');
       if (!existingLink) {
@@ -80,50 +91,127 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
 
       if (!mapRef.current) return;
 
-      // Create or reuse map
-      let map: L.Map;
-      if (mapInstanceRef.current) {
-        map = mapInstanceRef.current as L.Map;
-      } else {
-        map = L.map(mapRef.current, {
-          center,
-          zoom: 10,
-          zoomControl: true,
-          attributionControl: true,
-        });
-        mapInstanceRef.current = map;
+      const map = L.map(mapRef.current, {
+        center: centerRef.current,
+        zoom: 10,
+        zoomControl: true,
+        attributionControl: true,
+      });
+      mapInstanceRef.current = map;
 
-        // User location marker
-        const userIcon = L.divIcon({
+      // User location marker with pulse animation
+      const userIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+
+      const userMarker = L.marker(centerRef.current, { icon: userIcon, zIndexOffset: 1000 })
+        .addTo(map)
+        .bindPopup("<b>📍 আপনার অবস্থান</b>");
+      userMarkerRef.current = userMarker;
+
+      // Accuracy circle around user location
+      L.circle(centerRef.current, {
+        radius: 500,
+        color: "#e53e3e",
+        fillColor: "#e53e3e",
+        fillOpacity: 0.08,
+        weight: 1,
+        opacity: 0.3,
+      }).addTo(map);
+
+      // Add institution markers
+      INSTITUTIONS.forEach((inst) => {
+        const icon = L.divIcon({
           className: "",
-          html: `<div style="width:18px;height:18px;background:#e53e3e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative"><div style="position:absolute;inset:-6px;border:2px solid #e53e3e;border-radius:50%;opacity:.3;animation:pulse-ring 2s infinite"></div></div><style>@keyframes pulse-ring{0%{transform:scale(.8);opacity:.5}100%{transform:scale(1.5);opacity:0}}</style>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
         });
 
-        L.marker(center, { icon: userIcon, zIndexOffset: 1000 })
+        L.marker(inst.pos, { icon })
           .addTo(map)
-          .bindPopup("<b>📍 আপনার অবস্থান</b>");
+          .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
+      });
 
-        // Add institution markers
-        INSTITUTIONS.forEach((inst) => {
-          const icon = L.divIcon({
-            className: "",
-            html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
-          });
+      // Tile layer — will be managed by the mapStyle effect
+      const initialTile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        maxZoom: 18,
+      });
+      initialTile.addTo(map);
+      tileLayerRef.current = initialTile;
 
-          L.marker(inst.pos, { icon })
-            .addTo(map)
-            .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
-        });
+      // Add locate-me control button
+      const LocateControl = L.Control.extend({
+        options: { position: "topright" },
+        onAdd: function () {
+          const btn = L.DomUtil.create("button", "");
+          btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b4332" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>`;
+          btn.title = "আমার অবস্থান";
+          btn.style.cssText = "width:36px;height:36px;background:#fff;border:2px solid #1b4332;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:all .2s";
+          btn.onmouseover = () => { btn.style.background = "#f0fdf4"; };
+          btn.onmouseout = () => { btn.style.background = "#fff"; };
+          btn.onclick = function () {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  map.setView([latitude, longitude], 13, { animate: true });
+                  (userMarker as L.Marker).setLatLng([latitude, longitude]);
+                },
+                () => {
+                  map.setView(centerRef.current, 13, { animate: true });
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+              );
+            }
+          };
+          return btn;
+        },
+      });
+      new LocateControl().addTo(map);
 
-        // Invalidate size after mount
-        setTimeout(() => map.invalidateSize(), 200);
+      // Invalidate size after mount
+      setTimeout(() => map.invalidateSize(), 200);
+    });
+
+    return () => {
+      cancelled = true;
+      if (mapInstanceRef.current) {
+        (mapInstanceRef.current as { remove: () => void }).remove();
+        mapInstanceRef.current = null;
+        tileLayerRef.current = null;
+        userMarkerRef.current = null;
       }
+    };
+  }, []); // Only initialize once on mount
 
-      // Update tile layer based on mapStyle
+  // Update center when location changes (pan the map instead of reinitializing)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    import("leaflet").then((L) => {
+      const map = mapInstanceRef.current as L.Map | null;
+      if (!map) return;
+      map.setView(center, map.getZoom(), { animate: true });
+      // Update user marker position
+      if (userMarkerRef.current) {
+        (userMarkerRef.current as L.Marker).setLatLng(center);
+      }
+    });
+  }, [center]);
+
+  // Update tile layer when mapStyle changes (without remounting the map)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    import("leaflet").then((L) => {
+      const map = mapInstanceRef.current as L.Map | null;
+      if (!map) return;
+
+      // Remove old tile layer
       if (tileLayerRef.current) {
         map.removeLayer(tileLayerRef.current as L.TileLayer);
       }
@@ -141,16 +229,7 @@ export default function InteractiveMap({ center, mapStyle = "street" }: MapProps
       tileLayer.addTo(map);
       tileLayerRef.current = tileLayer;
     });
-
-    return () => {
-      // Only cleanup on unmount
-      if (mapInstanceRef.current) {
-        (mapInstanceRef.current as { remove: () => void }).remove();
-        mapInstanceRef.current = null;
-        tileLayerRef.current = null;
-      }
-    };
-  }, [center, mapStyle]);
+  }, [mapStyle]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }

@@ -14,16 +14,27 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const isAllowedOrigin = (origin: string | null) => {
+// ── CORS Origin Whitelist ────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://krishiai.live",
+  "https://www.krishiai.live",
+  "https://web.krishiai.live",
+];
+
+function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
-  return (
-    origin === "https://krishiai.live" ||
-    origin === "https://www.krishiai.live" ||
-    origin === "https://web.krishiai.live" ||
-    origin.includes("localhost") ||
-    origin.includes("127.0.0.1")
-  );
-};
+  if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+function corsHeaders(origin: string | null) {
+  const accessControl = isAllowedOrigin(origin) ? origin : "*";
+  return {
+    "Access-Control-Allow-Origin": accessControl,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
@@ -224,11 +235,28 @@ function generateAlerts(
 }
 
 // ── Main Handler ─────────────────────────────────────────────────────────────
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders(origin),
+  });
+}
+
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin");
   const { searchParams } = new URL(request.url);
   const lat = parseFloat(searchParams.get("lat") || "23.8103");
   const lon = parseFloat(searchParams.get("lon") || "90.4125");
   const city = searchParams.get("city") || "ঢাকা";
+
+  // Validate lat/lon ranges
+  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    return NextResponse.json(
+      { ok: false, error: "অবৈধ অক্ষাংশ/দ্রাঘিমাংশ", city },
+      { status: 400, headers: corsHeaders(origin) }
+    );
+  }
 
   try {
     const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -391,9 +419,12 @@ export async function GET(request: NextRequest) {
       source: "Open-Meteo · BMD",
     };
 
+    const origin2 = request.headers.get("origin");
+
     return NextResponse.json(weatherData, {
       headers: {
         "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
+        ...corsHeaders(origin),
       },
     });
   } catch (e) {
@@ -404,7 +435,7 @@ export async function GET(request: NextRequest) {
         error: "আবহাওয়া তথ্য লোড হয়নি",
         city,
       },
-      { status: 502 }
+      { status: 502, headers: corsHeaders(request.headers.get("origin")) }
     );
   }
 }
