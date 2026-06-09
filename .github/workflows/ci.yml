@@ -1,13 +1,14 @@
-name: KrishiAI — Validate
+name: KrishiAI — CI
 
 on:
   push:
-    branches: [main, production, production-v2, v3.0.0, v4.0]
+    branches: [main, develop, v3.0.0, v4.0]
   pull_request:
     branches: [main]
 
 jobs:
   validate:
+    name: Validate & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +16,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      - run: cat meta-mcp-hub/validation.md
       - run: bun run lint
         continue-on-error: true
       - run: bun run build

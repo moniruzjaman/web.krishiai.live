@@ -21,12 +21,10 @@ meta-mcp-hub/
 │   ├── graphify.js        # .graphify visualization layer
 │   └── external.js        # free-tier model router (Claude/Kimi/Z.ai)
 └── workflows/
-    ├── github-ci.yml      # GitHub Actions CI
-    ├── github-deploy.yml  # GitHub Actions CD
-    └── vercel-preview.yml # Vercel preview deploy
+    └── (reference — active workflows are in ../.github/workflows/)
 ```
 
-The hub lives at the project root, just below `.graphify/`.
+The hub lives at the project root. Protected modules (analyzer, chat, weather, dashboard, CABI) are enforced via `agentic.json` — no agent may modify them.
 
 ## Quick start
 
@@ -44,9 +42,9 @@ That's it — one login, one command, and the hub validates the DB, injects env,
 
 | Agent | Role | Best Assigned Task | Free Access |
 | --- | --- | --- | --- |
-| **openprovider** | Orchestrator | Central controller; routes intents to agents; fans out multi-agent tasks; handles free routing to Claude/Kimi/Z.ai | ✅ |
-| **cline** | File-editor | Safe read/write under `src/`, `public/`, `.graphify/`, `meta-mcp-hub/`; generates and syncs DB schema | ✅ |
-| **kilo** | Infra | Plans infra; emits GitHub Actions workflows (`ci.yml`, `deploy.yml`); sets up CI/CD pipelines | ✅ |
+| **openprovider** | Orchestrator | Central controller; routes intents to agents; fans out multi-agent tasks; handles free routing to Claude/Kimi/Z.ai; enforces protected module policy | ✅ |
+| **cline** | File-editor | Safe read/write under `src/`, `public/`, `.graphify/`, `meta-mcp-hub/`; respects protectedModules in agentic.json; syncs schema | ✅ |
+| **kilo** | Infra | Plans infra; emits GitHub Actions workflows (`.github/workflows/ci.yml`, `.github/workflows/deploy.yml`); sets up CI/CD pipelines | ✅ |
 | **opencode** | Refactor | Dry-run refactors; injects environment variables; ensures clean code structure | ✅ |
 | **graphify** | Visualization | Builds/queries/exports the `.graphify` knowledge graph; provides orchestration dashboard | ✅ |
 | **Claude (via OpenProvider)** | Reasoning | Compliance-sensitive validation; structured reasoning for complex workflows | ✅ |
@@ -83,11 +81,11 @@ The CI workflow runs `validate` on every push/PR; the CD workflow runs `validate
 
 ## CI/CD
 
-- **GitHub Actions CI** (`workflows/github-ci.yml`) — lint, typecheck, test, build, plus **Validate meta-mcp-hub** step.
-- **GitHub Actions CD** (`workflows/github-deploy.yml`) — runs **Run validation and auto-fix** on `main`, then deploys to Vercel.
-- **Vercel preview** (`workflows/vercel-preview.yml`) — preview deploys per PR.
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — validates meta-mcp-hub, lint, build.
+- **GitHub Actions Deploy** (`.github/workflows/deploy.yml`) — validates, builds, then deploys to Vercel on push to `main`.
+- **Vercel preview** (`.github/workflows/preview.yml`) — preview deploys per PR (optional).
 
-Copy or symlink the GitHub workflows into `.github/workflows/` (or run the `kilo` `emit-workflows` op) to activate them.
+Workflows live in `.github/workflows/` and are activated automatically.
 
 ## Graphify integration
 

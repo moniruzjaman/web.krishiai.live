@@ -3,35 +3,30 @@
 This checklist is the single source of truth for validating the `meta-mcp-hub` orchestration layer. It is consumed by the **OpenProvider** agent in two intents:
 
 - `validate` — runs each check, prints results, exits non-zero on failure.
-- `validate-and-fix` — runs each check and, where safe, applies automatic fixes (e.g. injecting missing env keys, syncing DB schema, regenerating workflows).
+- `validate-and-fix` — runs each check and, where safe, applies automatic fixes.
 
 The checklist is printed at the start of every CI/CD run for visibility.
 
 ---
 
-## 1. DB schema check
+## 1. Main App Module Protection
 
-- [ ] `prisma migrate status` reports the database is up to date.
-- [ ] No pending migrations in `prisma/migrations/`.
-- [ ] Generated client matches the schema (`prisma generate` succeeds).
-- **Auto-fix**: run `prisma migrate deploy` and `prisma generate`.
+- [ ] **Analyzer** module (`src/app/analyzer/`) — page.tsx fully intact, no missing imports, CABI diagnostic engine available at `src/lib/cabi/`.
+- [ ] **Chat** module (`src/app/chat/`) — page.tsx fully intact, AI chat route at `src/app/api/chat/route.ts`, ai-client at `src/lib/ai-client.ts`.
+- [ ] **Weather** module (`src/app/api/weather/`) — route.ts fully intact, weather service at `src/lib/weatherService.ts`.
+- [ ] **Dashboard** route (`src/app/dashboard/`) — page.tsx intact, deployment/status/usage API routes present.
+- [ ] No meta-mcp agent is allowed to modify, delete, or overwrite files under `src/app/analyzer/`, `src/app/chat/`, `src/app/api/weather/`, `src/app/dashboard/`, `src/lib/cabi/`, `src/lib/weatherService.ts`, `src/lib/ai-client.ts`.
+- **Auto-fix**: restore any protected module file from git if checksum mismatch detected.
 
 ## 2. Env injection check (`.env` vs `.env.example`)
 
-- [ ] `meta-mcp-hub/.env` exists.
-- [ ] Every key in `meta-mcp-hub/.env.example` is present in `meta-mcp-hub/.env`.
+- [ ] `.env` exists at project root.
+- [ ] Every key in `.env.example` is present in `.env`.
 - [ ] No key in `.env` is missing from `.env.example` (drift detection).
-- [ ] Required keys present: `DATABASE_URL`, `NEXTAUTH_SECRET`, `API_KEY`, `ANTHROPIC_API_KEY`, `KIMI_API_KEY`, `ZAI_API_KEY`.
+- [ ] Required keys present: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 - **Auto-fix**: copy missing keys from `.env.example` into `.env` with empty values; emit a warning for unset secrets.
 
-## 3. DB connection health check (`SELECT 1`)
-
-- [ ] Postgres reachable on `DATABASE_URL`.
-- [ ] `SELECT 1` returns 1.
-- [ ] Connection pool responds within 2s.
-- **Auto-fix**: none (fail loudly if unreachable).
-
-## 4. Agent role validation
+## 3. Agent role validation
 
 - [ ] **OpenProvider** exposes `pickAgent`, `routeFree`, `validate`, `validate-and-fix` (free routing enabled).
 - [ ] **Cline** exposes `read`, `write`, `syncSchema`; restricted to `src/`, `public/`, `.graphify/`, `meta-mcp-hub/`.
@@ -40,13 +35,23 @@ The checklist is printed at the start of every CI/CD run for visibility.
 - [ ] **Graphify** exposes `build`, `query`, `export`; `.graphify/{nodes,edges}.jsonl` exist or are exportable.
 - **Auto-fix**: regenerate missing `external.js` exports, run `syncSchema`, run `emit-workflows`, run `export`.
 
-## 5. Workflow verification
+## 4. Workflow verification
 
-- [ ] CI workflow (`meta-mcp-hub/workflows/github-ci.yml`) runs `lint`, `typecheck`, `test`, `build`, and the **Validate meta-mcp-hub** step.
-- [ ] CD workflow (`meta-mcp-hub/workflows/github-deploy.yml`) runs **Run validation and auto-fix** before deploy on `main`.
-- [ ] Vercel preview workflow (`meta-mcp-hub/workflows/vercel-preview.yml`) deploys a preview per PR.
-- [ ] All three workflows are symlinked/copied into `.github/workflows/`.
+- [ ] CI workflow (`.github/workflows/ci.yml`) runs `lint`, `build`, and validates meta-mcp-hub.
+- [ ] Vercel deploy workflow (`.github/workflows/deploy.yml`) runs validation + auto-fix, then deploys to Vercel on `main`.
+- [ ] All workflows are present in `.github/workflows/`.
 - **Auto-fix**: run `kilo emit-workflows` to regenerate missing YAMLs and copy them into `.github/workflows/`.
+
+## 5. Protected Module Integrity
+
+- [ ] No files under `src/app/analyzer/`, `src/app/chat/`, `src/app/api/weather/`, `src/app/dashboard/` have been modified outside of approved changes.
+- [ ] SHA-256 checksums match expected values for protected files:
+  - `src/app/analyzer/page.tsx`
+  - `src/app/chat/page.tsx`
+  - `src/app/api/weather/route.ts`
+  - `src/lib/weatherService.ts`
+  - `src/lib/ai-client.ts`
+- **Auto-fix**: revert any protected file that fails checksum validation via `git checkout -- <file>`.
 
 ## 6. Monitoring
 

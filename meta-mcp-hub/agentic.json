@@ -157,19 +157,30 @@
       "freeTier": true
     }
   },
+  "protectedModules": {
+    "description": "These modules are protected from meta-mcp agent modification. Agents must never modify, delete, or overwrite these files.",
+    "paths": [
+      "src/app/analyzer/",
+      "src/app/chat/",
+      "src/app/api/weather/",
+      "src/app/dashboard/",
+      "src/lib/cabi/",
+      "src/lib/weatherService.ts",
+      "src/lib/ai-client.ts"
+    ],
+    "enforcement": "strict",
+    "autoFix": "git checkout -- <file> on checksum mismatch"
+  },
   "validation": {
     "checklist": "meta-mcp-hub/validation.md",
     "intents": {
       "validate": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\"}}'",
       "validate-and-fix": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate-and-fix\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\",\"hubRoot\":\"meta-mcp-hub\"}}'"
     },
-    "ci": "workflows/github-ci.yml",
-    "cd": "workflows/github-deploy.yml"
+    "ci": ".github/workflows/ci.yml"
   },
   "workflows": {
-    "ci": ".github/workflows/ci.yml",
-    "deploy": ".github/workflows/deploy.yml",
-    "preview": "workflows/vercel-preview.yml"
+    "ci": ".github/workflows/ci.yml"
   },
   "graphify": {
     "dataDir": "../.graphify",
