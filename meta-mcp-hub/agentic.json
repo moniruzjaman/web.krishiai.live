@@ -1,0 +1,183 @@
+{
+  "name": "meta-mcp-hub",
+  "version": "1.2.0",
+  "description": "Meta MCP orchestration hub coordinating OpenProvider, Cline, Kilo, OpenCode, Graphify, and the free external models Claude, Kimi, and Z.ai for the krishiai.live PWA.",
+  "mode": "orchestrated",
+  "entrypoint": "agents/openprovider.js",
+  "routing": {
+    "provider": "openprovider-agent",
+    "mode": "free"
+  },
+  "registry": {
+    "type": "hybrid",
+    "localPath": "./agents",
+    "externalPath": "./agents/external.js",
+    "path": "./agents"
+  },
+  "agents": {
+    "openprovider": {
+      "file": "agents/openprovider.js",
+      "role": "orchestrator",
+      "description": "Central controller; routes intents to local agents; fans out multi-agent tasks; handles free routing to Claude/Kimi/Z.ai; runs validation + auto-fix.",
+      "bestAssignedTask": "Central controller; routes intents to agents; fans out multi-agent tasks; handles free routing to Claude/Kimi/Z.ai",
+      "freeAccess": true,
+      "capabilities": [
+        "task-routing",
+        "agent-discovery",
+        "result-aggregation",
+        "fallback-selection",
+        "free-routing",
+        "fan-out",
+        "validate",
+        "validate-and-fix"
+      ]
+    },
+    "cline": {
+      "file": "agents/cline.js",
+      "role": "file-editor",
+      "description": "Safe read/write under src/, public/, .graphify/, meta-mcp-hub/; generates and syncs the PWA DB schema.",
+      "bestAssignedTask": "Safe read/write under src/, public/, .graphify/, meta-mcp-hub/; generates and syncs DB schema",
+      "freeAccess": true,
+      "capabilities": [
+        "file-read",
+        "file-write",
+        "schema-migrate",
+        "schema-sync",
+        "db-seed"
+      ]
+    },
+    "kilo": {
+      "file": "agents/kilo.js",
+      "role": "infra",
+      "description": "Plans infra; emits GitHub Actions workflows (ci.yml, deploy.yml); sets up CI/CD pipelines.",
+      "bestAssignedTask": "Plans infra; emits GitHub Actions workflows (ci.yml, deploy.yml); sets up CI/CD pipelines",
+      "freeAccess": true,
+      "capabilities": [
+        "iac-plan",
+        "iac-apply",
+        "ci-pipeline",
+        "cd-pipeline",
+        "emit-workflows"
+      ]
+    },
+    "opencode": {
+      "file": "agents/opencode.js",
+      "role": "refactor",
+      "description": "Dry-run refactors; injects environment variables; ensures clean code structure.",
+      "bestAssignedTask": "Dry-run refactors; injects environment variables; ensures clean code structure",
+      "freeAccess": true,
+      "capabilities": [
+        "refactor",
+        "env-injection",
+        "secret-scrub",
+        "ast-transform",
+        "clean-structure"
+      ]
+    },
+    "graphify": {
+      "file": "agents/graphify.js",
+      "role": "visualization",
+      "description": "Builds/queries/exports the .graphify knowledge graph and provides the orchestration dashboard.",
+      "bestAssignedTask": "Builds/queries/exports the .graphify knowledge graph; provides orchestration dashboard",
+      "freeAccess": true,
+      "capabilities": [
+        "graph-build",
+        "graph-query",
+        "graph-render",
+        "graph-export",
+        "dashboard"
+      ]
+    },
+    "claude": {
+      "file": "agents/external.js",
+      "model": "claude",
+      "provider": "anthropic",
+      "routedVia": "openprovider",
+      "role": "reasoning",
+      "description": "Compliance-sensitive validation and structured reasoning for complex workflows.",
+      "bestAssignedTask": "Compliance-sensitive validation; structured reasoning for complex workflows",
+      "freeAccess": true,
+      "capabilities": [
+        "reasoning",
+        "compliance-check",
+        "structured-analysis",
+        "code-review"
+      ]
+    },
+    "kimi": {
+      "file": "agents/external.js",
+      "model": "kimi",
+      "provider": "moonshot",
+      "routedVia": "openprovider",
+      "role": "presentation",
+      "description": "Polishes outputs with bilingual formatting and professional design for reports/docs.",
+      "bestAssignedTask": "Polishes outputs; bilingual formatting; professional design for reports/docs",
+      "freeAccess": true,
+      "capabilities": [
+        "polish",
+        "bilingual",
+        "design",
+        "report-formatting"
+      ]
+    },
+    "z-ai": {
+      "file": "agents/external.js",
+      "model": "z-ai",
+      "provider": "z-ai",
+      "routedVia": "openprovider",
+      "role": "automation",
+      "description": "Automates structured content; clones workflows; integrates with broader pipelines.",
+      "bestAssignedTask": "Automates structured content; clones workflows; integrates with broader pipelines",
+      "freeAccess": true,
+      "capabilities": [
+        "automation",
+        "workflow-clone",
+        "pipeline-integration",
+        "structured-content"
+      ]
+    }
+  },
+  "models": {
+    "claude": {
+      "envKey": "ANTHROPIC_API_KEY",
+      "endpoint": "https://api.anthropic.com/v1/messages",
+      "defaultModel": "claude-3-5-sonnet-latest",
+      "freeTier": true
+    },
+    "kimi": {
+      "envKey": "KIMI_API_KEY",
+      "endpoint": "https://api.moonshot.cn/v1/chat/completions",
+      "defaultModel": "moonshot-v1-128k",
+      "freeTier": true
+    },
+    "z-ai": {
+      "envKey": "ZAI_API_KEY",
+      "endpoint": "https://api.z.ai/v1/chat/completions",
+      "defaultModel": "glm-4-flash",
+      "freeTier": true
+    }
+  },
+  "validation": {
+    "checklist": "meta-mcp-hub/validation.md",
+    "intents": {
+      "validate": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\"}}'",
+      "validate-and-fix": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate-and-fix\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\",\"hubRoot\":\"meta-mcp-hub\"}}'"
+    },
+    "ci": "workflows/github-ci.yml",
+    "cd": "workflows/github-deploy.yml"
+  },
+  "workflows": {
+    "ci": ".github/workflows/ci.yml",
+    "deploy": ".github/workflows/deploy.yml",
+    "preview": "workflows/vercel-preview.yml"
+  },
+  "graphify": {
+    "dataDir": "../.graphify",
+    "format": "jsonl",
+    "servedAt": "/api/graphify"
+  },
+  "logging": {
+    "level": "info",
+    "destination": "stdout"
+  }
+}
