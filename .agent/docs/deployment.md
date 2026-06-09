@@ -14,10 +14,10 @@
 - **Config:** `wrangler.toml`
 - **AI binding:** Native `env.AI.run()` (no REST + Bearer token)
 - **Routes:**
-  - `GET  /health` — Health check
-  - `POST /api/chat` — Bengali agricultural chat
-  - `POST /api/diagnose` — CABI crop diagnosis
-  - `POST /api/analyze` — General AI analysis
+    - `GET  /health` — Health check
+    - `POST /api/chat` — Bengali agricultural chat
+    - `POST /api/diagnose` — CABI crop diagnosis
+    - `POST /api/analyze` — General AI analysis
 - **Deploy:** `wrangler deploy` or auto-deploy via GitHub Actions on `main` push
 - **Dev:** `wrangler dev`
 

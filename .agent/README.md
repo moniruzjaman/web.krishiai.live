@@ -4,7 +4,7 @@ Centralized repository for **PWA documentation**, **agent orchestration**, and *
 
 ## Structure
 
-```
+```text
 .agent/
 ├── docs/                         # Complete PWA documentation
 │   ├── INDEX.md                 # Navigation hub

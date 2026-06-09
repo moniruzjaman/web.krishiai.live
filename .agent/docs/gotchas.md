@@ -14,38 +14,38 @@
 
 ## Moderate
 
-6. **NDVI is simulated**: There is NO Sentinel Hub integration. NDVI values are generated deterministically from month + lat/lng. Don't try to add Sentinel Hub API key — it would require a complete rewrite.
+1. **NDVI is simulated**: There is NO Sentinel Hub integration. NDVI values are generated deterministically from month + lat/lng. Don't try to add Sentinel Hub API key — it would require a complete rewrite.
 
-7. **Market prices are simulated**: Even when DAM live API works, the response is augmented with seasonal adjustments and daily jitter. Prices are realistic but not real-time market quotes.
+2. **Market prices are simulated**: Even when DAM live API works, the response is augmented with seasonal adjustments and daily jitter. Prices are realistic but not real-time market quotes.
 
-8. **News RSS parsing is fragile**: The `parseRSS()` function uses regex-based XML parsing, not a real XML parser. Malformed RSS from .gov.bd sites may silently fail.
+3. **News RSS parsing is fragile**: The `parseRSS()` function uses regex-based XML parsing, not a real XML parser. Malformed RSS from .gov.bd sites may silently fail.
 
-9. **Nominatim rate limit**: 1 request/second. The LocationContext caches geocode results in localStorage (24h TTL). Don't add more Nominatim calls without caching.
+4. **Nominatim rate limit**: 1 request/second. The LocationContext caches geocode results in localStorage (24h TTL). Don't add more Nominatim calls without caching.
 
-10. **Bengali font loading**: Uses `next/font/google` with `Noto_Sans_Bengali`. The CSS variable `--font-bengali` is applied to `<body>`. If you change fonts, ensure Bengali rendering still works.
+5. **Bengali font loading**: Uses `next/font/google` with `Noto_Sans_Bengali`. The CSS variable `--font-bengali` is applied to `<body>`. If you change fonts, ensure Bengali rendering still works.
 
-11. **Standalone output**: `next.config.ts` sets `output: "standalone"`. This is for Docker deployment. Don't remove it — it's required for production.
+6. **Standalone output**: `next.config.ts` sets `output: "standalone"`. This is for Docker deployment. Don't remove it — it's required for production.
 
-12. **React Strict Mode off**: `reactStrictMode: false` in next.config. This was intentional (likely to avoid double-render effects with Leaflet/GPS). Turning it on may cause map/GPS issues.
+7. **React Strict Mode off**: `reactStrictMode: false` in next.config. This was intentional (likely to avoid double-render effects with Leaflet/GPS). Turning it on may cause map/GPS issues.
 
-13. **`noImplicitAny: false`**: TypeScript is in relaxed mode. Function parameters may lack explicit types. Be careful when refactoring.
+8. **`noImplicitAny: false`**: TypeScript is in relaxed mode. Function parameters may lack explicit types. Be careful when refactoring.
 
-14. **Cloudflare Workers AI requires env vars**: `CF_ACCOUNT_ID` and `CF_API_TOKEN` must be set in Vercel environment variables. If missing, CF Workers AI is skipped and routes fall through to z-ai-web-dev-sdk. The `.env.local` file has them for local dev but is gitignored.
+9. **Cloudflare Workers AI requires env vars**: `CF_ACCOUNT_ID` and `CF_API_TOKEN` must be set in Vercel environment variables. If missing, CF Workers AI is skipped and routes fall through to z-ai-web-dev-sdk. The `.env.local` file has them for local dev but is gitignored.
 
-15. **CF Workers AI response format varies**: CF Workers AI can return either `{ result: { response: "..." } }` or `{ result: { choices: [{ message: { content: "..." } }] } }`. The utility handles both formats, but if Cloudflare changes their API, the parser may break.
+10. **CF Workers AI response format varies**: CF Workers AI can return either `{ result: { response: "..." } }` or `{ result: { choices: [{ message: { content: "..." } }] } }`. The utility handles both formats, but if Cloudflare changes their API, the parser may break.
 
 ## Minor
 
-14. **Toast redundancy**: Both `@radix-ui/react-toast` and `sonner` are installed. Only `sonner` is used (via `<Toaster />` in layout). The Radix toast is unused.
+11. **Toast redundancy**: Both `@radix-ui/react-toast` and `sonner` are installed. Only `sonner` is used (via `<Toaster />` in layout). The Radix toast is unused.
 
-15. **Upload directory**: Added to `.gitignore`. Was causing `EBUSY` errors during builds. Don't recreate it.
+12. **Upload directory**: Added to `.gitignore`. Was causing `EBUSY` errors during builds. Don't recreate it.
 
-16. **Package-lock.json exists alongside bun.lock**: Both lockfiles present. Bun uses `bun.lock`, npm uses `package-lock.json`. The npm one is likely stale.
+13. **Package-lock.json exists alongside bun.lock**: Both lockfiles present. Bun uses `bun.lock`, npm uses `package-lock.json`. The npm one is likely stale.
 
-17. **Workers are not deployed**: `src/workers/` contains the Cloudflare Worker code but it's deployed separately from the Next.js app. Changes to workers don't affect Vercel deployment.
+14. **Workers are not deployed**: `src/workers/` contains the Cloudflare Worker code but it's deployed separately from the Next.js app. Changes to workers don't affect Vercel deployment.
 
-18. **`mini-services/` directory**: Exists in root but purpose unclear. Not referenced by Next.js build.
+15. **`mini-services/` directory**: Exists in root but purpose unclear. Not referenced by Next.js build.
 
-19. **GitHub PAT**: A personal access token was used in previous sessions for pushing. If expired, generate a new one from GitHub Settings > Developer Tokens with repo scope.
+16. **GitHub PAT**: A personal access token was used in previous sessions for pushing. If expired, generate a new one from GitHub Settings > Developer Tokens with repo scope.
 
-20. **All 3 branches should stay synced**: main, production, production-v2 all point to the same commit. When pushing, update all three.
+17. **All 3 branches should stay synced**: main, production, production-v2 all point to the same commit. When pushing, update all three.
