@@ -4,10 +4,11 @@
 - **Name**: KrishiAI (কৃষি AI)
 - **URL**: https://web.krishiai.live
 - **Repo**: moniruzjaman/web.krishiai.live
-- **Branches**: main, v3.0.0
+- **Branches**: main, v4.0
 - **Runtime**: Bun | **Framework**: Next.js 16 (App Router) | **Deploy**: Vercel (hkg1)
 - **Backend**: Supabase (auth + DB + quota tracking) | **Mobile**: Expo (separate repo)
 - **Architecture**: Vercel + Supabase — completely free with quota-tier fallback
+- **Orchestration**: OpenProvider — central task router with dynamic provider mapping
 
 ## Source Tree
 
@@ -20,6 +21,7 @@ src/
 │   ├── globals.css             # Tailwind 4 globals
 │   ├── analyzer/page.tsx       # Disease analyzer (photo upload + symptoms → CABI diagnosis)
 │   ├── chat/page.tsx           # AI chat interface (Supabase + AI Provider Fallback)
+│   ├── dashboard/page.tsx      # OpenProvider orchestration hub dashboard (token usage, DB status, deployments)
 │   ├── learn/page.tsx          # Learning center
 │   ├── profile/page.tsx        # User profile + install button
 │   ├── tools/
@@ -45,6 +47,10 @@ src/
 │       ├── crop-prices/route.ts   # Simulated crop prices (DAM/DAE reference)
 │       ├── soil-analysis/route.ts # AEZ zone + USDA soil classification (AI client + static)
 │       └── smart-decision/route.ts # Combined weather+price+season scoring
+│   └── api/dashboard/
+│       ├── status/route.ts     # System status + provider health + DB connectivity
+│       ├── usage/route.ts      # Token usage stats + quota reference
+│       └── deployments/route.ts # Deployment history from git
 ├── components/
 │   ├── TopNavbar.tsx           # Top nav bar
 │   ├── BottomNav.tsx           # Bottom tab navigation
@@ -66,6 +72,7 @@ src/
 ├── lib/
 │   ├── utils.ts                # cn() utility
 │   ├── ai-client.ts            # Quota-aware AI client (Gemini → OpenRouter → Groq → offline)
+│   ├── openprovider.ts         # OpenProvider orchestrator (task routing, health tracking, telemetry)
 │   ├── cropCalendar.ts         # 10 crops, 6 seasons, risk alerts, Bengali months
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
@@ -97,6 +104,7 @@ Config files:
 ├── tsconfig.json               # Next.js TypeScript config
 ├── next.config.ts              # Next.js config (standalone, reactStrictMode)
 ├── vercel.json                 # Vercel deploy config (bun, hkg1, security headers)
+├── agentic.json                # OpenProvider orchestration config (agents, routes, providers)
 ├── .env.example                # Environment variables template (Supabase + AI keys)
 └── .github/workflows/validate.yml  # CI: bun install → lint → build
 ```
@@ -185,6 +193,10 @@ Config files:
 | `/api/crop-prices` | API | GET | 300s | Simulated from DAM/DAE baselines |
 | `/api/soil-analysis` | API | GET/POST | no-store | AI client + AEZ/USDA |
 | `/api/smart-decision` | API | GET | 600s | Open-Meteo + cropPriceService |
+| `/dashboard` | Page | GET | — | OpenProvider monitoring dashboard |
+| `/api/dashboard/status` | API | GET | no-store | Provider health + DB connectivity |
+| `/api/dashboard/usage` | API | GET | no-store | Token usage + quota reference |
+| `/api/dashboard/deployments` | API | GET | 60s | Deployment history from git |
 
 ## Environment Variables
 
@@ -195,3 +207,62 @@ Config files:
 | `GEMINI_API_KEY` | Primary AI provider | Yes |
 | `GROQ_API_KEY` | Text-only AI fallback | Recommended |
 | `OPENROUTER_API_KEY` | Vision-capable AI fallback | Recommended |
+
+## OpenProvider Orchestration Hub
+
+```
+┌───────────────┐
+│ OpenProvider   │  ← central orchestrator (src/lib/openprovider.ts)
+└───────┬───────┘
+        │
+   ┌────┼──────────┐
+   │    │           │
+┌───────┐┌────────┐┌───────────┐
+│ Cline ││ Kilo   ││ Opencode  │  ← Agent roles (task classification)
+│Schema ││ Infra  ││ Refactor  │
+└───┬───┘└───┬────┘└─────┬─────┘
+    │        │           │
+    └────────┼───────────┘
+             │
+    ┌────────┴────────┐
+    │ Claude/Kimi/Z   │  ← Provider routing (Gemini→OpenRouter→Groq)
+    └────────┬────────┘
+             │
+       ┌─────▼─────┐
+       │  Vercel   │  ← Deployment target (hkg1)
+       └───────────┘
+```
+
+### Task Routing Map
+
+| Task | Provider Priority Chain |
+|------|------------------------|
+| `chat` | Gemini → OpenRouter → Groq |
+| `diagnose` | Gemini → OpenRouter → Groq |
+| `soil_analysis` | Gemini → Groq |
+| `crop_database` | Gemini → OpenRouter |
+| `news_bulletin` | Groq → Gemini |
+| `schema` | Gemini |
+| `infra` | Groq → Gemini |
+| `refactor` | Gemini → Groq |
+| `validation` | Gemini → OpenRouter |
+| `polish` | Groq → Gemini |
+| `automation` | Gemini → Groq |
+
+### Agent Roles
+
+| Agent | Role | Task Types | Module |
+|-------|------|-----------|--------|
+| Cline | Schema & Migration | `schema` | `src/lib/supabase/schema.sql` |
+| Kilo | Infrastructure & CI/CD | `infra` | `.github/workflows/validate.yml` |
+| Opencode | Refactor & Environment | `refactor` | `next.config.ts` |
+| Claude | Validation & Compliance | `validation` | `src/lib/ai-client.ts` |
+| Kimi | Polish & Bilingual | `polish` | `src/lib/cabi/bengaliKeywords.ts` |
+| Z.ai | Automation & Structured Content | `automation` | `src/lib/openprovider.ts` |
+
+### Monitoring Dashboard
+
+- **Page**: `/dashboard` — Real-time token usage, DB sync status, deployment logs
+- **API**: `/api/dashboard/status`, `/api/dashboard/usage`, `/api/dashboard/deployments`
+- **Config**: `agentic.json` at project root
+- **Visualization**: `.graphify/orchestration.md`

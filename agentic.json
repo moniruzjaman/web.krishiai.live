@@ -1,0 +1,116 @@
+{
+  "$schema": "https://graphify.dev/schemas/agentic/v1",
+  "name": "KrishiAI OpenProvider Orchestration",
+  "version": "4.0.2",
+  "description": "Central orchestrator that routes AI tasks across providers with quota-aware fallback chains",
+  "orchestrator": {
+    "name": "OpenProvider",
+    "module": "src/lib/openprovider.ts",
+    "entry": "orchestrate()"
+  },
+  "agents": {
+    "cline": {
+      "role": "Schema & Migration",
+      "description": "DB schema generation, migration planning, data modeling",
+      "taskTypes": ["schema"],
+      "preferredProvider": "gemini",
+      "module": "src/lib/supabase/schema.sql"
+    },
+    "kilo": {
+      "role": "Infrastructure & CI/CD",
+      "description": "Infra setup, CI/CD pipelines, Docker configs, deployment checks",
+      "taskTypes": ["infra"],
+      "preferredProvider": "groq",
+      "module": ".github/workflows/validate.yml"
+    },
+    "opencode": {
+      "role": "Refactor & Environment",
+      "description": "Code refactoring, environment variable injection, config updates",
+      "taskTypes": ["refactor"],
+      "preferredProvider": "gemini",
+      "module": "next.config.ts"
+    },
+    "claude": {
+      "role": "Validation & Compliance",
+      "description": "Reasoning-heavy validation, compliance checks, quality assurance",
+      "taskTypes": ["validation"],
+      "preferredProvider": "gemini",
+      "module": "src/lib/ai-client.ts"
+    },
+    "kimi": {
+      "role": "Polish & Bilingual Formatting",
+      "description": "Bengali-English bilingual formatting, presentation-ready outputs",
+      "taskTypes": ["polish"],
+      "preferredProvider": "groq",
+      "module": "src/lib/cabi/bengaliKeywords.ts"
+    },
+    "zai": {
+      "role": "Automation & Structured Content",
+      "description": "Structured content generation, workflow automation, cloning",
+      "taskTypes": ["automation"],
+      "preferredProvider": "gemini",
+      "module": "src/lib/openprovider.ts"
+    }
+  },
+  "providers": {
+    "gemini": {
+      "model": "gemini-2.5-flash",
+      "apiKey": "GEMINI_API_KEY",
+      "strengths": ["reasoning", "multimodal", "rich-content"],
+      "freeTier": true,
+      "priority": 1
+    },
+    "openrouter": {
+      "model": "google/gemini-2.5-flash-preview-05-20",
+      "apiKey": "OPENROUTER_API_KEY",
+      "strengths": ["vision", "gemini-proxy", "wide-model-access"],
+      "freeTier": true,
+      "priority": 2
+    },
+    "groq": {
+      "model": "llama-3.1-8b-instant",
+      "apiKey": "GROQ_API_KEY",
+      "strengths": ["fast-text", "structured-output", "low-latency"],
+      "freeTier": true,
+      "priority": 3
+    }
+  },
+  "taskRoutes": {
+    "chat":           ["gemini", "openrouter", "groq"],
+    "diagnose":       ["gemini", "openrouter", "groq"],
+    "soil_analysis":  ["gemini", "groq"],
+    "crop_database":  ["gemini", "openrouter"],
+    "news_bulletin":  ["groq", "gemini"],
+    "schema":         ["gemini"],
+    "infra":          ["groq", "gemini"],
+    "refactor":       ["gemini", "groq"],
+    "validation":     ["gemini", "openrouter"],
+    "polish":         ["groq", "gemini"],
+    "automation":     ["gemini", "groq"]
+  },
+  "fallback": {
+    "strategy": "waterfall",
+    "offline": "Bengali graceful degradation message",
+    "quotaExceeded": "Daily limit reached, try tomorrow"
+  },
+  "deployment": {
+    "platform": "vercel",
+    "region": "hkg1",
+    "framework": "nextjs-16",
+    "runtime": "bun",
+    "output": "standalone"
+  },
+  "monitoring": {
+    "dashboard": "/dashboard",
+    "apiEndpoints": {
+      "status": "/api/dashboard/status",
+      "usage": "/api/dashboard/usage",
+      "deployments": "/api/dashboard/deployments"
+    },
+    "refreshInterval": "30s"
+  },
+  "graphify": {
+    "visualization": ".graphify/orchestration.md",
+    "index": ".graphify/INDEX.md"
+  }
+}
