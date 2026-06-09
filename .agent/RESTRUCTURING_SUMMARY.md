@@ -3,9 +3,10 @@
 ## What Was Done ✅
 
 ### 1. **Unified Two Folders into `.agent/`**
-   - **Before**: `.graphify/` (documentation) + `meta-mcp-hub/` (orchestration) — separated concerns
-   - **After**: `.agent/` — single unified hub with organized subdirectories
-   - **Result**: Cleaner root, easier to navigate
+
+- **Before**: `.graphify/` (documentation) + `meta-mcp-hub/` (orchestration) — separated concerns
+- **After**: `.agent/` — single unified hub with organized subdirectories
+- **Result**: Cleaner root, easier to navigate
 
 ### 2. **Organized Internal Structure**
    ```
