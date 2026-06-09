@@ -21,14 +21,16 @@
    ```
 
 ### 3. **Removed Unused Folders**
-   - ✅ Deleted `.sixth/` — empty, no content
-   - ✅ Deleted `.vibe/` — empty, no content
+
+- ✅ Deleted `.sixth/` — empty, no content
+- ✅ Deleted `.vibe/` — empty, no content
 
 ### 4. **Updated All Path References**
-   - ✅ Root `agentic.json` — paths → `.agent/docs/`
-   - ✅ `.agent/orchestration/agentic.json` — updated paths
-   - ✅ `github-ci.yml` — updated references
-   - ✅ `github-deploy.yml` — updated references
+
+- ✅ Root `agentic.json` — paths → `.agent/docs/`
+- ✅ `.agent/orchestration/agentic.json` — updated paths
+- ✅ `github-ci.yml` — updated references
+- ✅ `github-deploy.yml` — updated references
 
 ---
 
