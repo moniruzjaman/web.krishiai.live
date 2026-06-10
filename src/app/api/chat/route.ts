@@ -1,32 +1,18 @@
 /**
  * /api/chat — KrishiAI Chat API
  *
- * Uses z-ai-web-dev-sdk for AI-powered agricultural chat responses.
+ * Uses Supabase + AI Provider Fallback (Gemini → OpenRouter → Groq → Offline)
+ * for AI-powered agricultural chat with quota-tier management.
  * Provides Bengali-first responses with agricultural context.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-
-// ── CORS ────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://krishiai.live",
-  "https://www.krishiai.live",
-  "https://web.krishiai.live",
-];
-
-function corsHeaders(origin: string | null) {
-  const allowed = !origin || origin.includes("localhost") || origin.includes("127.0.0.1") || ALLOWED_ORIGINS.includes(origin);
-  return {
-    "Access-Control-Allow-Origin": allowed ? (origin || "*") : "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
-    headers: corsHeaders(request.headers.get("origin")),
+    headers: corsHeaders(request.headers.get("origin"), ["POST"]),
   });
 }
 
@@ -74,26 +60,26 @@ export async function POST(request: NextRequest) {
     const { messages } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: "messages প্রয়োজন" },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
     if (messages.length > MAX_MESSAGES) {
-      return NextResponse.json(
+      return corsNextResponse(
         { ok: false, error: `সর্বোচ্চ ${MAX_MESSAGES} টি বার্তা পাঠানো যায়` },
-        { status: 400, headers: corsHeaders(origin) }
+        { status: 400, origin }
       );
     }
 
     // Validate message content lengths
     for (const msg of messages) {
       if (msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
-        return NextResponse.json(
-          { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
-          { status: 400, headers: corsHeaders(origin) }
-        );
+      return corsNextResponse(
+        { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
+        { status: 400, origin }
+      );
       }
     }
 
@@ -112,10 +98,6 @@ export async function POST(request: NextRequest) {
 
 ${seasonContext}`;
 
-    // Import z-ai-web-dev-sdk dynamically
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     // Build conversation with system prompt
     const chatMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -125,30 +107,52 @@ ${seasonContext}`;
       })),
     ];
 
-    const completion = await zai.chat.completions.create({
-      messages: chatMessages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let reply = "";
+    let model = "";
+    let provider = "";
 
-    const reply = completion.choices?.[0]?.message?.content || "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করুন।";
+    // 1. Quota-aware AI client with provider fallback
+    try {
+      const { aiChatFull } = await import("@/lib/ai-client");
+      const result = await aiChatFull(chatMessages, { feature: 'chat' });
+      if (result.provider !== 'offline' && result.provider !== 'quota-exceeded') {
+        reply = result.text;
+        model = result.model;
+        provider = result.provider;
+      } else if (result.provider === 'quota-exceeded') {
+        return corsNextResponse(
+          { ok: false, error: result.text },
+          { status: 429, origin }
+        );
+      }
+    } catch (e) {
+      console.warn("[chat] AI client failed:", e instanceof Error ? e.message : String(e));
+    }
 
-    return NextResponse.json({
+    // 2. Offline fallback: Season-aware generic response
+    if (!reply) {
+      const m = new Date().getMonth() + 1;
+      const seasonName = m >= 11 || m <= 2 ? "রবি" : m <= 5 ? "বোরো/প্রাক-খরিফ" : m <= 8 ? "খরিফ/আমন" : "আমন/রবি প্রস্তুতি";
+      reply = `দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। বর্তমানে ${seasonName} মৌসুম চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।`;
+    }
+
+    return corsNextResponse({
       ok: true,
       reply,
-      model: "z-ai",
+      model: model || "fallback",
+      provider: provider || "fallback",
     }, {
-      headers: corsHeaders(origin),
+      origin,
+      methods: ["POST"],
     });
   } catch (e) {
-    console.error("[chat] Error:", e);
-    return NextResponse.json(
+    return corsNextResponse(
       {
         ok: false,
         error: "AI সহকারী এখন উপলব্ধ নয়",
         reply: "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। কিছুক্ষণ পর আবার চেষ্টা করুন।",
       },
-      { status: 503, headers: corsHeaders(origin) }
+      { status: 503, origin }
     );
   }
 }

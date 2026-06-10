@@ -109,7 +109,7 @@ export default function BottomNav() {
     <nav
       role="navigation"
       aria-label="Main navigation"
-      className="bg-white border-t border-gray-200 flex px-1 pt-2 pb-2 sticky bottom-0 z-50"
+      className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex px-1 pt-2 pb-2 sticky bottom-0 z-50"
       style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
     >
       {NAV_ITEMS.map((item) => {
@@ -126,7 +126,7 @@ export default function BottomNav() {
               className="flex flex-col items-center gap-0 flex-1 no-underline"
             >
               <div
-                className={`w-12 h-12 rounded-full border-[3px] border-white flex items-center justify-center -mt-5 ${
+                className={`w-12 h-12 rounded-full border-[3px] border-white dark:border-gray-900 flex items-center justify-center -mt-5 ${
                   isActive
                     ? "bg-[#1b8a3e] shadow-[0_0_0_3px_#1b8a3e]"
                     : "bg-[#1b8a3e] shadow-[0_0_0_2px_#1b8a3e]"
@@ -136,7 +136,7 @@ export default function BottomNav() {
               </div>
               <span
                 className={`text-[9px] font-bold mt-1 ${
-                  isActive ? "text-[#1b8a3e]" : "text-gray-400"
+                  isActive ? "text-[#1b8a3e] dark:text-green-400" : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 {item.label}
@@ -153,7 +153,7 @@ export default function BottomNav() {
           >
             <span
               className={`${
-                isActive ? "text-[#1b8a3e]" : "text-[#9ca3af]"
+                isActive ? "text-[#1b8a3e] dark:text-green-400" : "text-[#9ca3af] dark:text-gray-500"
               } transition-colors duration-200`}
             >
               {item.icon}
@@ -161,8 +161,8 @@ export default function BottomNav() {
             <span
               className={`text-[9px] font-medium ${
                 isActive
-                  ? "text-[#1b8a3e] font-bold"
-                  : "text-[#9ca3af]"
+                  ? "text-[#1b8a3e] dark:text-green-400 font-bold"
+                  : "text-[#9ca3af] dark:text-gray-500"
               } transition-colors duration-200`}
             >
               {item.label}

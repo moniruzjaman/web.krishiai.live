@@ -6,7 +6,7 @@ const TOOLS = [
   {
     icon: "🌿",
     title: "উদ্ভিদ স্বাস্থ্য বিশেষজ্ঞ",
-    sub: "ছবি তুলে রোগ সনাক্ত করুন",
+    sub: "CABI Plantwise পদ্ধতিতে পেশাদার রোগ নির্ণয়",
     cat: "PLANT HEALTH",
     catColor: "#ca8a04",
     bg: "linear-gradient(135deg,#fef9c3,#fef3c7)",
@@ -16,52 +16,82 @@ const TOOLS = [
   {
     icon: "🧪",
     title: "বালাইনাশক বিশেষজ্ঞ",
-    sub: "মিক্সিং চেক ও রোটেশন",
+    sub: "মিক্সিং চেক, IRAC রোটেশন ও সতর্কতা",
     cat: "PESTICIDE",
     catColor: "#b91c1c",
     bg: "linear-gradient(135deg,#fee2e2,#fce7f3)",
     to: "/tools/pesticide",
-    badge: "IRAC প্রটোকল",
+    badge: "সক্রিয়",
   },
   {
     icon: "🏺",
     title: "মৃত্তিকা অডিট",
-    sub: "মাটি পরীক্ষা ও সার পরামর্শ",
+    sub: "সার ক্যালকুলেটর, pH বিশ্লেষণ ও মাটি নির্ণয়",
     cat: "SOIL SCIENCE",
     catColor: "#9d174d",
     bg: "linear-gradient(135deg,#fce7f3,#ede9fe)",
     to: "/tools/soil",
-    badge: "SRDI ভিত্তিক",
+    badge: "সক্রিয়",
   },
   {
     icon: "🌾",
     title: "শস্য সুরক্ষা লাইব্রেরি",
-    sub: "৩৩+ ফসলের বিস্তারিত তথ্য",
+    sub: "১৫+ ফসলের বিস্তারিত চাষ পদ্ধতি ও পরামর্শ",
     cat: "CROP LIBRARY",
     catColor: "#166534",
     bg: "linear-gradient(135deg,#dcfce7,#d1fae5)",
     to: "/tools/crop-library",
-    badge: "BARI/BRRI",
-  },
-  {
-    icon: "🛰️",
-    title: "স্যাটেলাইট মনিটরিং",
-    sub: "জমির স্বাস্থ্য পর্যবেক্ষণ",
-    cat: "SATELLITE",
-    catColor: "#1d4ed8",
-    bg: "linear-gradient(135deg,#dbeafe,#ede9fe)",
-    to: "/tools/satellite",
-    badge: "শীঘ্রই",
+    badge: "সক্রিয়",
   },
   {
     icon: "📈",
     title: "ফলন পূর্বাভাস",
-    sub: "আবহাওয়া ভিত্তিক পূর্বাভাস",
+    sub: "ফলন অনুমান, আয় হিসাব ও মৌসুম ক্যালেন্ডার",
     cat: "YIELD FORECAST",
     catColor: "#6d28d9",
     bg: "linear-gradient(135deg,#ede9fe,#dbeafe)",
     to: "/tools/yield",
-    badge: "শীঘ্রই",
+    badge: "সক্রিয়",
+  },
+  {
+    icon: "💧",
+    title: "স্মার্ট সেচ ব্যবস্থাপনা",
+    sub: "সেচ সময়সূচি, পানি ক্যালকুলেটর ও সাশ্রয়ী প্রযুক্তি",
+    cat: "IRRIGATION",
+    catColor: "#0e7490",
+    bg: "linear-gradient(135deg,#ecfeff,#cffafe)",
+    to: "/tools/irrigation",
+    badge: "সক্রিয়",
+  },
+  {
+    icon: "🛰️",
+    title: "স্যাটেলাইট মনিটরিং",
+    sub: "NDVI ম্যাপিং, ফসল স্বাস্থ্য ও মৌসুম তুলনা",
+    cat: "SATELLITE",
+    catColor: "#1d4ed8",
+    bg: "linear-gradient(135deg,#dbeafe,#ede9fe)",
+    to: "/tools/satellite",
+    badge: "সক্রিয়",
+  },
+  {
+    icon: "📅",
+    title: "ফসল ক্যালেন্ডার",
+    sub: "১০টি ফসলের মৌসুম ক্যালেন্ডার, রোগ ও পোকার ঝুঁকি সতর্কতা",
+    cat: "CROP CALENDAR",
+    catColor: "#0891b2",
+    bg: "linear-gradient(135deg,#ecfeff,#cffafe)",
+    to: "/tools/crop-calendar",
+    badge: "নতুন",
+  },
+  {
+    icon: "🧠",
+    title: "স্মার্ট সিদ্ধান্ত",
+    sub: "আবহাওয়া, মূল্য ও মৌসুম মিলিয়ে সেরা ফসল নির্বাচন ও সেচ পরিকল্পনা",
+    cat: "SMART DECISION",
+    catColor: "#7c3aed",
+    bg: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+    to: "/tools/smart-decision",
+    badge: "নতুন",
   },
 ];
 
@@ -110,7 +140,7 @@ const ECOSYSTEM = [
 
 export default function ToolsPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div
         className="relative px-4 pt-5 pb-7"
@@ -162,19 +192,19 @@ export default function ToolsPage() {
                   >
                     {t.cat}
                   </div>
-                  <div className="text-[15px] font-bold text-gray-900 mb-[2px]">
+                  <div className="text-[15px] font-bold text-gray-900 dark:text-gray-100 mb-[2px]">
                     {t.title}
                   </div>
-                  <div className="text-[11px] text-gray-500">{t.sub}</div>
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.sub}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                   <span
                     className="text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap"
                     style={{
                       background:
-                        t.badge === "শীঘ্রই" ? "#e5e7eb" : "rgba(27,138,62,.12)",
+                        t.badge === "শীঘ্রই" ? "#e5e7eb" : t.badge === "নতুন" ? "rgba(124,58,237,.12)" : "rgba(27,138,62,.12)",
                       color:
-                        t.badge === "শীঘ্রই" ? "#9ca3af" : "#1b8a3e",
+                        t.badge === "শীঘ্রই" ? "#9ca3af" : t.badge === "নতুন" ? "#7c3aed" : "#1b8a3e",
                     }}
                   >
                     {t.badge}
@@ -191,8 +221,8 @@ export default function ToolsPage() {
         </div>
 
         {/* Ecosystem apps */}
-        <div className="border-t border-gray-200 pt-5">
-          <div className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3.5">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
+          <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-wider uppercase mb-3.5">
             🔗 ইকোসিস্টেম অ্যাপস
           </div>
           <div className="flex flex-col gap-2.5">
@@ -202,14 +232,14 @@ export default function ToolsPage() {
                 href={a.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-green-50/30 transition-colors no-underline"
+                className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white hover:bg-green-50/30 transition-colors no-underline"
               >
                 <div className="text-2xl">{a.icon}</div>
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-gray-900">
+                  <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     {a.title}
                   </div>
-                  <div className="text-[11px] text-gray-500">{a.desc}</div>
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">{a.desc}</div>
                 </div>
                 <span
                   className="text-[10px] font-bold px-2 py-1 rounded-full"
@@ -224,7 +254,7 @@ export default function ToolsPage() {
               </a>
             ))}
           </div>
-          <div className="text-[10px] text-gray-400 text-center mt-3.5 leading-relaxed">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-3.5 leading-relaxed">
             কৃষি AI ইকোসিস্টেমের সকল অ্যাপ একসাথে কাজ করে কৃষকদের জন্য সম্পূর্ণ
             ডিজিটাল সমাধান তৈরি করে।
           </div>

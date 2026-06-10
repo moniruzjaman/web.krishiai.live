@@ -45,21 +45,21 @@ export default function MapWidget() {
   }, [requestLocation]);
 
   return (
-    <div className="bg-white rounded-[14px] border border-gray-200 overflow-hidden card-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-700 overflow-hidden card-shadow">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 bg-gray-50/80">
-        <span className="text-[13px] font-bold text-gray-900">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80">
+        <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100">
           🗺️ কৃষি মানচিত্র
         </span>
         <span className="ml-auto flex items-center gap-2">
           {/* Map style toggle */}
-          <div className="flex bg-gray-200 rounded-full p-0.5">
+          <div className="flex bg-gray-200 dark:bg-gray-700 rounded-full p-0.5">
             <button
               onClick={() => setMapStyle("street")}
               className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer border-none ${
                 mapStyle === "street"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "bg-transparent text-gray-500"
+                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                  : "bg-transparent text-gray-500 dark:text-gray-400"
               }`}
             >
               মানচিত্র
@@ -68,8 +68,8 @@ export default function MapWidget() {
               onClick={() => setMapStyle("satellite")}
               className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer border-none ${
                 mapStyle === "satellite"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "bg-transparent text-gray-500"
+                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                  : "bg-transparent text-gray-500 dark:text-gray-400"
               }`}
             >
               🛰️ স্যাটেলাইট
@@ -102,13 +102,13 @@ export default function MapWidget() {
         </span>
       </div>
 
-      {/* Map frame */}
-      <div className="w-full h-[260px] sm:h-[320px] lg:h-[380px] relative">
-        <InteractiveMap center={center} mapStyle={mapStyle} />
+      {/* Map frame — taller for better visibility on mobile */}
+      <div className="w-full h-[300px] sm:h-[360px] lg:h-[420px] relative">
+        <InteractiveMap center={center} mapStyle={mapStyle} accuracy={location?.accuracy || 500} onLocateMe={handleLocateMe} />
       </div>
 
       {/* Legend */}
-      <div className="flex gap-3 px-3 py-2 text-[9px] text-gray-500 border-t border-gray-200 flex-wrap">
+      <div className="flex gap-3 px-3 py-2 text-[9px] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 flex-wrap">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
           কৃষি সম্প্রসারণ

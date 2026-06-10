@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1b4332" />
+  <title>KrishiAI — অফলাইন</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans Bengali', sans-serif;
+      background: #f0fdf4;
+      color: #1b4332;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 1rem;
+      color: #4b5563;
+      margin-bottom: 24px;
+      max-width: 320px;
+      line-height: 1.6;
+    }
+    button {
+      background: #1b4332;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2d6a4f; }
+    button:active { background: #1b8a3e; }
+  </style>
+</head>
+<body>
+  <div class="icon">🚜</div>
+  <h1>আপনি অফলাইনে আছেন</h1>
+  <p>ইন্টারনেট সংযোগ পুনরায় স্থাপন করুন, তারপর আবার চেষ্টা করুন।</p>
+  <button onclick="window.location.reload()">আবার চেষ্টা করুন</button>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[
+  {"name": "Grains", "value": "Grains", "nameBn": "শস্য"},
+  {"name": "Oils", "value": "Oils", "nameBn": "তেল বীজ"},
+  {"name": "Spices", "value": "Spices", "nameBn": "মসলা"},
+  {"name": "Pulses", "value": "Pulses", "nameBn": "ডাল"},
+  {"name": "Fruits", "value": "Fruits", "nameBn": "ফল"},
+  {"name": "Vegetables", "value": "Vegetables", "nameBn": "সবজি"},
+  {"name": "High Value Crops", "value": "High Value Crops", "nameBn": "উচ্চমূল্যের ফসল"}
+]

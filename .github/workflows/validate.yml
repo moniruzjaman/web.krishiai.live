@@ -1,0 +1,20 @@
+name: KrishiAI — Validate
+
+on:
+  push:
+    branches: [main, production, production-v2, v3.0.0, v4.0]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+        continue-on-error: true
+      - run: bun run build

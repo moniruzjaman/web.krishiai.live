@@ -134,7 +134,7 @@ export default function PhotoGallery() {
             className={`text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
               season === tab.key
                 ? "bg-[#1b4332] text-white border-[#1b4332]"
-                : "bg-white text-gray-600 border-gray-200 hover:border-green-300"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-300"
             }`}
           >
             {tab.icon} {tab.label}

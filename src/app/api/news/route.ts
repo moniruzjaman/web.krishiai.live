@@ -6,11 +6,12 @@
  * 2. Google News RSS with `site:gov.bd` queries → government-sourced articles
  * 3. Curated seasonal advisories from DAE/BRRI/BARI/BADC as fallback
  *
- * Also generates AI daily bulletin using z-ai-web-dev-sdk.
+ * Also generates AI daily bulletin using Supabase + AI Provider Fallback.
  * Falls back to seasonal calendar entries if all sources fail.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { corsHeaders, corsNextResponse } from "@/lib/cors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface NewsItem {
@@ -222,7 +223,6 @@ async function fetchViaCORSProxy(targetUrl: string, ms = 12000): Promise<string 
         const text = await r.text();
         // Validate it looks like XML/RSS
         if (text.includes("<") && text.length > 200) {
-          console.log(`[news] CORS proxy (${proxy.name}) success for ${targetUrl}`);
           return text;
         }
       }
@@ -1029,15 +1029,12 @@ function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[
   return [...base, ...(monthlyExtras[m] || [])];
 }
 
-// ── AI Daily Bulletin using z-ai-web-dev-sdk ─────────────────────────────────
+// ── AI Daily Bulletin using Quota-Aware AI Client ──────────────
 async function generateDailyBulletin(
   ctx: ReturnType<typeof bdAgriContext>,
   newsHeadlines: NewsItem[]
 ): Promise<DailyBulletin | null> {
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-
     const headlineList = newsHeadlines
       .slice(0, 8)
       .map((h, i) => `${i + 1}. ${h.title} (${h.source})`)
@@ -1061,11 +1058,34 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
 ২. দ্বিতীয় অগ্রাধিকার কাজ
 ৩. তৃতীয় অগ্রাধিকার কাজ`;
 
-    const result = await zai.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-    });
+    let text: string | null = null;
 
-    const text = result.choices?.[0]?.message?.content;
+    // 1. Primary: Quota-aware AI client
+    try {
+      const { aiChat } = await import("@/lib/ai-client");
+      const result = await aiChat(
+        "তুমি বাংলাদেশের কৃষি বিশেষজ্ঞ। বাংলায় সংক্ষিপ্ত বুলেটিন তৈরি করো। কোনো markdown ব্যবহার করো না।",
+        prompt,
+        { feature: "news_bulletin", temperature: 0.7, maxTokens: 800 }
+      );
+      if (result.provider !== "offline" && result.text) {
+        text = result.text;
+      }
+    } catch (e) {
+      console.warn("[news:bulletin] AI client failed:", e instanceof Error ? e.message : String(e));
+    }
+
+    // 2. Fallback: static seasonal bulletin
+    if (!text) {
+      text = `শিরোনাম: ${ctx.season} মৌসুমের কৃষি বুলেটিন
+মূল তথ্য: বর্তমানে ${ctx.activeCrops} চাষের সময়। ${ctx.urgentTasks}
+সতর্কতা: ${ctx.riskAlerts}
+করণীয়:
+১. ${ctx.urgentTasks.split("·")[0]?.trim() || "সময়মতো ফসলের পরিচর্যা করুন"}
+২. আবহাওয়ার পূর্বাভাস নিয়মিত দেখুন
+৩. সরকারি ভর্তুকি ও সেবার তথ্য স্থানীয় কৃষি অফিস থেকে নিন`;
+    }
+
     if (!text) return null;
 
     // Clean markdown formatting from AI response
@@ -1127,31 +1147,11 @@ ${headlineList ? `আজকের সংবাদ:\n${headlineList}\n\n` : ""}�
       dateStr: ctx.dateStr,
     };
   } catch (e) {
-    console.error("[news] AI bulletin generation failed:", e);
+    // AI bulletin generation failed, return null for graceful fallback
     return null;
   }
 }
 
-// ── CORS headers ─────────────────────────────────────────────────────────────
-function corsHeaders(request: NextRequest): Record<string, string> {
-  const allowed = [
-    "https://krishiai.live",
-    "https://www.krishiai.live",
-    "https://web.krishiai.live",
-  ];
-  const origin = request.headers.get("origin") || "";
-  const accessControl =
-    allowed.includes(origin) || origin.includes("localhost")
-      ? origin
-      : allowed[0];
-
-  return {
-    "Access-Control-Allow-Origin": accessControl,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
-  };
-}
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -1161,9 +1161,8 @@ export async function GET(request: NextRequest) {
 
   // Check cache (auto-invalidate on day change or after 30 min)
   if (!forceRefresh && !dayChanged && cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
-    return NextResponse.json(cachedResponse, {
-      headers: corsHeaders(request),
-    });
+    const origin = request.headers.get("origin");
+    return corsNextResponse(cachedResponse, { origin });
   }
 
   const ctx = bdAgriContext();
@@ -1326,12 +1325,13 @@ export async function GET(request: NextRequest) {
   cachedAt = Date.now();
   cachedDate = today;
 
-  return NextResponse.json(response, { headers: corsHeaders(request) });
+  const origin = request.headers.get("origin");
+  return corsNextResponse(response, { origin });
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 204,
-    headers: corsHeaders(request),
+    headers: corsHeaders(request.headers.get("origin")),
   });
 }

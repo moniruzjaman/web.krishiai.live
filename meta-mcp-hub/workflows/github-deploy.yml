@@ -1,0 +1,45 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  validate-and-fix:
+    name: Run validation and auto-fix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Print validation checklist
+        run: cat meta-mcp-hub/validation.md
+      - name: Validate + auto-fix via OpenProvider
+        run: |
+          node meta-mcp-hub/agents/openprovider.js \
+            '{"intent":"validate-and-fix","payload":{"checklist":"meta-mcp-hub/validation.md","hubRoot":"meta-mcp-hub"}}'
+      - name: Commit auto-fixes (if any)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore(meta-mcp-hub): auto-fix from validation"
+          git push
+  vercel-deploy:
+    runs-on: ubuntu-latest
+    needs: [validate-and-fix]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/setup@v4
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'

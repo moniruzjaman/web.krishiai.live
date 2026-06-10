@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
-
-const notoSansBengali = Noto_Sans_Bengali({
-  variable: "--font-bengali",
-  subsets: ["bengali"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
+import ClientShell from "@/components/ClientShell";
 
 export const metadata: Metadata = {
   title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -28,8 +21,15 @@ export const metadata: Metadata = {
     "কৃষি প্রযুক্তি",
   ],
   authors: [{ name: "KrishiAI Team" }],
+  manifest: "/manifest.json",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>",
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KrishiAI",
   },
   openGraph: {
     title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -46,13 +46,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap"
+        />
+        <meta name="theme-color" content="#1b4332" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body
-        className={`${notoSansBengali.variable} antialiased bg-background text-foreground`}
+        className="antialiased bg-background text-foreground"
         style={{ fontFamily: "var(--font-bengali), sans-serif" }}
       >
         <LocationProvider>
           {/* Mobile shell — max-width centered, sticky nav */}
-          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white relative">
+          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
             <TopNavbar />
             <main className="flex-1 pb-16">
               {children}
@@ -60,6 +70,7 @@ export default function RootLayout({
             <BottomNav />
           </div>
         </LocationProvider>
+        <ClientShell />
         <Toaster />
       </body>
     </html>
