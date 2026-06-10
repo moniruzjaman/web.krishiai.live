@@ -35,8 +35,8 @@
     "cline": {
       "file": "agents/cline.js",
       "role": "file-editor",
-      "description": "Safe read/write under src/, public/, .graphify/, meta-mcp-hub/; generates and syncs the PWA DB schema.",
-      "bestAssignedTask": "Safe read/write under src/, public/, .graphify/, meta-mcp-hub/; generates and syncs DB schema",
+      "description": "Safe read/write under src/, public/, .agent/docs/, .agent/orchestration/; generates and syncs the PWA DB schema.",
+      "bestAssignedTask": "Safe read/write under src/, public/, .agent/docs/, .agent/orchestration/; generates and syncs DB schema",
       "freeAccess": true,
       "capabilities": [
         "file-read",
@@ -77,8 +77,8 @@
     "graphify": {
       "file": "agents/graphify.js",
       "role": "visualization",
-      "description": "Builds/queries/exports the .graphify knowledge graph and provides the orchestration dashboard.",
-      "bestAssignedTask": "Builds/queries/exports the .graphify knowledge graph; provides orchestration dashboard",
+      "description": "Builds/queries/exports the .agent/docs knowledge graph and provides the orchestration dashboard.",
+      "bestAssignedTask": "Builds/queries/exports the .agent/docs knowledge graph; provides orchestration dashboard",
       "freeAccess": true,
       "capabilities": [
         "graph-build",
@@ -158,10 +158,10 @@
     }
   },
   "validation": {
-    "checklist": "meta-mcp-hub/validation.md",
+    "checklist": ".agent/orchestration/validation.md",
     "intents": {
-      "validate": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\"}}'",
-      "validate-and-fix": "node meta-mcp-hub/agents/openprovider.js '{\"intent\":\"validate-and-fix\",\"payload\":{\"checklist\":\"meta-mcp-hub/validation.md\",\"hubRoot\":\"meta-mcp-hub\"}}'"
+      "validate": "node .agent/orchestration/agents/openprovider.js '{\"intent\":\"validate\",\"payload\":{\"checklist\":\".agent/orchestration/validation.md\"}}'",
+      "validate-and-fix": "node .agent/orchestration/agents/openprovider.js '{\"intent\":\"validate-and-fix\",\"payload\":{\"checklist\":\".agent/orchestration/validation.md\",\"hubRoot\":\".agent/orchestration\"}}'"
     },
     "ci": "workflows/github-ci.yml",
     "cd": "workflows/github-deploy.yml"
@@ -172,7 +172,7 @@
     "preview": "workflows/vercel-preview.yml"
   },
   "graphify": {
-    "dataDir": "../.graphify",
+    "dataDir": "../docs",
     "format": "jsonl",
     "servedAt": "/api/graphify"
   },

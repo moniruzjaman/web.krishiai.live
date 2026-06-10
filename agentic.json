@@ -110,7 +110,7 @@
     "refreshInterval": "30s"
   },
   "graphify": {
-    "visualization": ".graphify/orchestration.md",
-    "index": ".graphify/INDEX.md"
+    "visualization": ".agent/docs/orchestration.md",
+    "index": ".agent/docs/INDEX.md"
   }
 }

@@ -14,17 +14,17 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Print validation checklist
-        run: cat meta-mcp-hub/validation.md
+        run: cat .agent/orchestration/validation.md
       - name: Validate + auto-fix via OpenProvider
         run: |
-          node meta-mcp-hub/agents/openprovider.js \
-            '{"intent":"validate-and-fix","payload":{"checklist":"meta-mcp-hub/validation.md","hubRoot":"meta-mcp-hub"}}'
+          node .agent/orchestration/agents/openprovider.js \
+            '{"intent":"validate-and-fix","payload":{"checklist":".agent/orchestration/validation.md","hubRoot":".agent/orchestration"}}'
       - name: Commit auto-fixes (if any)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "chore(meta-mcp-hub): auto-fix from validation"
+          git diff --cached --quiet || git commit -m "chore(.agent): auto-fix from validation"
           git push
   vercel-deploy:
     runs-on: ubuntu-latest

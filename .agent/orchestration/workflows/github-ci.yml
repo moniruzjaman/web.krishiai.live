@@ -34,8 +34,8 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm test --if-present
-  validate-meta-mcp-hub:
-    name: Validate meta-mcp-hub
+  validate-agent:
+    name: Validate .agent folder
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,14 +45,14 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Print validation checklist
-        run: cat meta-mcp-hub/validation.md
+        run: cat .agent/orchestration/validation.md
       - name: Run OpenProvider validation
         run: |
-          node meta-mcp-hub/agents/openprovider.js \
-            '{"intent":"validate","payload":{"checklist":"meta-mcp-hub/validation.md"}}'
+          node .agent/orchestration/agents/openprovider.js \
+            '{"intent":"validate","payload":{"checklist":".agent/orchestration/validation.md"}}'
   build:
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test, validate-meta-mcp-hub]
+    needs: [lint, typecheck, test, validate-agent]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
