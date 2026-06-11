@@ -308,11 +308,33 @@ export default function CABIDiagnosisPage() {
       const data = await res.json();
 
       if (data.ok) {
+        // Extract Bangla and English sections from text
+        let bangla = "";
+        let english = "";
+        const fullText = data.text || "";
+
+        const banglaStart = fullText.indexOf("---BANGLA_SECTION---");
+        const banglaEnd = fullText.indexOf("---END_BANGLA---");
+        const englishStart = fullText.indexOf("---ENGLISH_SECTION---");
+        const englishEnd = fullText.indexOf("---END_ENGLISH---");
+
+        if (banglaStart !== -1 && banglaEnd !== -1) {
+          bangla = fullText.slice(banglaStart + "---BANGLA_SECTION---".length, banglaEnd).trim();
+        }
+        if (englishStart !== -1 && englishEnd !== -1) {
+          english = fullText.slice(englishStart + "---ENGLISH_SECTION---".length, englishEnd).trim();
+        }
+
+        // If no section markers found, use full text as bangla
+        if (!bangla && !english) {
+          bangla = fullText;
+        }
+
         setResult({
           provider: data.provider || "unknown",
-          bangla: data.bangla || "",
-          english: data.english || "",
-          json: data.json || null,
+          bangla,
+          english,
+          json: data.structured || null,
           elapsed_ms: data.elapsed_ms || 0,
         });
       } else {

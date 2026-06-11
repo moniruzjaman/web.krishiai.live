@@ -942,7 +942,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-1.5">
               <span className="text-[12px] text-gray-600 dark:text-gray-400">সংস্করণ</span>
               <span className="text-[12px] font-semibold text-gray-800 dark:text-gray-200">
-                v3.0.0
+                v3.1.1 @2026
               </span>
             </div>
 
@@ -960,6 +960,17 @@ export default function ProfilePage() {
               <span className="text-[12px] font-semibold text-green-600">
                 ✓ স্থানীয় সংরক্ষিত
               </span>
+            </div>
+
+            {/* Support Email */}
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-[12px] text-gray-600 dark:text-gray-400">সাপোর্ট</span>
+              <a
+                href="mailto:support@krishiai.live"
+                className="text-[12px] font-semibold text-green-700 dark:text-green-400 hover:underline"
+              >
+                support@krishiai.live
+              </a>
             </div>
           </div>
 
