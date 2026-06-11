@@ -91,16 +91,62 @@ interface DiagnosisJson {
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 const CROPS = [
-  { key: "ধান", icon: "🌾", label: "ধান" },
-  { key: "পাট", icon: "🌿", label: "পাট" },
+  // শস্য (Grains)
+  { key: "ধান (বোরো)", icon: "🌾", label: "ধান (বোরো)" },
+  { key: "ধান (আমন)", icon: "🌾", label: "ধান (আমন)" },
+  { key: "ধান (আউশ)", icon: "🌾", label: "ধান (আউশ)" },
+  { key: "গম", icon: "🌾", label: "গম" },
+  { key: "ভুট্টা", icon: "🌽", label: "ভুট্টা" },
+  // ডাল (Pulses)
+  { key: "মসুর", icon: "🫘", label: "মসুর ডাল" },
+  { key: "মুগ", icon: "🫘", label: "মুগ ডাল" },
+  { key: "খেসারি", icon: "🫘", label: "খেসারি" },
+  { key: "ছোলা", icon: "🫘", label: "ছোলা" },
+  // তেলবীজ (Oilseeds)
+  { key: "সরিষা", icon: "🌻", label: "সরিষা" },
+  { key: "তিল", icon: "🌻", label: "তিল" },
+  { key: "সূর্যমুখী", icon: "🌻", label: "সূর্যমুখী" },
+  { key: "চীনাবাদাম", icon: "🥜", label: "চীনাবাদাম" },
+  // সবজি (Vegetables)
   { key: "আলু", icon: "🥔", label: "আলু" },
   { key: "টমেটো", icon: "🍅", label: "টমেটো" },
   { key: "বেগুন", icon: "🍆", label: "বেগুন" },
-  { key: "সরিষা", icon: "🌼", label: "সরিষা" },
-  { key: "কলা", icon: "🍌", label: "কলা" },
+  { key: "মরিচ", icon: "🌶️", label: "মরিচ" },
+  { key: "পেঁয়াজ", icon: "🧅", label: "পেঁয়াজ" },
+  { key: "রসুন", icon: "🧄", label: "রসুন" },
+  { key: "লাউ", icon: "🫛", label: "লাউ" },
+  { key: "মিষ্টি কুমড়া", icon: "🎃", label: "মিষ্টি কুমড়া" },
+  { key: "শশা", icon: "🥒", label: "শশা" },
+  { key: "বাঁধাকপি", icon: "🥬", label: "বাঁধাকপি" },
+  { key: "ফুলকপি", icon: "🥦", label: "ফুলকপি" },
+  { key: "আদা", icon: "🫚", label: "আদা" },
+  { key: "হলুদ", icon: "🌿", label: "হলুদ" },
+  { key: "করলা", icon: "🥒", label: "করলা" },
+  { key: "ঝিঙ্গা", icon: "🥒", label: "ঝিঙ্গা" },
+  { key: "কাকরল", icon: "🥒", label: "কাকরল" },
+  // ফল (Fruits)
   { key: "আম", icon: "🥭", label: "আম" },
-  { key: "গম", icon: "🌾", label: "গম" },
-  { key: "ভুট্টা", icon: "🌽", label: "ভুট্টা" },
+  { key: "কলা", icon: "🍌", label: "কলা" },
+  { key: "পেঁপে", icon: "🍈", label: "পেঁপে" },
+  { key: "লিচু", icon: "🍇", label: "লিচু" },
+  { key: "জাম", icon: "🫐", label: "জাম" },
+  { key: "কাঁঠাল", icon: "🍈", label: "কাঁঠাল" },
+  { key: "আনারস", icon: "🍍", label: "আনারস" },
+  { key: "সুপারি", icon: "🥥", label: "সুপারি" },
+  { key: "নারিকেল", icon: "🥥", label: "নারিকেল" },
+  { key: "পান", icon: "🍃", label: "পান" },
+  { key: "লেবু", icon: "🍋", label: "লেবু" },
+  { key: "কমলা", icon: "🍊", label: "কমলা" },
+  // অর্থকরী ফসল (Cash crops)
+  { key: "পাট", icon: "🪢", label: "পাট" },
+  { key: "চা", icon: "🍵", label: "চা" },
+  { key: "তুলা", icon: "☁️", label: "তুলা" },
+  { key: "আখ", icon: "🎋", label: "আখ" },
+  { key: "তামাক", icon: "🚬", label: "তামাক" },
+  // মসলা (Spices)
+  { key: "ধনিয়া", icon: "🌿", label: "ধনিয়া" },
+  { key: "জিরা", icon: "🌿", label: "জিরা" },
+  { key: "দারুচিনি", icon: "🪵", label: "দারুচিনি" },
 ];
 
 const SYMPTOM_CATEGORIES = [

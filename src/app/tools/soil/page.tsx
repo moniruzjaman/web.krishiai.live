@@ -5,7 +5,8 @@
  *
  * Tab 1: AEZ Explorer — Searchable list of 30 Bangladesh AEZ zones with AI analysis
  * Tab 2: Soil Calculator — Sand/Silt/Clay sliders with SVG donut chart & USDA classification
- * Tab 3: Fertilizer Calculator — SRDI-based fertilizer recommendations (kept from original)
+ * Tab 3: Fertilizer Calculator — SRDI-based fertilizer recommendations
+ * Tab 4: BARC 2024 — BARC Fertilizer Advisory with crop-specific recommendations
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -89,11 +90,206 @@ const SOIL_ZONES: Record<string, string> = {
   "টাঙ্গাইল": "loam", "কিশোরগঞ্জ": "loam", "নরসিংদী": "loam", "ব্রাহ্মণবাড়িয়া": "loam",
   "কুমিল্লা": "loam", "চাঁদপুর": "silt", "ফেনী": "sandy", "নোয়াখালী": "sandy",
   "লক্ষ্মীপুর": "sandy", "বরগুনা": "peat", "পিরোজপুর": "peat", "ঝিনাইদহ": "loam",
-  "মাগুরা": "loam", "চুয়াডাঙ্গা": "loam", "মেহেরপুর": "loam", "নাইলর": "loam",
+  "মাগুরা": "loam", "চুয়াডাঙ্গা": "loam", "মেহেরপুর": "loam", "নারাইল": "loam",
   "চাঁপাইনবাবগঞ্জ": "calcareous", "নওগাঁ": "loam", "জয়পুরহাট": "calcareous",
   "ঠাকুরগাঁও": "loam", "পঞ্চগড়": "loam", "বান্দরবান": "loam",
   "মানিকগঞ্জ": "silt", "রাজবাড়ী": "silt",
 };
+
+// ── District → AEZ Zone mapping ────────────────────────────────────────────
+const DISTRICT_AEZ: Record<string, string> = {
+  "ঢাকা": "AEZ-28 (মধুপুর ভূমি)",
+  "গাজীপুর": "AEZ-28 (মধুপুর ভূমি)",
+  "নারায়ণগঞ্জ": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "মুন্সীগঞ্জ": "AEZ-15 (আড়িয়াল বিল)",
+  "মানিকগঞ্জ": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "ফরিদপুর": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "রাজশাহী": "AEZ-11 (উচ্চ গঙ্গা নদী বন্যার সমভূমি)",
+  "নাটোর": "AEZ-5 (নিম্ন আত্রাই অববাহিকা)",
+  "পাবনা": "AEZ-10 (সক্রিয় গঙ্গা বন্যার সমভূমি)",
+  "বগুড়া": "AEZ-4 (করতোয়া-বঙ্গলী বন্যার সমভূমি)",
+  "দিনাজপুর": "AEZ-27 (উত্তর-পূর্ব বরেন্দ্র ভূমি)",
+  "রংপুর": "AEZ-3 (তিস্তা আঁকাবাঁকা বন্যার সমভূমি)",
+  "কুড়িগ্রাম": "AEZ-2 (সক্রিয় তিস্তা বন্যার সমভূমি)",
+  "যশোর": "AEZ-11 (উচ্চ গঙ্গা নদী বন্যার সমভূমি)",
+  "খুলনা": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "চট্টগ্রাম": "AEZ-23 (চট্টগ্রাম উপকূলীয় সমভূমি)",
+  "কক্সবাজার": "AEZ-23 (চট্টগ্রাম উপকূলীয় সমভূমি)",
+  "সিলেট": "AEZ-20 (পূর্ব সুরমা-কুশিয়ারা বন্যার সমভূমি)",
+  "ময়মনসিংহ": "AEZ-8 (নবীন ব্রহ্মপুত্র ও যমুনা বন্যার সমভূমি)",
+  "টাঙ্গাইল": "AEZ-8 (নবীন ব্রহ্মপুত্র ও যমুনা বন্যার সমভূমি)",
+  "কুমিল্লা": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "বরিশাল": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "নোয়াখালী": "AEZ-18 (নবীন মেঘনা মোহনা বন্যার সমভূমি)",
+  "লক্ষ্মীপুর": "AEZ-17 (নিম্ন মেঘনা নদী বন্যার সমভূমি)",
+  "জামালপুর": "AEZ-7 (সক্রিয় ব্রহ্মপুত্র-যমুনা বন্যার সমভূমি)",
+  "শেরপুর": "AEZ-7 (সক্রিয় ব্রহ্মপুত্র-যমুনা বন্যার সমভূমি)",
+  "কিশোরগঞ্জ": "AEZ-9 (পুরাতন ব্রহ্মপুত্র বন্যার সমভূমি)",
+  "নরসিংদী": "AEZ-9 (পুরাতন ব্রহ্মপুত্র বন্যার সমভূমি)",
+  "ব্রাহ্মণবাড়িয়া": "AEZ-30 (আখাউড়া টেরেস)",
+  "চাঁদপুর": "AEZ-17 (নিম্ন মেঘনা নদী বন্যার সমভূমি)",
+  "ফেনী": "AEZ-18 (নবীন মেঘনা মোহনা বন্যার সমভূমি)",
+  "সাতক্ষীরা": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "কুষ্টিয়া": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "ঝিনাইদহ": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "মাগুরা": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "চুয়াডাঙ্গা": "AEZ-11 (উচ্চ গঙ্গা নদী বন্যার সমভূমি)",
+  "মেহেরপুর": "AEZ-11 (উচ্চ গঙ্গা নদী বন্যার সমভূমি)",
+  "নওগাঁ": "AEZ-25 (সমতল বরেন্দ্র ভূমি)",
+  "চাঁপাইনবাবগঞ্জ": "AEZ-26 (উচ্চ বরেন্দ্র ভূমি)",
+  "জয়পুরহাট": "AEZ-4 (করতোয়া-বঙ্গলী বন্যার সমভূমি)",
+  "ঠাকুরগাঁও": "AEZ-6 (নিম্ন পুর্ণভবা বন্যার সমভূমি)",
+  "পঞ্চগড়": "AEZ-1 (পুরাতন হিমালয় পাদদেশীয় সমভূমি)",
+  "লালমনিরহাট": "AEZ-3 (তিস্তা আঁকাবাঁকা বন্যার সমভূমি)",
+  "নীলফামারী": "AEZ-3 (তিস্তা আঁকাবাঁকা বন্যার সমভূমি)",
+  "গাইবান্ধা": "AEZ-4 (করতোয়া-বঙ্গলী বন্যার সমভূমি)",
+  "নেত্রকোণা": "AEZ-22 (উত্তর ও পূর্ব পাদদেশীয় সমভূমি)",
+  "হবিগঞ্জ": "AEZ-20 (পূর্ব সুরমা-কুশিয়ারা বন্যার সমভূমি)",
+  "মৌলভীবাজার": "AEZ-20 (পূর্ব সুরমা-কুশিয়ারা বন্যার সমভূমি)",
+  "সুনামগঞ্জ": "AEZ-21 (সিলেট অববাহিকা)",
+  "পটুয়াখালী": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "বরগুনা": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "ভোলা": "AEZ-19 (পুরাতন মেঘনা মোহনা বন্যার সমভূমি)",
+  "ঝালকাঠি": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "পিরোজপুর": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "গোপালগঞ্জ": "AEZ-14 (গোপালগঞ্জ-খুলনা বিল)",
+  "মাদারীপুর": "AEZ-15 (আড়িয়াল বিল)",
+  "শরীয়তপুর": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "রাজবাড়ী": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "নারাইল": "AEZ-12 (নিম্ন গঙ্গা নদী বন্যার সমভূমি)",
+  "বাগেরহাট": "AEZ-13 (গঙ্গা জোয়ার-ভাটার সমভূমি)",
+  "বান্দরবান": "AEZ-29 (উত্তর ও পূর্ব পাহাড়ি এলাকা)",
+  "রাঙ্গামাটি": "AEZ-29 (উত্তর ও পূর্ব পাহাড়ি এলাকা)",
+  "খাগড়াছড়ি": "AEZ-29 (উত্তর ও পূর্ব পাহাড়ি এলাকা)",
+};
+
+// ── BARC 2024 Fertilizer Advisory ───────────────────────────────────────────
+const BARC_2024_ADVISORY = [
+  {
+    title: "সুষম সার ব্যবস্থাপনা",
+    icon: "⚖️",
+    desc: "মাটি পরীক্ষার ভিত্তিতে সুষম সার প্রয়োগ নিশ্চিত করুন। অতিরিক্ত সার মাটির স্বাস্থ্য নষ্ট করে ও পরিবেশের ক্ষতি করে।",
+    color: "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
+  },
+  {
+    title: "IPNS — সমন্বিত উদ্ভিদ পুষ্টি ব্যবস্থাপনা",
+    icon: "🔄",
+    desc: "জৈব সার + রাসায়নিক সার + জীবাণু সার একত্রে ব্যবহার করুন। গোবর সার ১-২ টন/বিঘা, কম্পোস্ট সার ও জীবাণু সার (রাইজোবিয়াম, এজোস্পাইরিলাম) প্রয়োগ করুন।",
+    color: "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
+  },
+  {
+    title: "মাটি পরীক্ষা ভিত্তিক সার প্রয়োগ",
+    icon: "🧪",
+    desc: "প্রতি ২-৩ বছর অন্তর মাটি পরীক্ষা করুন। মাটির pH, জৈব পদার্থ, NPK ও মাইক্রোনিউট্রিয়েন্ট পরীক্ষা করে সারের মাত্রা নির্ধারণ করুন।",
+    color: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
+  },
+  {
+    title: "জিংক ও বোরনের ঘাটতি পূরণ",
+    icon: "🔬",
+    desc: "বাংলাদেশের মাটিতে জিংক ও বোরনের তীব্র ঘাটতি। জিংক সালফেট ২-৩ কেজি/বিঘা ও বরিক এসিড ১-১.৫ কেজি/বিঘা প্রয়োগ করুন।",
+    color: "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800",
+  },
+  {
+    title: "ইউরিয়া ডিপ প্লেসমেন্ট (UDP)",
+    icon: "🕳️",
+    desc: "ইউরিয়া সার মাটির গভীরে (৭-১০ সেমি) প্রয়োগ করুন। এতে ইউরিয়ার ব্যবহার ৩০% কম হয় ও ফলন ১৫-২০% বাড়ে। UDP যন্ত্র বা হাতে প্রয়োগ করুন।",
+    color: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
+  },
+  {
+    title: "সার প্রয়োগের সময় ও পদ্ধতি",
+    icon: "⏰",
+    desc: "ইউরিয়া ৩ কিস্তায়, টিএসপি জমি তৈরির সময় পুরোটা, এমওপি ২ কিস্তায় প্রয়োগ করুন। সার প্রয়োগের পর সাথে সাথে মাটির সাথে মিশিয়ে দিন।",
+    color: "bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800",
+  },
+];
+
+// ── BARC 2024 Crop-Specific Recommendations (kg/bigha) ──────────────────────
+const BARC_CROP_RECOMMENDATIONS = [
+  {
+    crop: "বোরো ধান",
+    icon: "🌾",
+    season: "রবি (নভেম্বর-মে)",
+    urea: "৬৫-৭৫", tsp: "৪৫-৫৫", mop: "৩০-৩৫", gypsum: "১৫-১৮", zinc: "২.০",
+    boron: "১.০", notes: "ইউরিয়া ৩ কিস্তায় (১/৩ + ১/৩ + ১/৩)। বোরন ঘাটতি এলাকায় বরিক এসিড যোগ করুন। জিংক সালফেট বীজতলায় বা জমি তৈরির সময় দিন।",
+  },
+  {
+    crop: "আউশ ধান",
+    icon: "🌾",
+    season: "খরিফ-১ (এপ্রিল-জুলাই)",
+    urea: "৪০-৫০", tsp: "৩০-৩৫", mop: "২০-২৫", gypsum: "১০-১২", zinc: "১.৫",
+    boron: "০.৮", notes: "আউশ ধানে সার কম লাগে। জৈব সার ও জীবাণু সার ব্যবহার করলে রাসায়নিক সার ২০-২৫% কমানো যায়।",
+  },
+  {
+    crop: "আমন ধান",
+    icon: "🌾",
+    season: "খরিফ-২ (জুলাই-নভেম্বর)",
+    urea: "৫০-৬০", tsp: "৩৫-৪০", mop: "২৫-৩০", gypsum: "১২-১৫", zinc: "২.০",
+    boron: "১.০", notes: "আমন ধানে ইউরিয়া UDP পদ্ধতিতে দিলে ৩০% সার বাঁচে। পটাশের ঘাটতি এলাকায় এমওপি বাড়ান।",
+  },
+  {
+    crop: "গম",
+    icon: "🌾",
+    season: "রবি (নভেম্বর-মার্চ)",
+    urea: "৫৫-৬৫", tsp: "৫০-৬০", mop: "৩৫-৪০", gypsum: "১৮-২০", zinc: "১.৫",
+    boron: "১.০", notes: "ইউরিয়া ২ কিস্তায় (বপন + কুশি পর্যায়)। বোরন সার গমের ফলন উল্লেখযোগ্য বাড়ায়। জমি তৈরির সময় পুরো টিএসপি দিন।",
+  },
+  {
+    crop: "আলু",
+    icon: "🥔",
+    season: "রবি (নভেম্বর-ফেব্রুয়ারি)",
+    urea: "৮০-৯০", tsp: "৭০-৮০", mop: "৫০-৬০", gypsum: "২০-২৫", zinc: "২.০",
+    boron: "১.৫", notes: "আলুতে পটাশ ও বোরন অত্যন্ত গুরুত্বপূর্ণ। ইউরিয়া ৩ কিস্তায় দিন। কম্পোস্ট ২-৩ টন/বিঘা ব্যবহার করুন।",
+  },
+  {
+    crop: "সরিষা",
+    icon: "🌻",
+    season: "রবি (অক্টোবর-ফেব্রুয়ারি)",
+    urea: "৪৫-৫৫", tsp: "৪৫-৫০", mop: "২৫-৩০", gypsum: "১৮-২০", zinc: "১.০",
+    boron: "১.৫", notes: "সরিষায় বোরন সার অত্যন্ত জরুরি — বরিক এসিড ১-১.৫ কেজি/বিঘা। সালফার ঘাটতিতে জিপসাম বাড়ান। টিএসপি জমি তৈরির সময় দিন।",
+  },
+  {
+    crop: "ভুট্টা",
+    icon: "🌽",
+    season: "খরিফ/রবি",
+    urea: "৭৫-৮৫", tsp: "৫৫-৬৫", mop: "৪০-৫০", gypsum: "১৮-২০", zinc: "২.০",
+    boron: "১.০", notes: "ভুট্টায় নাইট্রোজেন বেশি লাগে। ইউরিয়া ৩ কিস্তায় দিন। জিংক ঘাটতি ভুট্টায় সাদা পটু রোগ করে — জিংক সালফেট অবশ্যই দিন।",
+  },
+  {
+    crop: "পাট",
+    icon: "🪢",
+    season: "খরিফ (এপ্রিল-জুলাই)",
+    urea: "৩৫-৪৫", tsp: "৩০-৩৫", mop: "২০-২৫", gypsum: "১০-১২", zinc: "১.০",
+    boron: "০.৫", notes: "পাটে অতিরিক্ত ইউরিয়া দিলে গাছ পড়ে যায়। জৈব সার ১-২ টন/বিঘা দিলে মাটির গঠন ভালো হয়।",
+  },
+  {
+    crop: "টমেটো",
+    icon: "🍅",
+    season: "রবি",
+    urea: "৬০-৭০", tsp: "৪৫-৫৫", mop: "৪০-৪৫", gypsum: "১২-১৫", zinc: "১.৫",
+    boron: "১.০", notes: "টমেটোতে পটাশ ও বোরন জরুরি। ইউরিয়া ৩ কিস্তায়। ফুল আসার সময় পটাশ বেশি দিন। জৈব সার ব্যবহার করুন।",
+  },
+  {
+    crop: "পেঁয়াজ",
+    icon: "🧅",
+    season: "রবি",
+    urea: "৫৫-৬৫", tsp: "৪৫-৫০", mop: "৩৫-৪০", gypsum: "১৫-১৮", zinc: "১.০",
+    boron: "১.০", notes: "পেঁয়াজে সালফার ও বোরন জরুরি। জিপসাম ও বরিক এসিড অবশ্যই দিন। ইউরিয়া ৩ কিস্তায় দিন।",
+  },
+  {
+    crop: "ডাল (মসুর)",
+    icon: "🫘",
+    season: "রবি (নভেম্বর-ফেব্রুয়ারি)",
+    urea: "১০-১৫", tsp: "৩৫-৪০", mop: "১৫-২০", gypsum: "১২-১৫", zinc: "১.০",
+    boron: "০.৮", notes: "ডাল ফসলে নাইট্রোজেন কম লাগে কারণ রাইজোবিয়াম জীবাণু বায়ু থেকে নাইট্রোজেন সংগ্রহ করে। রাইজোবিয়াম ইনোকুলাম বীজের সাথে মিশিয়ে বুনুন।",
+  },
+  {
+    crop: "মরিচ",
+    icon: "🌶️",
+    season: "খরিফ/রবি",
+    urea: "৪৫-৫৫", tsp: "৪০-৪৫", mop: "৩০-৩৫", gypsum: "১২-১৫", zinc: "১.০",
+    boron: "১.০", notes: "মরিচে বোরন ও ক্যালসিয়াম ঘাটতি ফুলঝরা রোগ করে। জিপসাম ও বরিক এসিড নিশ্চিত করুন।",
+  },
+];
 
 // ── Fertilizer info ──────────────────────────────────────────────────────────
 const FERTILIZER_INFO = [
@@ -200,7 +396,8 @@ export default function SoilPage() {
 
 function SoilPageContent() {
   const { location } = useLocation();
-  const [activeTab, setActiveTab] = useState<"aez" | "calculator" | "fertilizer">("aez");
+  const [activeTab, setActiveTab] = useState<"aez" | "calculator" | "fertilizer" | "barc">("aez");
+  const [barcSearch, setBarcSearch] = useState("");
 
   // AEZ Explorer state
   const [aezSearch, setAezSearch] = useState("");
@@ -230,6 +427,7 @@ function SoilPageContent() {
 
   // Auto-detect soil type from district
   const detectedSoil = location?.district ? SOIL_ZONES[location.district] || "loam" : null;
+  const detectedAez = location?.district ? DISTRICT_AEZ[location.district] || null : null;
   const soil = SOIL_TYPES.find((s) => s.id === (selectedSoil || detectedSoil || "loam"));
   const crop = CROPS.find((c) => c.id === selectedCrop);
   const areaNum = Math.max(parseFloat(area) || 1, 0.1);
@@ -302,6 +500,21 @@ function SoilPageContent() {
     }
   }, []);
 
+  // Auto-select AEZ from user's GPS location when it becomes available
+  useEffect(() => {
+    if (location?.district && !selectedAez) {
+      const aezStr = DISTRICT_AEZ[location.district];
+      if (aezStr) {
+        const match = aezStr.match(/AEZ-(\d+)/);
+        if (match) {
+          const aezId = parseInt(match[1], 10);
+          setSelectedAez(aezId);
+          fetchAezAnalysis(aezId);
+        }
+      }
+    }
+  }, [location?.district, selectedAez, fetchAezAnalysis]);
+
   // Fetch sample analysis
   const fetchSampleAnalysis = useCallback(async () => {
     setSampleLoading(true);
@@ -367,7 +580,7 @@ function SoilPageContent() {
         <h1 className="text-[22px] font-bold text-white mb-1">🏺 মৃত্তিকা বিশেষজ্ঞ</h1>
         <p className="text-xs text-white/70">AEZ জোন বিশ্লেষণ, মাটি ক্যালকুলেটর ও সার সুপারিশ — SRDI/BARC ভিত্তিক</p>
         {location?.district && (
-          <div className="text-[10px] text-white/60 mt-2">📍 {location.district} — {detectedSoil ? SOIL_TYPES.find(s => s.id === detectedSoil)?.name : "মাটি নির্ণয় হচ্ছে"}</div>
+          <div className="text-[10px] text-white/60 mt-2">📍 {location.district} — {detectedSoil ? SOIL_TYPES.find(s => s.id === detectedSoil)?.name : "মাটি নির্ণয় হচ্ছে"} · {detectedAez || "AEZ নির্ণয় হচ্ছে"}</div>
         )}
       </div>
 
@@ -375,9 +588,10 @@ function SoilPageContent() {
         {/* Tabs */}
         <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
           {[
-            { key: "aez" as const, label: "🗺️ AEZ এক্সপ্লোরার" },
-            { key: "calculator" as const, label: "🧪 মাটি ক্যালকুলেটর" },
-            { key: "fertilizer" as const, label: "🧮 সার ক্যালকুলেটর" },
+            { key: "aez" as const, label: "🗺️ AEZ" },
+            { key: "calculator" as const, label: "🧪 মাটি" },
+            { key: "fertilizer" as const, label: "🧮 সার" },
+            { key: "barc" as const, label: "📋 BARC" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -749,6 +963,7 @@ function SoilPageContent() {
             TAB 3: FERTILIZER CALCULATOR (KEPT FROM ORIGINAL)
         ════════════════════════════════════════════════════════════════════ */}
         {activeTab === "fertilizer" && (
+          <>
           <div className="space-y-4">
             {/* Soil type selector */}
             <div>
@@ -903,6 +1118,250 @@ function SoilPageContent() {
               >
                 SRDI ওয়েবসাইট →
               </a>
+            </div>
+          </div>
+
+          {/* ═══ BARC 2024 Fertilizer Advisory ═══ */}
+          <div className="space-y-3">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800 p-4">
+              <div className="text-[13px] font-extrabold text-gray-900 dark:text-gray-100 mb-1">
+                📋 BARC ২০২৪ সার সুপারিশ গাইড
+              </div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-3">
+                বাংলাদেশ কৃষি গবেষণা পরিষদ (BARC) সার সুপারিশ গাইড ২০২৪ ভিত্তিক
+              </div>
+              {detectedAez && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-2.5 mb-3 border border-emerald-100 dark:border-emerald-900">
+                  <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">📍 আপনার AEZ: {detectedAez}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400">এই জোনের জন্য সার সুপারিশ নিচে দেওয়া হলো</div>
+                </div>
+              )}
+              <div className="space-y-2.5">
+                {BARC_2024_ADVISORY.map((item, i) => (
+                  <div key={i} className={`rounded-xl border p-3 ${item.color}`}>
+                    <div className="flex items-start gap-2">
+                      <span className="text-base flex-shrink-0">{item.icon}</span>
+                      <div>
+                        <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{item.title}</div>
+                        <div className="text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed mt-0.5">{item.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-[9px] text-gray-400 dark:text-gray-500 border-t border-emerald-200 dark:border-emerald-800 pt-2">
+                তথ্যসূত্র: BARC Fertilizer Recommendation Guide 2024, SRDI Soil Resource Development Institute
+              </div>
+            </div>
+          </div>
+          </>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            TAB 4: BARC 2024 FERTILIZER ADVISORY
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "barc" && (
+          <div className="space-y-4">
+            {/* Header card */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800 p-4">
+              <div className="text-[15px] font-extrabold text-gray-900 dark:text-gray-100 mb-1">
+                📋 BARC ২০২৪ সার সুপারিশ গাইড
+              </div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                বাংলাদেশ কৃষি গবেষণা পরিষদ (BARC) সার সুপারিশ গাইড ২০২৪ ভিত্তিক
+              </div>
+              {detectedAez && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-2.5 border border-emerald-100 dark:border-emerald-900">
+                  <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">📍 আপনার AEZ: {detectedAez}</div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400">এই জোনের জন্য সার সুপারিশ নিচে দেওয়া হলো</div>
+                </div>
+              )}
+            </div>
+
+            {/* Key Principles */}
+            <div className="space-y-2.5">
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300">🔑 মূল নীতিমালা</div>
+              {BARC_2024_ADVISORY.map((item, i) => (
+                <div key={i} className={`rounded-xl border p-3 ${item.color}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-base flex-shrink-0">{item.icon}</span>
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{item.title}</div>
+                      <div className="text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed mt-0.5">{item.desc}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Crop-Specific BARC Recommendations */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300">🌾 ফসলভিত্তিক BARC সুপারিশকৃত মাত্রা (কেজি/বিঘা)</div>
+              </div>
+
+              {/* Search crops */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 ফসল খুঁজুন..."
+                  value={barcSearch}
+                  onChange={(e) => setBarcSearch(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 placeholder:text-gray-400"
+                />
+                {barcSearch && (
+                  <button
+                    onClick={() => setBarcSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm cursor-pointer bg-transparent border-none"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Crop cards */}
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+                {BARC_CROP_RECOMMENDATIONS.filter(c =>
+                  c.crop.includes(barcSearch) ||
+                  c.season.includes(barcSearch) ||
+                  c.notes.includes(barcSearch)
+                ).map((rec, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
+                    {/* Crop header */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-lg">{rec.icon}</span>
+                      <div className="flex-1">
+                        <div className="text-[12px] font-extrabold text-gray-900 dark:text-gray-100">{rec.crop}</div>
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400">{rec.season}</div>
+                      </div>
+                    </div>
+
+                    {/* Fertilizer amounts grid */}
+                    <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+                      {[
+                        { label: "ইউরিয়া", val: rec.urea, color: "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900" },
+                        { label: "টিএসপি", val: rec.tsp, color: "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900" },
+                        { label: "এমওপি", val: rec.mop, color: "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border-green-100 dark:border-green-900" },
+                        { label: "জিপসাম", val: rec.gypsum, color: "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 border-yellow-100 dark:border-yellow-900" },
+                        { label: "জিংক", val: rec.zinc, color: "text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-900" },
+                        { label: "বোরন", val: rec.boron, color: "text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/30 border-pink-100 dark:border-pink-900" },
+                      ].map((f, j) => (
+                        <div key={j} className={`rounded-lg border p-1.5 text-center ${f.color}`}>
+                          <div className="text-[8px] font-medium opacity-70">{f.label}</div>
+                          <div className="text-[11px] font-extrabold">{f.val}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Notes */}
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 rounded-lg p-2">
+                      <div className="text-[10px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                        💡 {rec.notes}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {BARC_CROP_RECOMMENDATIONS.filter(c =>
+                  c.crop.includes(barcSearch) ||
+                  c.season.includes(barcSearch) ||
+                  c.notes.includes(barcSearch)
+                ).length === 0 && (
+                  <div className="text-center py-6 text-[12px] text-gray-400">
+                    কোনো ফসল পাওয়া যায়নি
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* IPNS Detailed Breakdown */}
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-4">
+              <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100 mb-2">🔄 IPNS বিস্তারিত পদ্ধতি</div>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-[10px] font-bold text-green-700 dark:text-green-300 flex-shrink-0">১</span>
+                  <div>
+                    <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">জৈব সার প্রয়োগ</div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">গোবর সার ১-২ টন/বিঘা বা কম্পোস্ট ২-৩ টন/বিঘা জমি তৈরির সময় মিশিয়ে দিন। পচন প্রক্রিয়া শেষ হলে মাটির উর্বরতা বাড়ে।</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-[10px] font-bold text-blue-700 dark:text-blue-300 flex-shrink-0">২</span>
+                  <div>
+                    <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">রাসায়নিক সার (সুষম মাত্রায়)</div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">মাটি পরীক্ষার ফলাফল অনুযায়ী NPK সার প্রয়োগ করুন। জৈব সার ব্যবহারে রাসায়নিক সার ২০-২৫% কমানো সম্ভব।</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-[10px] font-bold text-purple-700 dark:text-purple-300 flex-shrink-0">৩</span>
+                  <div>
+                    <div className="text-[11px] font-bold text-gray-900 dark:text-gray-100">জীবাণু সার প্রয়োগ</div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">রাইজোবিয়াম (ডাল ফসল), এজোস্পাইরিলাম (ধান/গম), পিএসবি (ফসফরাস দ্রবীভূত) — বীজের সাথে মিশিয়ে বা জমিতে প্রয়োগ করুন।</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* UDP Section */}
+            <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 rounded-2xl border border-red-200 dark:border-red-800 p-4">
+              <div className="text-[12px] font-bold text-gray-900 dark:text-gray-100 mb-2">🕳️ ইউরিয়া ডিপ প্লেসমেন্ট (UDP) — বিস্তারিত</div>
+              <div className="space-y-2 text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p>• <strong className="text-gray-800 dark:text-gray-200">পদ্ধতি:</strong> ইউরিয়া সার মাটির ৭-১০ সেমি গভীরে ২-৩ চারার মাঝখানে প্রয়োগ করুন</p>
+                <p>• <strong className="text-gray-800 dark:text-gray-200">সুবিধা:</strong> নাইট্রোজেন ক্ষয় ৩০% কমে, ফলন ১৫-২০% বাড়ে</p>
+                <p>• <strong className="text-gray-800 dark:text-gray-200">যন্ত্র:</strong> UDP যন্ত্র (BRRI উদ্ভাবিত) বা হাতে লাঠি দিয়ে গর্ত করে প্রয়োগ</p>
+                <p>• <strong className="text-gray-800 dark:text-gray-200">সময়:</strong> রোপণের ৫-৭ দিন পর প্রথম কিস্তা, কুশি ও গুড়া পর্যায়ে পরবর্তী কিস্তা</p>
+                <p>• <strong className="text-gray-800 dark:text-gray-200">সতর্কতা:</strong> সার পানিতে ভিজবে না, গভীরে দেওয়ার পর মাটি দিয়ে ঢেকে দিন</p>
+              </div>
+            </div>
+
+            {/* Fertilizer Application Timing */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <div className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2">⏰ সার প্রয়োগের সময়কাল ও পদ্ধতি</div>
+              <div className="space-y-2">
+                {FERTILIZER_INFO.map((f, i) => (
+                  <div key={i} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2.5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm">{f.icon}</span>
+                      <span className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{f.name}</span>
+                      <span className="text-[9px] text-gray-400 font-mono">{f.en}</span>
+                    </div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">
+                      ⏱️ {f.timing}
+                    </div>
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">
+                      📋 {f.method}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Source */}
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+              <div className="text-[12px] font-bold text-green-900 dark:text-green-300 mb-2">🏛️ সরকারি সেবা ও তথ্যসূত্র</div>
+              <div className="space-y-1.5 text-[11px] text-green-800 dark:text-green-400">
+                <p>• BARC Fertilizer Recommendation Guide 2024</p>
+                <p>• SRDI মাটি পরীক্ষা — সম্পূর্ণ বিনামূল্যে</p>
+                <p>• উপজেলা কৃষি অফিস থেকে নমুনা জমা দিন</p>
+                <p>• ভর্তুকিতে সার — কৃষি ডিলারের মাধ্যমে</p>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <a
+                  href="https://srdi.gov.bd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 rounded-full px-3 py-1.5 no-underline hover:bg-green-200 transition-colors"
+                >
+                  SRDI ওয়েবসাইট →
+                </a>
+                <a
+                  href="https://barc.gov.bd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 rounded-full px-3 py-1.5 no-underline hover:bg-emerald-200 transition-colors"
+                >
+                  BARC ওয়েবসাইট →
+                </a>
+              </div>
             </div>
           </div>
         )}

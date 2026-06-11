@@ -942,7 +942,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-1.5">
               <span className="text-[12px] text-gray-600 dark:text-gray-400">সংস্করণ</span>
               <span className="text-[12px] font-semibold text-gray-800 dark:text-gray-200">
-                v2.1.0
+                v3.0.0
               </span>
             </div>
 
@@ -996,7 +996,7 @@ export default function ProfilePage() {
 
         {/* ═══ Version Footer ══════════════════════════════════════════════ */}
         <div className="text-center mt-4 text-[10px] text-gray-400 dark:text-gray-500">
-          কৃষি AI v2.1.0 · © ২০২৫
+          কৃষি AI v3.0.0 · © ২০২৫
         </div>
       </div>
     </div>

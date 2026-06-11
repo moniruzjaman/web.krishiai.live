@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import ClientShell from "@/components/ClientShell";
 import Providers from "@/components/Providers";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-bengali), sans-serif" }}
       >
         <Providers>
+          <LanguageProvider>
           <LocationProvider>
             {/* Mobile shell — max-width centered, sticky nav */}
             <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
@@ -72,6 +74,7 @@ export default function RootLayout({
               <BottomNav />
             </div>
           </LocationProvider>
+          </LanguageProvider>
           <ClientShell />
           <Toaster />
         </Providers>

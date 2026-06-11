@@ -15,18 +15,42 @@ import { useState, useCallback } from "react";
 
 // ── Pest Database ────────────────────────────────────────────────────────────
 const PESTS = [
-  { id: "brown_planthopper", name: "বাদামি গাছফড়িং", en: "Brown Planthopper", icon: "🦗", crops: ["বোরো ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "4C", "9B"] },
-  { id: "rice_stemborer", name: "ধানের গণ্ডারি", en: "Yellow Stemborer", icon: "🐛", crops: ["বোরো ধান", "আউশ ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "5", "28"] },
-  { id: "rice_hispa", name: "ধানের হিসপা", en: "Rice Hispa", icon: "🪲", crops: ["আউশ ধান", "আমন ধান"], severity: "medium", pesticideGroups: ["4A", "3", "5"] },
-  { id: "blast", name: "ব্লাস্ট রোগ", en: "Rice Blast", icon: "🍄", crops: ["বোরো ধান", "আমন ধান"], severity: "high", pesticideGroups: ["3", "11", "7"] },
-  { id: "sheath_blight", name: "খোল পোড়া রোগ", en: "Sheath Blight", icon: "🍄", crops: ["বোরো ধান", "আমন ধান"], severity: "medium", pesticideGroups: ["3", "11", "M01"] },
-  { id: "aphid", name: "মাজরা/আফিড", en: "Aphid", icon: "🪲", crops: ["সবজি", "ফল", "সরিষা"], severity: "medium", pesticideGroups: ["4A", "4C", "9B", "8A"] },
-  { id: "fruit_borer", name: "ফল ছিদ্রকারী", en: "Fruit Borer", icon: "🐛", crops: ["টমেটো", "বেগুন", "পেঁপে"], severity: "high", pesticideGroups: ["5", "28", "4A"] },
-  { id: "potato_late_blight", name: "আলুর ব্লাইট", en: "Late Blight", icon: "🍄", crops: ["আলু"], severity: "high", pesticideGroups: ["4", "M01", "27", "40"] },
-  { id: "jute_semilooper", name: "পাটের সেমিলুপার", en: "Jute Semilooper", icon: "🐛", crops: ["পাট"], severity: "medium", pesticideGroups: ["4A", "5", "3"] },
-  { id: "mustard_aphid", name: "সরিষার মাজরা", en: "Mustard Aphid", icon: "🪲", crops: ["সরিষা"], severity: "high", pesticideGroups: ["4A", "9B", "8A"] },
-  { id: "onion_thrips", name: "পেঁয়াজের থ্রিপস", en: "Onion Thrips", icon: "🪲", crops: ["পেঁয়াজ", "রসুন"], severity: "medium", pesticideGroups: ["4A", "9C", "1B"] },
-  { id: "chili_anthracnose", name: "মরিচের অ্যানথ্রাকনোজ", en: "Chili Anthracnose", icon: "🍄", crops: ["মরিচ"], severity: "high", pesticideGroups: ["3", "11", "M01"] },
+  // ধানের কীট (Rice Pests)
+  { id: "brown_planthopper", name: "বাদামি গাছফড়িং", en: "Brown Planthopper (BPH)", icon: "🦗", crops: ["বোরো ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "4C", "9B"], moa: "Group 4A: নিওনিকোটিনয়েড — স্নায়ু সংকেত বাধা; Group 4C: সালফোক্সামিন; Group 9B: পাইমেট্রোজিন — স্নায়ু নিষ্ক্রিয়", rotation: "4A → 4C → 9B (প্রতি মৌসুমে পরিবর্তন)" },
+  { id: "rice_stemborer", name: "ধানের গণ্ডারি", en: "Yellow Stemborer", icon: "🐛", crops: ["বোরো ধান", "আউশ ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "5", "28"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 5: স্পিনোসাড — নিকোটিনিক রিসেপ্টর; Group 28: ক্লোরানট্রানিলিপ্রোল — পেশি শিথিল", rotation: "5 → 28 → 4A (৩ মৌসুম রোটেশন)" },
+  { id: "rice_hispa", name: "ধানের হিসপা", en: "Rice Hispa", icon: "🪲", crops: ["আউশ ধান", "আমন ধান"], severity: "medium", pesticideGroups: ["4A", "3", "5"], moa: "Group 3: পাইরেথ্রয়েড — সোডিয়াম চ্যানেল বাধা; Group 4A: নিওনিকোটিনয়েড; Group 5: স্পিনোসাড", rotation: "3 → 4A → 5" },
+  { id: "rice_leaf_folder", name: "ধানের পাতা মোড়ানো পোকা", en: "Rice Leaf Folder", icon: "🦋", crops: ["বোরো ধান", "আমন ধান"], severity: "medium", pesticideGroups: ["4A", "5", "6"], moa: "Group 6: অ্যাভারমেকটিন — ক্লোরাইড চ্যানেল অ্যাক্টিভেটর", rotation: "6 → 4A → 5" },
+  { id: "rice_gall_midge", name: "ধানের গাঁট মাছি", en: "Rice Gall Midge", icon: "🪰", crops: ["আউশ ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "3"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 3: পাইরেথ্রয়েড", rotation: "4A → 3" },
+  { id: "rice_whorl_maggot", name: "ধানের শীষ মাছি", en: "Rice Whorl Maggot", icon: "🪰", crops: ["বোরো ধান"], severity: "medium", pesticideGroups: ["4A", "3"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 3: পাইরেথ্রয়েড", rotation: "4A → 3" },
+  // ধানের রোগ (Rice Diseases)
+  { id: "blast", name: "ব্লাস্ট রোগ", en: "Rice Blast", icon: "🍄", crops: ["বোরো ধান", "আমন ধান"], severity: "high", pesticideGroups: ["3", "11", "7"], moa: "Group 3: ডেমোক্সি — স্টেরল জৈবসংশ্লেষণ বাধা; Group 11: স্ট্রোবিলুরিন — শ্বসন বাধা (QoI); Group 7: কার্বক্সিম — সাইটোক্রোম bc1", rotation: "3 → 11 → 7 (প্রতি স্প্রেতে পরিবর্তন, একই গ্রুপ পরপর ব্যবহার নিষেধ)" },
+  { id: "sheath_blight", name: "খোল পোড়া রোগ", en: "Sheath Blight", icon: "🍄", crops: ["বোরো ধান", "আমন ধান"], severity: "medium", pesticideGroups: ["3", "11", "M01"], moa: "Group M01: মাল্টিসাইট কন্টাক্ট — ম্যানকোজেব; Group 3: ট্রাইয়াজোল; Group 11: ট্রাইফ্লোক্সিস্ট্রোবিন", rotation: "M01 → 3 → 11" },
+  { id: "bacterial_leaf_blight", name: "ব্যাকটেরিয়াল পাতা পোড়া", en: "Bacterial Leaf Blight", icon: "🦠", crops: ["বোরো ধান", "আমন ধান"], severity: "high", pesticideGroups: ["M01", "P1", "46"], moa: "Group M01: মাল্টিসাইট (কপার/ম্যানকোজেব); Group P1: স্ট্রেপটোমাইসিন; Group 46: ক্যাসুগামাইসিন", rotation: "P1 → M01 → 46" },
+  { id: "tungro", name: "টুংরো রোগ", en: "Rice Tungro", icon: "🦠", crops: ["আউশ ধান", "আমন ধান"], severity: "high", pesticideGroups: ["4A", "9B"], moa: "ভাইরাস বাহক (সবুদ গাছফড়িং) নিয়ন্ত্রণ: Group 4A/9B", rotation: "4A → 9B" },
+  // সবজির কীট (Vegetable Pests)
+  { id: "aphid", name: "মাজরা/আফিড", en: "Aphid", icon: "🪲", crops: ["সবজি", "ফল", "সরিষা"], severity: "medium", pesticideGroups: ["4A", "4C", "9B", "8A"], moa: "Group 8A: অর্গানোফসফেট — এসিটাইলকোলিনেস্টারেজ বাধা; Group 4A/4C: নিওনিকোটিনয়েড; Group 9B: পাইমেট্রোজিন", rotation: "4A → 9B → 8A → 4C" },
+  { id: "fruit_borer", name: "ফল ছিদ্রকারী", en: "Fruit Borer", icon: "🐛", crops: ["টমেটো", "বেগুন", "পেঁপে"], severity: "high", pesticideGroups: ["5", "28", "4A"], moa: "Group 5: স্পিনোসাড; Group 28: ডায়ামাইড — রায়ানোডিন রিসেপ্টর; Group 4A: নিওনিকোটিনয়েড", rotation: "5 → 28 → 4A" },
+  { id: "potato_late_blight", name: "আলুর ব্লাইট", en: "Late Blight", icon: "🍄", crops: ["আলু"], severity: "high", pesticideGroups: ["4", "M01", "27", "40"], moa: "Group 4: ফেনিলআমাইড — RNA সংশ্লেষণ বাধা; Group M01: মাল্টিসাইট; Group 27: সায়ানো-ইমিডাজোল; Group 40: কার্বামেট", rotation: "M01 → 4 → 27 → 40" },
+  { id: "tomato_leaf_curl", name: "টমেটোর পাতা মোড়া ভাইরাস", en: "Tomato Leaf Curl Virus", icon: "🦠", crops: ["টমেটো", "মরিচ"], severity: "high", pesticideGroups: ["4A", "9B"], moa: "ভাইরাস বাহক (সাদা মাছি) নিয়ন্ত্রণ: Group 4A/9B", rotation: "4A → 9B" },
+  { id: "eggplant_fruit_shoot_borer", name: "বেগুনের ডগা ও ফল ছিদ্রকারী", en: "Eggplant FSB", icon: "🐛", crops: ["বেগুন"], severity: "high", pesticideGroups: ["5", "28", "4A"], moa: "Group 5: স্পিনোসাড; Group 28: ক্লোরানট্রানিলিপ্রোল; Group 4A: নিওনিকোটিনয়েড", rotation: "5 → 28 → 4A" },
+  // ফসলের রোগ (Crop Diseases)
+  { id: "mustard_aphid", name: "সরিষার মাজরা", en: "Mustard Aphid", icon: "🪲", crops: ["সরিষা"], severity: "high", pesticideGroups: ["4A", "9B", "8A"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 9B: পাইমেট্রোজিন; Group 8A: অর্গানোফসফেট", rotation: "4A → 9B → 8A" },
+  { id: "onion_thrips", name: "পেঁয়াজের থ্রিপস", en: "Onion Thrips", icon: "🪲", crops: ["পেঁয়াজ", "রসুন"], severity: "medium", pesticideGroups: ["4A", "9C", "1B"], moa: "Group 9C: ফ্লোনিকামিড — স্নায়ু নিষ্ক্রিয়; Group 1B: কার্বামেট — এসিটাইলকোলিনেস্টারেজ বাধা", rotation: "4A → 9C → 1B" },
+  { id: "chili_anthracnose", name: "মরিচের অ্যানথ্রাকনোজ", en: "Chili Anthracnose", icon: "🍄", crops: ["মরিচ"], severity: "high", pesticideGroups: ["3", "11", "M01"], moa: "Group 3: ডেমোক্সি/ট্রাইয়াজোল; Group 11: স্ট্রোবিলুরিন; Group M01: মাল্টিসাইট", rotation: "M01 → 3 → 11" },
+  { id: "jute_semilooper", name: "পাটের সেমিলুপার", en: "Jute Semilooper", icon: "🐛", crops: ["পাট"], severity: "medium", pesticideGroups: ["4A", "5", "3"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 5: স্পিনোসাড; Group 3: পাইরেথ্রয়েড", rotation: "3 → 4A → 5" },
+  // ফলের কীট (Fruit Pests)
+  { id: "mango_hopper", name: "আমের মাছি/হপার", en: "Mango Hopper", icon: "🪲", crops: ["আম"], severity: "high", pesticideGroups: ["4A", "3", "9B"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 3: পাইরেথ্রয়েড; Group 9B: পাইমেট্রোজিন", rotation: "4A → 3 → 9B" },
+  { id: "mango_anthracnose", name: "আমের অ্যানথ্রাকনোজ", en: "Mango Anthracnose", icon: "🍄", crops: ["আম"], severity: "high", pesticideGroups: ["3", "11", "M01"], moa: "Group 3: ট্রাইয়াজোল; Group 11: স্ট্রোবিলুরিন; Group M01: ম্যানকোজেব", rotation: "M01 → 3 → 11" },
+  { id: "banana_sigatoka", name: "কলার সিগাটোকা রোগ", en: "Banana Sigatoka", icon: "🍄", crops: ["কলা"], severity: "high", pesticideGroups: ["3", "11", "M01"], moa: "Group 3: প্রোপিকোনাজোল; Group 11: ট্রাইফ্লোক্সিস্ট্রোবিন; Group M01: ম্যানকোজেব", rotation: "M01 → 3 → 11" },
+  { id: "banana_panama_wilt", name: "কলার পানামা উইল্ট", en: "Panama Wilt", icon: "🍄", crops: ["কলা"], severity: "high", pesticideGroups: ["3", "M01", "P1"], moa: "Group 3: কার্বেনডাজিম; Group M01: মাল্টিসাইট; Group P1: জৈবিক (ট্রাইকোডারমা)", rotation: "P1 → M01 → 3" },
+  { id: "papaya_mealybug", name: "পেঁপের মিলিবাগ", en: "Papaya Mealybug", icon: "🪲", crops: ["পেঁপে"], severity: "high", pesticideGroups: ["4A", "4C", "9C"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 4C: সালফোক্সামিন; Group 9C: ফ্লোনিকামিড", rotation: "4A → 9C → 4C" },
+  // গমের রোগ (Wheat Diseases)
+  { id: "wheat_rust", name: "গমের পাতায় মরচে রোগ", en: "Wheat Rust", icon: "🍄", crops: ["গম"], severity: "high", pesticideGroups: ["3", "11", "M01"], moa: "Group 3: প্রোপিকোনাজোল; Group 11: স্ট্রোবিলুরিন; Group M01: মাল্টিসাইট", rotation: "M01 → 3 → 11" },
+  { id: "wheat_blight", name: "গমের ব্লাইট", en: "Wheat Blight", icon: "🍄", crops: ["গম"], severity: "medium", pesticideGroups: ["3", "M01"], moa: "Group 3: ট্রাইয়াজোল; Group M01: মাল্টিসাইট", rotation: "M01 → 3" },
+  // আখের কীট (Sugarcane Pests)
+  { id: "sugarcane_borer", name: "আখের গণ্ডারি", en: "Sugarcane Borer", icon: "🐛", crops: ["আখ"], severity: "high", pesticideGroups: ["4A", "5", "28"], moa: "Group 4A: নিওনিকোটিনয়েড; Group 5: স্পিনোসাড; Group 28: ডায়ামাইড", rotation: "5 → 28 → 4A" },
+  // তুলার কীট (Cotton Pests)
+  { id: "cotton_bollworm", name: "তুলার শীষ ছিদ্রকারী", en: "Cotton Bollworm", icon: "🐛", crops: ["তুলা"], severity: "high", pesticideGroups: ["5", "28", "4A"], moa: "Group 5: স্পিনোসাড; Group 28: ক্লোরানট্রানিলিপ্রোল; Group 4A: নিওনিকোটিনয়েড", rotation: "5 → 28 → 4A" },
 ];
 
 // ── IRAC Groups ──────────────────────────────────────────────────────────────
@@ -182,6 +206,30 @@ export default function PesticidePage() {
                     ))}
                   </div>
                 </div>
+
+                {/* MoA (Mode of Action) */}
+                {"moa" in pest && pest.moa && (
+                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-2.5">
+                    <div className="text-[11px] font-bold text-purple-900 dark:text-purple-300 mb-1">
+                      🧬 ক্রিয়ার ধরন (MoA)
+                    </div>
+                    <div className="text-[10px] text-purple-800 dark:text-purple-400 leading-relaxed">
+                      {pest.moa}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rotation Group */}
+                {"rotation" in pest && pest.rotation && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5">
+                    <div className="text-[11px] font-bold text-blue-900 dark:text-blue-300 mb-1">
+                      🔄 রোটেশন গ্রুপ
+                    </div>
+                    <div className="text-[10px] text-blue-800 dark:text-blue-400 leading-relaxed">
+                      {pest.rotation}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">প্রস্তাবিত কীটনাশক (IRAC গ্রুপ)</div>

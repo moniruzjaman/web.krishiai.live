@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/context/LanguageContext";
 
 const SIDEBAR_LINKS = [
   { href: "/", icon: "🏠", label: "হোম" },
@@ -16,9 +17,10 @@ const SIDEBAR_LINKS = [
 export default function TopNavbar() {
   const pathname = usePathname();
   const [dark, setDark] = useState(false);
-  const [lang, setLang] = useState<"bn" | "en">("bn");
+  const { lang, toggleLang } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
 
   // Persist dark mode — read from localStorage after mount
   useEffect(() => {
@@ -33,20 +35,6 @@ export default function TopNavbar() {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("krishi_dark", String(dark));
   }, [dark]);
-
-  // Persist language
-  useEffect(() => {
-    const stored = localStorage.getItem("krishi_lang");
-    if (stored === "en" || stored === "bn") setLang(stored);
-  }, []);
-
-  const toggleLang = useCallback(() => {
-    setLang((prev) => {
-      const next = prev === "bn" ? "en" : "bn";
-      localStorage.setItem("krishi_lang", next);
-      return next;
-    });
-  }, []);
 
   // Share handler
   const handleShare = useCallback(async () => {
@@ -81,6 +69,54 @@ export default function TopNavbar() {
       document.body.style.overflow = "";
     };
   }, [sidebarOpen]);
+
+  // PWA install prompt detection
+  useEffect(() => {
+    // Check if already in standalone mode
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setCanInstall(true);
+      // Show the topnav install button
+      const btn = document.getElementById("krishi-topnav-install-btn");
+      if (btn) {
+        btn.classList.remove("hidden");
+        btn.classList.add("flex");
+      }
+      // Also store for the InstallPrompt component
+      (window as unknown as Record<string, unknown>).__krishiInstallPrompt = e;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  // Handle install button click
+  const handleInstall = useCallback(async () => {
+    const promptEvent = (window as unknown as Record<string, unknown>).__krishiInstallPrompt as Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> } | undefined;
+    if (!promptEvent || typeof (promptEvent as unknown as { prompt?: unknown }).prompt !== "function") {
+      // Fallback: show instructions
+      const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+      if (isIOS) {
+        alert("Safari এর Share বাটন থেকে 'হোম স্ক্রিনে যোগ করুন' সিলেক্ট করুন।");
+      }
+      return;
+    }
+    try {
+      await (promptEvent as unknown as { prompt: () => Promise<void> }).prompt();
+      const result = await (promptEvent as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
+      if (result.outcome === "accepted") {
+        setCanInstall(false);
+        const btn = document.getElementById("krishi-topnav-install-btn");
+        if (btn) {
+          btn.classList.add("hidden");
+          btn.classList.remove("flex");
+        }
+      }
+    } catch {
+      // silently fail
+    }
+  }, []);
 
   return (
     <>
@@ -152,6 +188,18 @@ export default function TopNavbar() {
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Install App Button */}
+        {canInstall && (
+          <button
+            onClick={handleInstall}
+            className="flex w-auto h-[26px] items-center gap-1 cursor-pointer bg-emerald-600 hover:bg-emerald-700 border-none text-white text-[10px] font-bold rounded-full px-2.5 transition-colors"
+            aria-label="অ্যাপ ইনস্টল করুন"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            <span className="hidden sm:inline">ইনস্টল</span>
+          </button>
+        )}
 
         {/* Share */}
         <button
