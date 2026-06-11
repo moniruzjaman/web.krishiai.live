@@ -1,260 +1,82 @@
 /**
- * /api/diagnose — CABI Plantwise Diagnosis API
+ * /api/diagnose — CABI Plantwise Diagnosis API (v2 — Offline-First)
  *
- * Accepts both:
- *   - { messages, crop, district }  (OpenAI-style chat format)
- *   - { image, symptoms, crop, description }  (Analyzer page format)
+ * Architecture: OFFLINE-FIRST + AI FALLBACK
+ *   Step 1: Run offline CABI diagnostic engine (instant, no network)
+ *   Step 2: If confidence >= 70% → return offline result immediately
+ *   Step 3: If confidence < 70% → try ONE AI provider with 8s timeout
+ *   Step 4: Return combined result with confidence level
  *
- * AI Provider Waterfall: Gemini 2.5 Flash → OpenRouter Qwen-VL → Groq Llama4 Scout →
- *                        OpenRouter text → Gemini text → Emergency keyword fallback
+ * Total time: 0-8 seconds (well within Vercel's 10s hobby limit)
  *
- * System prompt: Full CABI Plantwise Ready Reckoner + Exclusion Logic
+ * Request formats:
+ *   - { messages, crop, district }  (OpenAI-style)
+ *   - { image, symptoms, crop, description, district, eliminationAnswers, triangleAnswers, infectedPart }  (Analyzer-page)
+ *
+ * Response: { ok, offlineResult, aiResult, provider, elapsed_ms, structured }
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { diagnoseOffline } from "@/lib/cabi/diagnosticEngine";
+import { saveDiagnosis, hasTurso } from "@/lib/turso";
+import {
+  FRAC_GROUPS, IRAC_GROUPS, PLANTWISE_RED_LIST,
+  getFRACOptionsForDisease, getIRACOptionsForPest, isRedListed
+} from "@/lib/cabi/resistanceDB";
 
-const REQUEST_TIMEOUT_MS = 30_000;
+// ─── Constants ──────────────────────────────────────────────────────────────
+const AI_TIMEOUT_MS = 8_000;        // 8s max for AI call (Vercel hobby = 10s total)
+const CONFIDENCE_THRESHOLD = 70;     // Offline confidence above this → skip AI
+const MAX_IMAGE_CHARS = 800_000;     // ~600KB base64
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SYSTEM PROMPT — CABI READY RECKONER + EXCLUSION LOGIC (FULL)
-// ═══════════════════════════════════════════════════════════════════════════════
-const SYSTEM_PROMPT = `
-You are an expert crop disease and pest diagnostic AI for Bangladesh, trained strictly on the CABI Plantwise methodology. You assist DAE extension officers and farmers in accurate field diagnosis using the CABI Exclusion Decision Tree, Ready Reckoner tables, and the Disease Triangle framework.
+// ─── CABI System Prompt (condensed for speed — full prompt was 600+ lines) ──
+const SYSTEM_PROMPT = `You are a CABI Plantwise diagnostic AI for Bangladesh. Diagnose the crop disease based on the provided symptoms, image, and field observations.
 
-You MUST follow the diagnostic protocol below in strict order before producing any diagnosis.
+Follow the CABI exclusion protocol:
+1. Abiotic vs Biotic gate → 2. Exclusion Gates (A: insects, B: virus, C: bacteria, D: fungi) → 3. Disease Triangle → 4. IPM
 
-═════════════════════════════════════════════════════════
-PART 1 — MANDATORY DIAGNOSTIC PROTOCOL (CABI METHOD)
-═══════════════════════════════════════════════════════
+BIG 5 FILTER: All recommendations must be 1)Economic 2)Effective 3)Safe(NEVER recommend Red List pesticides: Monocrotophos, Carbofuran, Endosulfan, Phorate, Aldicarb) 4)Practical 5)Locally Available in Bangladesh.
 
-STEP 1 — ABIOTIC vs BIOTIC GATE (Gate 1)
-─────────────────────────────────────────
-First determine whether the problem is abiotic (non-living cause) or biotic (living pathogen/pest).
+RESISTANCE MANAGEMENT: Always include FRAC/IRAC MoA group numbers. Never repeat same group consecutively.
 
-ABIOTIC indicators (rule out living causes first):
-• Problem is uniformly distributed across the entire field
-• Pattern follows machinery tracks, irrigation channels, or soil type zones
-• Symptoms appear symmetrically on both sides of the leaf midrib
-• No progression — all plants affected simultaneously, not spreading
-• No fruiting bodies, ooze, webbing, frass, or insect presence
-• Linked to a specific management event (fertilizer application, herbicide, flooding)
-→ IF ABIOTIC: Consider nutrient deficiency, drought, waterlogging, herbicide injury, salinity, pH toxicity
-
-BIOTIC indicators:
-• Problem spreads progressively from a focus point or field edge
-• Irregular distribution — some plants healthy, some sick, clear border between healthy/diseased tissue
-• Signs of pathogen presence: fruiting bodies, ooze, webbing, frass, cast skins, eggs
-• Symptoms appear asymmetrically
-→ IF BIOTIC: Proceed to Step 2
-
-STEP 2 — SYMMETRY ANALYSIS (Nutrient vs Pathogen)
-───────────────────────────────────────────────────
-• Symptoms SYMMETRICAL on both leaf halves → NUTRIENT DEFICIENCY (not biotic)
-• Symptoms ASYMMETRICAL or random → PATHOGEN or HERBICIDE INJURY
-
-STEP 3 — BIOTIC EXCLUSION GATES (Gate 2 — Run all gates in sequence)
-──────────────────────────────────────────────────────────────────────
-
-GATE A — EXCLUDE INSECTS/MITES:
-• NO chewing marks, holes, rolled leaves, mines, frass, cast skins, eggs, webbing, stippling → EXCLUDE INSECTS & MITES
-• YES to any above → retain insects/mites as suspects
-
-GATE B — EXCLUDE VIRUS:
-• NO mosaic, ring spots, chlorotic patterns following vein boundaries, systemic distortion of young leaves → EXCLUDE VIRUS
-• Symptoms confined between veins (interveinal) = NOT virus
-• YES to mosaic or ring spots → retain virus as suspect
-
-GATE C — EXCLUDE BACTERIA:
-• NO water-soaked margins at lesion edges → EXCLUDE BACTERIA
-• NO bacterial ooze or sticky exudate → EXCLUDE BACTERIA
-• Bacterial streaming test: cut stem 15cm from base, place in clear water — milky streaming after 5 min = bacterial wilt confirmed
-• YES to water-soaked margins or ooze → retain bacteria as suspect
-
-GATE D — CONFIRM FUNGAL / OOMYCETE:
-• IF visible fruiting bodies (black pycnidia, pustules, powdery coating, cottony growth) → TRUE FUNGI confirmed
-• IF rapid aggressive rot with white cottony sporulation, no hard sclerotia → OOMYCETE (Phytophthora/Pythium) NOT true fungus
-• IF hard black sclerotia present → TRUE FUNGI (Sclerotinia or Rhizoctonia type)
-• Oomycetes are NOT killed by standard fungicides — use Metalaxyl, Mancozeb, Fosetyl-Al
-
-STEP 4 — DISEASE TRIANGLE ASSESSMENT
-──────────────────────────────────────
-Evaluate all three components:
-1. HOST susceptibility: Is this variety known to be susceptible? Growth stage vulnerability?
-2. PATHOGEN pressure: Are conditions known for high inoculum? Recent disease history?
-3. ENVIRONMENT: Use real-time weather data — temperature, humidity, rainfall
-   • Humidity >80% + Temp 26–35°C = HIGH fungal blast/blight risk
-   • Humidity >85% = HIGH bacterial blight risk
-   • Cool nights <20°C + warm days = Tungro virus/insect vector risk
-   • Heavy rain >50mm = stem borer, root rot, waterlogging stress
-   • Prolonged dry spell = mite, thrips, aphid outbreak risk
-
-═══════════════════════════════════════════════════════
-PART 2 — READY RECKONER TABLES
-═══════════════════════════════════════════════════════
-
-TABLE 1 — PEST FEEDING PATTERN IDENTIFICATION
-MITES: 0.2–0.5mm, stippling on leaf underside, bronzing, fine webbing. Weather: hot dry.
-THRIPS: 1–2mm, silver streaks on leaf, black frass dots. Weather: hot dry.
-APHIDS: 2–5mm, leaf curl, honeydew, sooty mold, ants present.
-WHITEFLY: 2–3mm, underside leaf, honeydew, shake plant = white cloud.
-LEAFHOPPERS/BPH: Phloem sucking at stem base, hopper burn.
-CHEWING INSECTS: Leaf folder (rolled leaves), hispa (white parallel streaks), army worm (ragged chewing), stem borer (dead heart/white ear).
-
-TABLE 2 — FUNGAL DISEASE DIFFERENTIATION (Bangladesh Rice)
-LEAF BLAST: Spindle/diamond lesions, GRAY center, brown border, yellow halo. 25-28°C + high humidity.
-BROWN SPOT: Oval/circular, larger than blast, BROWN with wider yellow halo. Linked to K deficiency.
-SHEATH BLIGHT: On SHEATH, white/gray center, wavy border, hard SCLEROTIA. Progresses upward.
-BACTERIAL LEAF BLIGHT: WATER-SOAKED margins, starts from leaf TIP, milky ooze test.
-
-TABLE 3 — NUTRIENT DEFICIENCY
-NITROGEN: Uniform yellowing from OLDER leaves upward, symmetrical.
-PHOSPHORUS: Purple/reddish older leaves, stunted.
-POTASSIUM: Tip and margin SCORCH on older leaves.
-ZINC: Very common in Bangladesh rice — WHITE mid-vein on young leaves ("Khaira" disease).
-IRON: Yellowing with bronzing, toxicity in waterlogged soil.
-SULPHUR: YOUNG leaves turn pale yellow (opposite of N deficiency).
-
-TABLE 4 — OOMYCETE vs TRUE FUNGUS
-TRUE FUNGUS: Hard fruiting bodies. Treat with Propiconazole, Tricyclazole, Carbendazim.
-OOMYCETE: White cottony sporulation, no hard structures. Standard fungicides INEFFECTIVE. Use Metalaxyl, Mancozeb, Fosetyl-Al.
-
-TABLE 5 — VIRUS DIFFERENTIATION
-RICE TUNGRO: Yellow-orange younger leaves, stunting, leafhopper vector. No chemical cure.
-TOMATO TYLCV: Leaf curling upward, whitefly vector.
-MOSAIC VIRUSES: Mosaic/mottle pattern on young leaves. No cure — remove infected plants.
-
-═══════════════════════════════════════════════════════
-PART 3 — THE BIG 5 RECOMMENDATION FRAMEWORK
-═══════════════════════════════════════════════════════
-ALL recommendations MUST pass through these 5 filters:
-1. ECONOMIC: Is damage loss > cost of control? If NO → "Do Nothing / Monitor"
-2. EFFECTIVE: Scientifically proven for this pathogen in Bangladesh?
-3. SAFE — PLANTWISE RED LIST (NEVER recommend): Monocrotophos, Carbofuran, Endosulfan, Phorate, Aldicarb, etc.
-4. PRACTICAL: Suitable for smallholder farmers with limited equipment
-5. LOCALLY AVAILABLE: Only products available in Bangladesh markets
-
-═══════════════════════════════════════════════════════
-PART 4 — RESISTANCE MANAGEMENT (FRAC/IRAC)
-═══════════════════════════════════════════════════════
-FUNGICIDE: Never repeat same FRAC group consecutively. SDHI (Group 7) + SBI (Group 3) — HIGH risk.
-INSECTICIDE: Rotate IRAC groups. Never same group >2 consecutive sprays.
-
-═══════════════════════════════════════════════════════
-PART 5 — VISUAL ANALYSIS PROTOCOL (When image provided)
-═══════════════════════════════════════════════════════
-1. DISTRIBUTION: Whole field pattern visible? Uniform or focal?
-2. LEAF SURFACE: Upper vs lower surface affected?
-3. LESION MORPHOLOGY: Shape, size, color, border, center
-4. SIGNS: Fruiting bodies, webbing, stippling, frass, ooze
-5. PLANT PART: Leaf blade, sheath, stem, node, panicle, root
-6. PROGRESSION: Tip-down, margin-in, base-up, systemic
-7. ASSOCIATED SYMPTOMS: Stunting, wilting, lodging, head sterility
-
-═══════════════════════════════════════════════════════
-PART 6 — MANDATORY OUTPUT FORMAT
-═══════════════════════════════════════════════════════
-
+MANDATORY OUTPUT FORMAT (dual language):
 ---BANGLA_SECTION---
 ## ১. CABI বর্জন পদ্ধতি অনুযায়ী বিশ্লেষণ
 **অ্যাবায়োটিক নাকি বায়োটিক:** [বিশ্লেষণ]
-**বর্জন গেট ফলাফল:** [কোন কারণগুলো বাদ দেওয়া হয়েছে এবং কেন]
-
-## ২. সম্ভাব্য রোগ / পোকার নাম
+**বর্জন গেট ফলাফল:** [কোন কারণগুলো বাদ দেওয়া হয়েছে]
+## ২. সম্ভাব্য রোগ
 **প্রাথমিক সন্দেহ:** [নাম — বাংলা ও বৈজ্ঞানিক]
-**বিকল্প সন্দেহ:** [নাম]
-**আস্থার মাত্রা:** [উচ্চ / মাঝারি / কম]
-
+**আস্থার মাত্রা:** [উচ্চ/মাঝারি/কম]
 ## ৩. রোগ ত্রিভুজ মূল্যায়ন
-**পোষক (Host):** [জাতের সংবেদনশীলতা]
-**জীবাণু (Pathogen):** [ইনোকুলাম চাপ]
-**পরিবেশ (Environment):** [আবহাওয়া বিশ্লেষণ]
-
-## ৪. মাঠে নিশ্চিতকরণের পদ্ধতি
-[কীভাবে মাঠে নিশ্চিত করবেন]
-
-## ৫. তীব্রতা ও অর্থনৈতিক গুরুত্ব
-**ক্ষয়ক্ষতির মাত্রা:** [%]
-**অর্থনৈতিক থ্রেশহোল্ড:** [ব্যবস্থা প্রয়োজন কিনা]
-
-## ৬. সমন্বিত বালাই ব্যবস্থাপনা (IPM)
-**কৃষি ব্যবস্থাপনা:** [বিস্তারিত]
-**জৈবিক নিয়ন্ত্রণ:** [Trichoderma, COS]
-**রাসায়নিক (শেষ উপায় — FRAC/IRAC গ্রুপ সহ):** [শুধু অর্থনৈতিক থ্রেশহোল্ড অতিক্রম করলে]
-
-## ৭. প্রতিরোধ — পরবর্তী মৌসুম
+**পোষক:** [বিশ্লেষণ] **জীবাণু:** [বিশ্লেষণ] **পরিবেশ:** [বিশ্লেষণ]
+## ৪. সমন্বিত বালাই ব্যবস্থাপনা (IPM)
+**কৃষি ব্যবস্থাপনা:** [বিস্তারিত] **জৈবিক নিয়ন্ত্রণ:** [Trichoderma, COS]
+**রাসায়নিক (শেষ উপায় — MoA গ্রুপ সহ):** [শুধু অর্থনৈতিক থ্রেশহোল্ড অতিক্রম করলে]
+## ৫. প্রতিরোধ — পরবর্তী মৌসুম
 [বিস্তারিত]
-
-## ৮. কখন DAE কর্মকর্তার পরামর্শ নেবেন
-[নির্দিষ্ট পরিস্থিতি]
+## ৬. ⚠️ দাবিত্যাগ: রাসায়নিক প্রয়োগের আগে অবশ্যই স্থানীয় DAE/SAAO কর্মকর্তার পরামর্শ নিন
 ---END_BANGLA---
-
 ---ENGLISH_SECTION---
-[Same 8 sections in English]
+[Same sections in English]
 ---END_ENGLISH---
-
-STRUCTURED OUTPUT REQUIREMENT:
-At the very end, include ONE JSON block:
-
 ---JSON_SUMMARY---
 {
-  "disease_name": "Rice Leaf Blast",
-  "disease_name_bn": "ধানের পাতা ব্লাস্ট",
-  "confidence": "high",
-  "confidence_pct": 85,
-  "severity": "moderate",
-  "urgency": "within_3_days",
-  "biotic_abiotic": "biotic",
-  "cause_type": "fungal",
-  "etl_exceeded": true,
-  "action_required": true,
-  "gate_results": {
-    "a_insects": "excluded",
-    "a_reason": "No chewing marks or insect signs",
-    "b_virus": "excluded",
-    "b_reason": "No mosaic or ring spots",
-    "c_bacteria": "excluded",
-    "c_reason": "No water-soaked margins or ooze",
-    "d_fungi": "confirmed",
-    "d_reason": "Spindle-shaped gray-centered lesions"
-  },
-  "top_candidates": [
-    { "rank": 1, "name_bn": "ব্লাস্ট", "name_en": "Leaf Blast", "scientific_name": "Pyricularia oryzae", "confidence_pct": 85, "key_feature": "Spindle gray-centered lesions" },
-    { "rank": 2, "name_bn": "বাদামি দাগ", "name_en": "Brown Spot", "scientific_name": "Bipolaris oryzae", "confidence_pct": 12, "key_feature": "Oval lesions, wider halo" }
-  ],
-  "disease_triangle": { "host_score": 7, "pathogen_score": 8, "environment_score": 9, "host_note": "...", "pathogen_note": "...", "environment_note": "..." },
-  "field_confirmation": { "test_bn": "পাতায় মাকু আকৃতির ছাই রঙের দাগ খুঁজুন", "steps_bn": ["...", "..."] },
-  "ipm_recommendations": [
-    { "priority": 1, "type": "cultural", "action_bn": "...", "timing": "এখনই" },
-    { "priority": 2, "type": "chemical", "action_bn": "ট্রাইসাইক্লাজোল ০.৭ গ্রাম/লিটার", "timing": "৩ দিনের মধ্যে" }
-  ],
-  "chemical_options": [
-    { "name_bn": "ট্রাইসাইক্লাজোল", "trade_name": "ব্রিকোল / ট্রুপার", "frac_irac_group": "FRAC 29", "dose": "০.৭ গ্রাম/লিটার", "phi_days": 14 }
-  ],
-  "prevention_bn": "...",
-  "dae_consult_bn": "...",
-  "key_recommendations": ["...", "...", "..."]
+  "disease_name": "Rice Leaf Blast", "disease_name_bn": "ধানের পাতা ব্লাস্ট",
+  "confidence": "high", "confidence_pct": 85, "severity": "moderate",
+  "urgency": "within_3_days", "biotic_abiotic": "biotic", "cause_type": "fungal",
+  "etl_exceeded": true, "action_required": true,
+  "gate_results": {"a_insects":"excluded","a_reason":"...","b_virus":"excluded","b_reason":"...","c_bacteria":"excluded","c_reason":"...","d_fungi":"confirmed","d_reason":"..."},
+  "top_candidates": [{"rank":1,"name_bn":"ব্লাস্ট","name_en":"Leaf Blast","scientific_name":"Pyricularia oryzae","confidence_pct":85,"key_feature":"..."}],
+  "disease_triangle": {"host_score":7,"pathogen_score":8,"environment_score":9,"host_note":"...","pathogen_note":"...","environment_note":"..."},
+  "field_confirmation": {"test_bn":"...","steps_bn":["..."]},
+  "ipm_recommendations": [{"priority":1,"type":"cultural","action_bn":"...","timing":"এখনই"}],
+  "chemical_options": [{"name_bn":"ট্রাইসাইক্লাজোল","trade_name":"ব্রিকোল","frac_irac_group":"FRAC 29","dose":"০.৭ গ্রাম/লিটার","phi_days":14,"moa":"Melanin biosynthesis inhibitor"}],
+  "prevention_bn": "...", "dae_consult_bn": "...", "disclaimer": "রাসায়নিক প্রয়োগের আগে অবশ্যই স্থানীয় DAE/SAAO কর্মকর্তার পরামর্শ নিন",
+  "key_recommendations": ["..."]
 }
----END_JSON---
+---END_JSON---`.trim();
 
-CRITICAL JSON RULES:
-- JSON block is MANDATORY — never omit
-- All confidence_pct must be integers 0–100; candidates sum ≤100
-- urgency: "immediate" | "within_3_days" | "within_week" | "monitor"
-- gate_results values: "excluded" | "retained" | "uncertain"
-- type in ipm: "cultural" | "biological" | "chemical" | "monitoring"
-- Provide at least 2 top_candidates
-`.trim();
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function extractPlainUserText(messages: any[]): string {
-  return messages
-    .flatMap((m) => {
-      if (!Array.isArray(m.content)) return typeof m.content === "string" ? [m.content] : [];
-      return m.content.filter((b: any) => b.type === "text" && b.text).map((b: any) => b.text);
-    })
-    .join("\n");
-}
-
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function extractStructuredJson(text: string) {
   try {
     const marker = "---JSON_SUMMARY---";
@@ -262,176 +84,269 @@ function extractStructuredJson(text: string) {
     const startIdx = text.indexOf(marker);
     const endIdx = text.indexOf(endMarker);
     if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null;
-    const jsonStr = text.slice(startIdx + marker.length, endIdx).trim();
-    return JSON.parse(jsonStr);
-  } catch {
-    return null;
-  }
+    return JSON.parse(text.slice(startIdx + marker.length, endIdx).trim());
+  } catch { return null; }
 }
 
 function stripStructuredJson(text: string) {
   const marker = "---JSON_SUMMARY---";
   const endMarker = "---END_JSON---";
-  const startIdx = text.indexOf(marker);
-  const endIdx = text.indexOf(endMarker);
-  if (startIdx === -1 || endIdx === -1) return text;
-  return text.slice(0, startIdx).trim() + text.slice(endIdx + endMarker.length).trim();
+  const s = text.indexOf(marker);
+  const e = text.indexOf(endMarker);
+  if (s === -1 || e === -1) return text;
+  return text.slice(0, s).trim() + text.slice(e + endMarker.length).trim();
 }
 
-function compressMessages(messages: any[], maxBase64Chars = 1_000_000) {
-  return messages.map((m) => {
-    if (!Array.isArray(m.content)) return m;
-    return {
-      ...m,
-      content: m.content.map((b: any) => {
-        if (b.type === "image" && b.source?.data?.length > maxBase64Chars) {
-          return { ...b, source: { ...b.source, data: b.source.data.slice(0, maxBase64Chars) } };
-        }
-        return b;
-      }),
-    };
-  });
+function extractSections(text: string) {
+  let bangla = "", english = "";
+  const bs = text.indexOf("---BANGLA_SECTION---"), be = text.indexOf("---END_BANGLA---");
+  const es = text.indexOf("---ENGLISH_SECTION---"), ee = text.indexOf("---END_ENGLISH---");
+  if (bs !== -1 && be !== -1) bangla = text.slice(bs + "---BANGLA_SECTION---".length, be).trim();
+  if (es !== -1 && ee !== -1) english = text.slice(es + "---ENGLISH_SECTION---".length, ee).trim();
+  if (!bangla && !english) bangla = text;
+  return { bangla, english };
 }
 
-function stripImages(messages: any[]) {
-  return messages.map((m) => ({
-    ...m,
-    content: Array.isArray(m.content)
-      ? m.content.filter((b: any) => b.type !== "image")
-      : m.content,
-  }));
+function compressImage(dataUrl: string, maxChars: number = MAX_IMAGE_CHARS): string {
+  if (dataUrl.length <= maxChars) return dataUrl;
+  // Truncate oversized images
+  return dataUrl.slice(0, maxChars);
 }
 
-function toOpenAIMessages(messages: any[]) {
-  return messages.map((m) => {
-    if (typeof m.content === "string") return { role: m.role, content: m.content };
-    if (Array.isArray(m.content)) {
-      return {
-        role: m.role,
-        content: m.content.map((b: any) => {
-          if (b.type === "text") return { type: "text", text: b.text };
-          if (b.type === "image" && b.source?.type === "base64") {
-            return {
-              type: "image_url",
-              image_url: { url: `data:${b.source.media_type || "image/jpeg"};base64,${b.source.data}` },
-            };
-          }
-          return null;
-        }).filter(Boolean),
-      };
+function extractPlainUserText(messages: any[]): string {
+  return messages.flatMap((m: any) => {
+    if (!Array.isArray(m.content)) return typeof m.content === "string" ? [m.content] : [];
+    return m.content.filter((b: any) => b.type === "text" && b.text).map((b: any) => b.text);
+  }).join("\n");
+}
+
+// ─── Convert offline diagnosis to API response format ───────────────────────
+function offlineToStructured(offline: any, crop: string, symptoms: string[], infectedPart?: string, eliminationAnswers?: Record<string, string>, triangleAnswers?: Record<string, string>) {
+  // Map offline confidence to percentage
+  const confidenceMap: Record<string, number> = { high: 85, medium: 55, low: 30 };
+  const confidencePct = offline.specificDisease
+    ? (offline.specificDisease.confidence === 'high' ? 85 : offline.specificDisease.confidence === 'medium' ? 55 : 30)
+    : (offline.confidence === 'high' ? 75 : offline.confidence === 'medium' ? 50 : 25);
+
+  // Build gate results
+  const gateResults: Record<string, string> = {};
+  const excluded = offline.excluded || [];
+  const suspects = offline.suspects || [];
+
+  gateResults.a_insects = excluded.includes('insects/mites') ? 'excluded' : suspects.some((s: string) => s.includes('insect')) ? 'retained' : 'uncertain';
+  gateResults.a_reason = gateResults.a_insects === 'excluded' ? 'কোনো পোকার লক্ষণ পাওয়া যায়নি' : gateResults.a_insects === 'retained' ? 'পোকার লক্ষণ শনাক্ত' : 'নিশ্চিত হতে আরো তথ্য দরকার';
+  gateResults.b_virus = excluded.includes('virus') ? 'excluded' : suspects.some((s: string) => s.includes('virus')) ? 'retained' : 'uncertain';
+  gateResults.b_reason = gateResults.b_virus === 'excluded' ? 'মোজাইক বা রিং স্পট নেই' : gateResults.b_virus === 'retained' ? 'ভাইরাসের লক্ষণ শনাক্ত' : 'নিশ্চিত হতে আরো তথ্য দরকার';
+  gateResults.c_bacteria = excluded.includes('bacteria') ? 'excluded' : suspects.some((s: string) => s.includes('bacteria')) ? 'retained' : 'uncertain';
+  gateResults.c_reason = gateResults.c_bacteria === 'excluded' ? 'পানিভেজা কিনারা বা আঠালো নিঃসরণ নেই' : gateResults.c_bacteria === 'retained' ? 'ব্যাকটেরিয়ার লক্ষণ শনাক্ত' : 'নিশ্চিত হতে আরো তথ্য দরকার';
+  gateResults.d_fungi = excluded.includes('fungi/oomycetes') && excluded.includes('true fungi') && excluded.includes('oomycetes') ? 'excluded' : suspects.some((s: string) => s.includes('fung') || s.includes('oomy')) ? 'confirmed' : 'uncertain';
+  gateResults.d_reason = gateResults.d_fungi === 'excluded' ? 'ছত্রাকের লক্ষণ পাওয়া যায়নি' : gateResults.d_fungi === 'confirmed' ? 'ছত্রাকের লক্ষণ নিশ্চিত' : 'নিশ্চিত হতে আরো তথ্য দরকার';
+
+  // Apply elimination answers to refine gate results
+  if (eliminationAnswers) {
+    if (eliminationAnswers.water_soak === 'yes') {
+      gateResults.c_bacteria = 'retained';
+      gateResults.c_reason = 'পানিভেজা দাগ নিশ্চিত — ব্যাকটেরিয়া সন্দেহ';
     }
-    return m;
+    if (eliminationAnswers.leaf_margin_discolor === 'yes') {
+      // Could be fungal or bacterial depending on pattern
+    }
+    if (eliminationAnswers.insect_visible === 'yes') {
+      gateResults.a_insects = 'retained';
+      gateResults.a_reason = 'পোকা দৃশ্যমান — কীটপতঙ্গ সন্দেহ';
+    }
+    if (eliminationAnswers.mosaic_pattern === 'yes') {
+      gateResults.b_virus = 'retained';
+      gateResults.b_reason = 'মোজাইক প্যাটার্ন — ভাইরাস সন্দেহ';
+    }
+    if (eliminationAnswers.powdery_growth === 'yes' || eliminationAnswers.fruiting_bodies === 'yes') {
+      gateResults.d_fungi = 'confirmed';
+      gateResults.d_reason = eliminationAnswers.powdery_growth === 'yes' ? 'গুঁড়া আবরণ — ছত্রাক নিশ্চিত' : 'ফ্রুটিং বডি — ছত্রাক নিশ্চিত';
+    }
+  }
+
+  // Build top candidates
+  const topCandidates = (offline.cropDiseaseMatches || []).slice(0, 3).map((match: any, i: number) => ({
+    rank: i + 1,
+    name_bn: match.nameBn || match.name,
+    name_en: match.name,
+    scientific_name: match.pathogen || '',
+    confidence_pct: Math.round(match.matchRatio * 100),
+    key_feature: (match.matchedSymptoms || []).slice(0, 2).join(', ') || 'Symptom match',
+  }));
+
+  // If no crop disease matches, use primary suspect
+  if (topCandidates.length === 0 && offline.primarySuspect) {
+    topCandidates.push({
+      rank: 1,
+      name_bn: offline.primarySuspect,
+      name_en: offline.primarySuspect,
+      scientific_name: 'Field confirmation required',
+      confidence_pct: confidencePct,
+      key_feature: 'Based on exclusion gate analysis',
+    });
+  }
+
+  // Determine cause type
+  let causeType = 'uncertain';
+  if (offline.abioticBiotic === 'abiotic') causeType = 'deficiency';
+  else if (suspects.some((s: string) => s.includes('fung'))) causeType = 'fungal';
+  else if (suspects.includes('bacteria')) causeType = 'bacterial';
+  else if (suspects.includes('virus')) causeType = 'viral';
+  else if (suspects.some((s: string) => s.includes('insect'))) causeType = 'insect';
+
+  // Build IPM recommendations with MoA numbers
+  const ipmRecs: any[] = [];
+  const ipm = offline.ipmRecommendations || {};
+
+  (ipm.cultural || []).forEach((rec: string, i: number) => {
+    ipmRecs.push({ priority: ipmRecs.length + 1, type: 'cultural', action_bn: rec, timing: 'এখনই' });
   });
-}
+  (ipm.biological || []).forEach((rec: string) => {
+    ipmRecs.push({ priority: ipmRecs.length + 1, type: 'biological', action_bn: rec, timing: 'প্রতিরোধ হিসেবে' });
+  });
 
-function buildEmergencyDiagnosis(text: string, imageAttached: boolean) {
-  const lower = text.toLowerCase();
-  const suspects: string[] = [];
-  if (/yellow|হলুদ|chlorosis/.test(lower)) suspects.push("পুষ্টি ঘাটতি / nutrient deficiency");
-  if (/spot|দাগ|blast|blight|lesion/.test(lower)) suspects.push("ছত্রাক বা ব্যাকটেরিয়া / fungal or bacterial disease");
-  if (/curl|কুঁক|মোড়া|mosaic|virus/.test(lower)) suspects.push("ভাইরাস বা থ্রিপস / virus or sucking pest");
-  if (/hole|ছিদ্র|chew|roll|frass|web|mite|aphid|thrips|insect|পোকা/.test(lower)) suspects.push("পোকার আক্রমণ / insect or mite attack");
-  if (/wilt|মরে|শুক|rot|পচা/.test(lower)) suspects.push("উইল্ট বা রুট রট / wilt or root rot");
+  // Chemical options with MoA numbers from FRAC/IRAC databases
+  const chemicalOptions: any[] = [];
+  if (offline.specificDisease && (ipm.chemical || []).length > 0) {
+    const diseaseName = offline.specificDisease.name;
+    // Get FRAC options for fungal diseases
+    if (causeType === 'fungal') {
+      const fracOptions = getFRACOptionsForDisease(diseaseName);
+      fracOptions.forEach(group => {
+        chemicalOptions.push({
+          name_bn: group.commonProducts[0] || group.name,
+          trade_name: group.commonProducts.slice(0, 2).join(' / '),
+          frac_irac_group: `FRAC ${group.code}`,
+          dose: 'লেবেল মাত্রায়',
+          phi_days: group.phiDays,
+          moa: group.modeOfAction,
+          resistance_risk: group.resistanceRisk,
+        });
+      });
+    }
+    // Get IRAC options for insect pests
+    if (causeType === 'insect') {
+      const iracOptions = getIRACOptionsForPest(diseaseName);
+      iracOptions.forEach(group => {
+        chemicalOptions.push({
+          name_bn: group.commonProducts[0] || group.name,
+          trade_name: group.commonProducts.slice(0, 2).join(' / '),
+          frac_irac_group: `IRAC ${group.code}`,
+          dose: 'লেবেল মাত্রায়',
+          phi_days: group.phiDays,
+          moa: group.modeOfAction,
+          resistance_risk: group.resistanceRisk,
+        });
+      });
+    }
+    // If no specific FRAC/IRAC found, use generic chemical recs
+    if (chemicalOptions.length === 0) {
+      (ipm.chemical || []).forEach((rec: string) => {
+        chemicalOptions.push({
+          name_bn: rec,
+          trade_name: '',
+          frac_irac_group: 'পরামর্শ করুন',
+          dose: '',
+          phi_days: 14,
+          moa: 'DAE কর্মকর্তার পরামর্শ নিন',
+          resistance_risk: 'unknown',
+        });
+      });
+    }
+  }
 
-  const primary = suspects[0] || "ছবি ও বর্ণনার ভিত্তিতে প্রাথমিক সন্দেহ";
-  const differentials = suspects.slice(1, 3);
-  const imageNote = imageAttached
-    ? "ছবি যুক্ত আছে, প্রাথমিক মাঠ-স্তরের জরুরি বিশ্লেষণ।"
-    : "এই বিশ্লেষণটি মূলত আপনার বর্ণনার ভিত্তিতে করা হয়েছে।";
+  // Add chemical recs as IPM items
+  if (chemicalOptions.length > 0) {
+    chemicalOptions.slice(0, 2).forEach(chem => {
+      ipmRecs.push({
+        priority: ipmRecs.length + 1,
+        type: 'chemical',
+        action_bn: `${chem.name_bn} (${chem.frac_irac_group}) — ${chem.moa}`,
+        timing: '৩ দিনের মধ্যে',
+      });
+    });
+  }
+
+  // Add monitoring
+  ipmRecs.push({ priority: ipmRecs.length + 1, type: 'monitoring', action_bn: '৭ দিন পর পুনরায় মূল্যায়ন করুন', timing: '৭ দিন পর' });
+
+  // Build disease triangle scores
+  const triangle = offline.diseaseTriangle || {};
+  const envScore = triangle.riskLevel === 'high' ? 8 : triangle.riskLevel === 'medium' ? 5 : 3;
+
+  // Apply triangle answers to enhance scores
+  let hostScore = 5, pathogenScore = 5;
+  if (triangleAnswers) {
+    if (triangleAnswers.weed_around === 'yes') { pathogenScore += 1; } // alternate host
+    if (triangleAnswers.urea_recent === 'yes') { hostScore += 1; pathogenScore += 1; } // succulent growth + blast risk
+    if (triangleAnswers.waterlogged === 'yes') { hostScore += 1; } // stress
+    if (triangleAnswers.recent_spray === 'yes') { pathogenScore = Math.max(pathogenScore - 1, 3); } // some control already
+  }
+  hostScore = Math.min(hostScore + (triangle.riskLevel === 'high' ? 2 : 0), 10);
+  pathogenScore = Math.min(pathogenScore + (triangle.riskLevel === 'high' ? 2 : 0), 10);
+
+  // Determine ETL (Economic Threshold Level)
+  const etlExceeded = offline.specificDisease?.severity === 'severe' ||
+    (confidencePct >= 50 && ['fungal', 'bacterial', 'viral', 'insect'].includes(causeType));
+
+  // Determine urgency
+  let urgency = 'monitor';
+  if (offline.specificDisease?.severity === 'severe') urgency = 'immediate';
+  else if (etlExceeded && confidencePct >= 60) urgency = 'within_3_days';
+  else if (confidencePct >= 40) urgency = 'within_week';
 
   return {
-    text: `---BANGLA_SECTION---
-## ১. প্রাথমিক CABI বিশ্লেষণ
-**অবস্থা:** জরুরি বিকল্প বিশ্লেষণ
-**মন্তব্য:** ${imageNote}
-
-## ২. সম্ভাব্য কারণ
-**প্রাথমিক সন্দেহ:** ${primary}
-**বিকল্প সন্দেহ:** ${differentials.length ? differentials.join(" ; ") : "মাঠে দেখে নিশ্চিত করা দরকার"}
-**আস্থার মাত্রা:** কম থেকে মাঝারি
-
-## ৩. এখনই যা করবেন
-- আক্রান্ত গাছ/পাতা আলাদা করে দেখুন
-- পাতার উল্টোপাশে পোকা, ডিম, জাল, মধুরস বা কালো ফোঁটা আছে কি না দেখুন
-- দাগ পানিভেজা কিনারা থেকে শুরু হলে ব্যাকটেরিয়া সন্দেহ করুন
-- দাগ হীরার মতো বা বাদামি গোল হলে ছত্রাক সন্দেহ করুন
-- উপসর্গ দুই পাশ সমান হলে পুষ্টি ঘাটতি আগে বিবেচনা করুন
-
-## ৪. কৃষক-নিরাপদ তাৎক্ষণিক পরামর্শ
-- এখনই অপ্রয়োজনীয় কীটনাশক/ফাঙ্গিসাইড স্প্রে করবেন না
-- আক্রান্ত অংশের পরিষ্কার ছবি আবার নিন
-- ক্ষতি দ্রুত বাড়লে নিকটস্থ DAE কর্মকর্তাকে দেখান
----END_BANGLA---
-
----ENGLISH_SECTION---
-## 1. Provisional CABI Analysis
-**Status:** Emergency fallback
-**Primary suspect:** ${primary}
-**Differentials:** ${differentials.length ? differentials.join(" ; ") : "Needs field confirmation"}
-**Confidence:** Low to Medium
----END_ENGLISH---
-
----JSON_SUMMARY---
-{
-  "disease_name": "${primary.split(' / ')[1] || primary}",
-  "disease_name_bn": "${primary.split(' / ')[0] || primary}",
-  "confidence": "low",
-  "confidence_pct": 40,
-  "severity": "moderate",
-  "urgency": "within_3_days",
-  "biotic_abiotic": "uncertain",
-  "cause_type": "uncertain",
-  "etl_exceeded": false,
-  "action_required": true,
-  "gate_results": {
-    "a_insects": "uncertain",
-    "a_reason": "Needs field inspection",
-    "b_virus": "uncertain",
-    "b_reason": "Needs field inspection",
-    "c_bacteria": "uncertain",
-    "c_reason": "Needs field inspection",
-    "d_fungi": "uncertain",
-    "d_reason": "Needs field inspection"
-  },
-  "top_candidates": [
-    { "rank": 1, "name_bn": "${primary.split(' / ')[0]}", "name_en": "${primary.split(' / ')[1] || primary}", "scientific_name": "Field confirmation required", "confidence_pct": 40, "key_feature": "Emergency keyword-based match" }
-  ],
-  "disease_triangle": { "host_score": 5, "pathogen_score": 5, "environment_score": 5, "host_note": "Unable to assess — needs field data", "pathogen_note": "Unable to assess — needs field data", "environment_note": "Unable to assess — needs weather data" },
-  "field_confirmation": { "test_bn": "পাতার উল্টোপাশে পোকা/মাইট/ছত্রাক দেখুন", "steps_bn": ["পাতার নিচে পোকা বা জাল আছে কিনা দেখুন", "দাগের ধরন পরীক্ষা করুন", "DAE কর্মকর্তাকে দেখান"] },
-  "ipm_recommendations": [
-    { "priority": 1, "type": "monitoring", "action_bn": "আক্রান্ত গাছ পর্যবেক্ষণ করুন", "timing": "এখনই" },
-    { "priority": 2, "type": "cultural", "action_bn": "অপ্রয়োজনীয় কীটনাশক স্প্রে করবেন না", "timing": "এখনই" }
-  ],
-  "chemical_options": [],
-  "prevention_bn": "পরবর্তী মৌসুমে প্রতিরোধী জাত ব্যবহার করুন এবং সুষম সার দিন।",
-  "dae_consult_bn": "ক্ষতি দ্রুত বাড়লে বা ৩ দিনে উন্নতি না হলে DAE কর্মকর্তাকে জানান।",
-  "key_recommendations": ["আক্রান্ত গাছ পর্যবেক্ষণ করুন", "অপ্রয়োজনীয় রাসায়নিক ব্যবহার করবেন না", "DAE কর্মকর্তার পরামর্শ নিন"]
-}
----END_JSON---`,
-    provider: "Emergency Keyword Fallback ⚠️",
+    disease_name: offline.specificDisease?.name || offline.primarySuspect || 'Uncertain',
+    disease_name_bn: offline.specificDisease?.nameBn || offline.primarySuspect || 'অনিশ্চিত',
+    confidence: offline.confidence || 'low',
+    confidence_pct: confidencePct,
+    severity: offline.specificDisease?.severity || 'moderate',
+    urgency,
+    biotic_abiotic: offline.abioticBiotic || 'uncertain',
+    cause_type: causeType,
+    etl_exceeded: etlExceeded,
+    action_required: etlExceeded,
+    gate_results: gateResults,
+    top_candidates: topCandidates,
+    disease_triangle: {
+      host_score: hostScore,
+      pathogen_score: pathogenScore,
+      environment_score: envScore,
+      host_note: triangle.host || 'Host assessment pending',
+      pathogen_note: triangle.pathogen || 'Pathogen assessment pending',
+      environment_note: triangle.environment || 'Environment assessment pending',
+    },
+    field_confirmation: {
+      test_bn: offline.fieldConfirmation?.[0] || 'পাতার উল্টোপাশে পোকা/ছত্রাক দেখুন',
+      steps_bn: offline.fieldConfirmation?.slice(0, 4) || ['পাতার নিচে পোকা বা জাল আছে কিনা দেখুন', 'দাগের ধরন পরীক্ষা করুন'],
+    },
+    ipm_recommendations: ipmRecs,
+    chemical_options: chemicalOptions,
+    prevention_bn: (ipm.prevention || []).join('। ') || 'প্রতিরোধী জাত ব্যবহার করুন এবং সুষম সার দিন।',
+    dae_consult_bn: '৭ দিনে আক্রমণ না কমলে বা নতুন জমিতে ছড়িয়ে পড়লে DAE কর্মকর্তাকে জানান।',
+    disclaimer: '⚠️ রাসায়নিক প্রয়োগের আগে অবশ্যই স্থানীয় DAE/SAAO কর্মকর্তার পরামর্শ নিন।',
+    key_recommendations: ipmRecs.slice(0, 3).map((r: any) => r.action_bn),
   };
 }
 
-// ─── Provider: Google Gemini 2.5 Flash ─────────────────────────────────────
-async function tryGemini(messages: any[], withVision: boolean) {
+// ─── AI Provider: Gemini 2.5 Flash ──────────────────────────────────────────
+async function tryGemini(messages: any[], withVision: boolean): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  const src = withVision ? compressMessages(messages) : stripImages(messages);
+  const src = withVision ? messages : messages.map(m => ({
+    ...m,
+    content: Array.isArray(m.content) ? m.content.filter((b: any) => b.type !== "image") : m.content,
+  }));
+
   const lastMsg = src[src.length - 1];
-  const content = Array.isArray(lastMsg.content)
-    ? lastMsg.content
-    : [{ type: "text", text: lastMsg.content }];
+  const content = Array.isArray(lastMsg.content) ? lastMsg.content : [{ type: "text", text: lastMsg.content || "" }];
 
   const parts: any[] = [];
   for (const block of content) {
     if (block.type === "image" && block.source?.type === "base64" && withVision) {
-      parts.push({
-        inlineData: {
-          mimeType: block.source.media_type || "image/jpeg",
-          data: block.source.data,
-        },
-      });
+      parts.push({ inlineData: { mimeType: block.source.media_type || "image/jpeg", data: block.source.data } });
     } else if (block.type === "text") {
       parts.push({ text: block.text });
     }
@@ -440,11 +355,10 @@ async function tryGemini(messages: any[], withVision: boolean) {
   const body = {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: [{ role: "user", parts }],
-    generationConfig: { maxOutputTokens: 3000, temperature: 0.3 },
+    generationConfig: { maxOutputTokens: 2500, temperature: 0.3 },
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
-  const res = await fetch(url, {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
     method: "POST",
     headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -452,260 +366,296 @@ async function tryGemini(messages: any[], withVision: boolean) {
 
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || `Gemini HTTP ${res.status}`);
-
   const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("\n") || "No response.";
-  return { text, provider: withVision ? "Google Gemini 2.5 Flash 👁️" : "Google Gemini 2.5 Flash (text)" };
+  return { text, provider: withVision ? "Gemini 2.5 Flash 👁️" : "Gemini 2.5 Flash (text)" };
 }
 
-// ─── Provider: OpenRouter (vision + text) ──────────────────────────────────
-async function tryOpenRouter(messages: any[], modelId: string) {
+// ─── AI Provider: OpenRouter ────────────────────────────────────────────────
+async function tryOpenRouter(messages: any[], modelId: string): Promise<{ text: string; provider: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
 
-  const body = {
-    model: modelId,
-    max_tokens: 3000,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...toOpenAIMessages(compressMessages(messages))],
-  };
+  const openAIMsgs = messages.map(m => {
+    if (typeof m.content === "string") return { role: m.role, content: m.content };
+    if (Array.isArray(m.content)) {
+      return {
+        role: m.role,
+        content: m.content.map((b: any) => {
+          if (b.type === "text") return { type: "text", text: b.text };
+          if (b.type === "image" && b.source?.type === "base64") {
+            return { type: "image_url", image_url: { url: `data:${b.source.media_type || "image/jpeg"};base64,${b.source.data}` } };
+          }
+          return null;
+        }).filter(Boolean),
+      };
+    }
+    return m;
+  });
+
+  const body = { model: modelId, max_tokens: 2500, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...openAIMsgs] };
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://krishiai.live",
-      "X-Title": "KrishiAI CABI Diagnosis",
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "HTTP-Referer": "https://krishiai.live", "X-Title": "KrishiAI CABI Diagnosis" },
     body: JSON.stringify(body),
   });
 
   const data = await res.json();
   if (!res.ok || data.error) throw new Error(data?.error?.message || `OpenRouter HTTP ${res.status}`);
-
-  const resolvedModel = (data?.model || modelId).split("/").pop()?.replace(":free", "") || modelId;
-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: `OpenRouter / ${resolvedModel}` };
+  const resolved = (data?.model || modelId).split("/").pop()?.replace(":free", "") || modelId;
+  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: `OpenRouter / ${resolved}` };
 }
 
-// ─── Provider: Groq Llama 4 Scout ──────────────────────────────────────────
-async function tryGroq(messages: any[]) {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY not set");
-
-  const body = {
-    model: "llama-3.2-11b-vision-preview",
-    max_tokens: 3000,
-    temperature: 0.3,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...toOpenAIMessages(compressMessages(messages))],
-  };
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `Groq HTTP ${res.status}`);
-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: "Groq Llama 3.2 Vision ⚡" };
-}
-
-// ─── Convert analyzer-page format to messages format ────────────────────────
-function normalizeToMessages(body: any): { messages: any[]; crop: string; district: string } {
-  // If already in messages format
+// ─── Normalize request format ───────────────────────────────────────────────
+function normalizeToMessages(body: any): {
+  messages: any[]; crop: string; district: string; infectedPart: string;
+  eliminationAnswers: Record<string, string>; triangleAnswers: Record<string, string>;
+} {
   if (body.messages && Array.isArray(body.messages) && body.messages.length > 0) {
-    return { messages: body.messages, crop: body.crop || "", district: body.district || "" };
+    return {
+      messages: body.messages, crop: body.crop || "", district: body.district || "",
+      infectedPart: body.infectedPart || "", eliminationAnswers: body.eliminationAnswers || {},
+      triangleAnswers: body.triangleAnswers || {},
+    };
   }
 
-  // Convert analyzer-page format: { image, symptoms, crop, description }
-  const { image, symptoms, crop, description, district } = body;
+  const { image, symptoms, crop, description, district, infectedPart, eliminationAnswers, triangleAnswers } = body;
   const content: any[] = [];
-
-  // Build text part
   const textParts: string[] = [];
   if (crop) textParts.push(`ফসল: ${crop}`);
-  if (symptoms && Array.isArray(symptoms) && symptoms.length > 0) {
-    textParts.push(`লক্ষণসমূহ: ${symptoms.join(", ")}`);
-  }
+  if (symptoms && Array.isArray(symptoms) && symptoms.length > 0) textParts.push(`লক্ষণসমূহ: ${symptoms.join(", ")}`);
   if (description) textParts.push(`বর্ণনা: ${description}`);
   if (district) textParts.push(`জেলা: ${district}`);
+  if (infectedPart) textParts.push(`আক্রান্ত অংশ: ${infectedPart}`);
 
-  const textContent = textParts.join("\n");
-  if (textContent) {
-    content.push({ type: "text", text: textContent });
-  }
-
-  // Add image if present (data URL format from FileReader)
-  if (image) {
-    // image can be a data URL like "data:image/jpeg;base64,..."
-    const match = image.match(/^data:([^;]+);base64,(.+)$/);
-    if (match) {
-      content.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: match[1],
-          data: match[2],
-        },
-      });
+  // Include elimination answers in text for AI context
+  if (eliminationAnswers && Object.keys(eliminationAnswers).length > 0) {
+    textParts.push('বর্জন প্রশ্নের উত্তর:');
+    for (const [key, val] of Object.entries(eliminationAnswers)) {
+      textParts.push(`  ${key}: ${val}`);
     }
   }
 
-  if (content.length === 0) {
-    content.push({ type: "text", text: "কৃষি রোগ নির্ণয় অনুরোধ" });
+  // Include triangle answers
+  if (triangleAnswers && Object.keys(triangleAnswers).length > 0) {
+    textParts.push('রোগ ত্রিভুজ প্রশ্নের উত্তর:');
+    for (const [key, val] of Object.entries(triangleAnswers)) {
+      textParts.push(`  ${key}: ${val}`);
+    }
   }
+
+  if (textParts.length > 0) content.push({ type: "text", text: textParts.join("\n") });
+
+  if (image) {
+    const compressed = compressImage(image);
+    const match = compressed.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) content.push({ type: "image", source: { type: "base64", media_type: match[1], data: match[2] } });
+  }
+
+  if (content.length === 0) content.push({ type: "text", text: "কৃষি রোগ নির্ণয় অনুরোধ" });
 
   return {
     messages: [{ role: "user", content }],
-    crop: crop || "",
-    district: district || "",
+    crop: crop || "", district: district || "",
+    infectedPart: infectedPart || "",
+    eliminationAnswers: eliminationAnswers || {},
+    triangleAnswers: triangleAnswers || {},
   };
 }
 
-// ─── Main Handler ─────────────────────────────────────────────────────────────
+// ─── Main Handler ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+
   try {
     const rawBody = await req.json();
-
-    // Normalize both request formats
-    const { messages, crop, district } = normalizeToMessages(rawBody);
+    const { messages, crop, district, infectedPart, eliminationAnswers, triangleAnswers } = normalizeToMessages(rawBody);
 
     if (!messages.length) {
       return NextResponse.json({ ok: false, error: "Messages are required" }, { status: 400 });
     }
 
-    const lastMsg = messages[messages.length - 1];
-    let imageAttached = false;
-    if (Array.isArray(lastMsg.content)) {
-      imageAttached = lastMsg.content.some((b: any) => b.type === "image");
-    }
-
-    const attempts: string[] = [];
-    const startTime = Date.now();
-
-    // Helper timeout wrapper
-    const withTimeout = async (promise: Promise<any>, label: string) => {
-      return Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), REQUEST_TIMEOUT_MS)),
-      ]);
-    };
-
-    // ─── 1. Gemini 2.5 Flash (vision) ───
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const r = await withTimeout(tryGemini(messages, imageAttached), "Gemini");
-        const structured = extractStructuredJson(r.text);
-        const cleanText = structured ? stripStructuredJson(r.text) : r.text;
-        return NextResponse.json({
-          ok: true,
-          text: cleanText,
-          structured,
-          provider: r.provider,
-          attempts,
-          elapsed_ms: Date.now() - startTime,
-        });
-      } catch (e: any) {
-        attempts.push(`Gemini: ${e.message}`);
-      }
-    }
-
-    // ─── 2. OpenRouter Qwen-VL Free (vision) ───
-    if (process.env.OPENROUTER_API_KEY) {
-      try {
-        const r = await withTimeout(
-          tryOpenRouter(messages, "qwen/qwen2.5-vl-72b-instruct:free"),
-          "OpenRouter Qwen-VL"
-        );
-        const structured = extractStructuredJson(r.text);
-        const cleanText = structured ? stripStructuredJson(r.text) : r.text;
-        return NextResponse.json({
-          ok: true,
-          text: cleanText,
-          structured,
-          provider: r.provider,
-          attempts,
-          elapsed_ms: Date.now() - startTime,
-        });
-      } catch (e: any) {
-        attempts.push(`OpenRouter Qwen-VL: ${e.message}`);
-      }
-    }
-
-    // ─── 3. Groq Llama 3.2 Vision ───
-    if (process.env.GROQ_API_KEY) {
-      try {
-        const r = await withTimeout(tryGroq(messages), "Groq");
-        const structured = extractStructuredJson(r.text);
-        const cleanText = structured ? stripStructuredJson(r.text) : r.text;
-        return NextResponse.json({
-          ok: true,
-          text: cleanText,
-          structured,
-          provider: r.provider,
-          attempts,
-          elapsed_ms: Date.now() - startTime,
-        });
-      } catch (e: any) {
-        attempts.push(`Groq: ${e.message}`);
-      }
-    }
-
-    // ─── 4. OpenRouter text-only ───
-    if (process.env.OPENROUTER_API_KEY) {
-      try {
-        const r = await withTimeout(
-          tryOpenRouter(messages, "qwen/qwen2.5-72b-instruct:free"),
-          "OpenRouter Text"
-        );
-        const structured = extractStructuredJson(r.text);
-        const cleanText = structured ? stripStructuredJson(r.text) : r.text;
-        return NextResponse.json({
-          ok: true,
-          text: cleanText,
-          structured,
-          provider: r.provider,
-          attempts,
-          elapsed_ms: Date.now() - startTime,
-        });
-      } catch (e: any) {
-        attempts.push(`OpenRouter text: ${e.message}`);
-      }
-    }
-
-    // ─── 5. Gemini text-only ───
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const r = await withTimeout(tryGemini(messages, false), "Gemini text");
-        const structured = extractStructuredJson(r.text);
-        const cleanText = structured ? stripStructuredJson(r.text) : r.text;
-        return NextResponse.json({
-          ok: true,
-          text: cleanText,
-          structured,
-          provider: r.provider,
-          attempts,
-          elapsed_ms: Date.now() - startTime,
-        });
-      } catch (e: any) {
-        attempts.push(`Gemini text: ${e.message}`);
-      }
-    }
-
-    // ─── 6. Emergency keyword fallback ───
     const plainText = extractPlainUserText(messages);
-    const emergencyResult = buildEmergencyDiagnosis(plainText, imageAttached);
-    const structured = extractStructuredJson(emergencyResult.text);
-    const cleanText = structured ? stripStructuredJson(emergencyResult.text) : emergencyResult.text;
+    const imageAttached = messages.some(m =>
+      Array.isArray(m.content) && m.content.some((b: any) => b.type === "image")
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 1: OFFLINE DIAGNOSIS (instant, no network needed)
+    // ═══════════════════════════════════════════════════════════════════════
+    const allSymptoms = [
+      ...plainText.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean),
+    ];
+
+    const offlineResult = diagnoseOffline({
+      symptoms: {
+        mainSymptoms: plainText,
+        ...(eliminationAnswers || {}),
+        ...(triangleAnswers || {}),
+      },
+      hostInfo: {
+        varietySusceptibility: triangleAnswers?.variety_known === 'susceptible' ? 'high' : 'medium',
+        growthStage: triangleAnswers?.growth_stage || undefined,
+      },
+      pathogenInfo: {
+        inoculumPressure: triangleAnswers?.disease_history === 'yes' ? 'high' : 'low',
+        recentHistory: triangleAnswers?.disease_history === 'yes' ? 'present' : undefined,
+      },
+      envInfo: {
+        humidity: triangleAnswers?.high_humidity === 'yes' ? 90 : undefined,
+        temp: triangleAnswers?.hot_weather === 'yes' ? 32 : undefined,
+        rainfall: triangleAnswers?.heavy_rain === 'yes' ? 60 : undefined,
+      },
+      crop: crop || undefined,
+    });
+
+    const structured = offlineToStructured(
+      offlineResult, crop, allSymptoms, infectedPart, eliminationAnswers, triangleAnswers
+    );
+
+    const offlineConfidence = structured.confidence_pct;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 2: If confidence >= threshold, return offline result immediately
+    // ═══════════════════════════════════════════════════════════════════════
+    if (offlineConfidence >= CONFIDENCE_THRESHOLD) {
+      const elapsed = Date.now() - startTime;
+
+      // Save to Turso (non-blocking)
+      if (hasTurso()) {
+        saveDiagnosis({
+          session_id: `diag_${Date.now()}`,
+          crop, disease_name: structured.disease_name,
+          disease_name_bn: structured.disease_name_bn,
+          confidence: structured.confidence, confidence_pct: offlineConfidence,
+          severity: structured.severity, biotic_abiotic: structured.biotic_abiotic,
+          cause_type: structured.cause_type, etl_exceeded: structured.etl_exceeded,
+          provider: 'Offline CABI Engine', symptoms: plainText.slice(0, 500),
+          infected_part: infectedPart, district, image_attached: imageAttached,
+          elapsed_ms: elapsed,
+        }).catch(() => {});
+      }
+
+      return NextResponse.json({
+        ok: true,
+        offline: true,
+        confidence_pct: offlineConfidence,
+        provider: "CABI Offline Engine ⚡",
+        structured,
+        elapsed_ms: elapsed,
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 3: Low confidence — try ONE AI provider (8s timeout)
+    // ═══════════════════════════════════════════════════════════════════════
+    let aiResult: { text: string; provider: string } | null = null;
+    let aiProvider = "";
+
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([promise, new Promise<never>((_, rej) => setTimeout(() => rej(new Error('AI timeout')), ms))]);
+
+    // Try Gemini first (best for vision + reasoning)
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        aiResult = await withTimeout(tryGemini(messages, imageAttached), AI_TIMEOUT_MS);
+        aiProvider = aiResult.provider;
+      } catch (e: any) {
+        // Gemini failed, try OpenRouter
+      }
+    }
+
+    // If Gemini failed, try OpenRouter
+    if (!aiResult && process.env.OPENROUTER_API_KEY) {
+      try {
+        const modelId = imageAttached ? "qwen/qwen2.5-vl-72b-instruct:free" : "qwen/qwen2.5-72b-instruct:free";
+        aiResult = await withTimeout(tryOpenRouter(messages, modelId), AI_TIMEOUT_MS);
+        aiProvider = aiResult.provider;
+      } catch (e: any) {
+        // OpenRouter also failed
+      }
+    }
+
+    const elapsed = Date.now() - startTime;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 4: Merge AI result with offline result
+    // ═══════════════════════════════════════════════════════════════════════
+    if (aiResult) {
+      const aiStructured = extractStructuredJson(aiResult.text);
+      // AI result takes priority for structured data, but we add MoA numbers if missing
+      const finalStructured = aiStructured || structured;
+
+      // Ensure MoA numbers on chemical options
+      if (finalStructured.chemical_options) {
+        finalStructured.chemical_options.forEach((chem: any) => {
+          if (!chem.moa && chem.frac_irac_group) {
+            const fracGroup = FRAC_GROUPS.find(g => `FRAC ${g.code}` === chem.frac_irac_group);
+            if (fracGroup) chem.moa = fracGroup.modeOfAction;
+          }
+        });
+      }
+
+      // Ensure disclaimer
+      if (!finalStructured.disclaimer) {
+        finalStructured.disclaimer = '⚠️ রাসায়নিক প্রয়োগের আগে অবশ্যই স্থানীয় DAE/SAAO কর্মকর্তার পরামর্শ নিন।';
+      }
+
+      // Save to Turso
+      if (hasTurso()) {
+        saveDiagnosis({
+          session_id: `diag_${Date.now()}`,
+          crop, disease_name: finalStructured.disease_name,
+          disease_name_bn: finalStructured.disease_name_bn,
+          confidence: finalStructured.confidence, confidence_pct: finalStructured.confidence_pct,
+          severity: finalStructured.severity, biotic_abiotic: finalStructured.biotic_abiotic,
+          cause_type: finalStructured.cause_type, etl_exceeded: finalStructured.etl_exceeded,
+          provider: aiProvider, symptoms: plainText.slice(0, 500),
+          infected_part: infectedPart, district, image_attached: imageAttached,
+          elapsed_ms: elapsed,
+        }).catch(() => {});
+      }
+
+      return NextResponse.json({
+        ok: true,
+        offline: false,
+        confidence_pct: finalStructured.confidence_pct || offlineConfidence,
+        provider: aiProvider,
+        structured: finalStructured,
+        text: stripStructuredJson(aiResult.text),
+        offline_backup: structured,
+        elapsed_ms: elapsed,
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 5: AI also failed — return offline result with "low confidence" tag
+    // ═══════════════════════════════════════════════════════════════════════
+    if (hasTurso()) {
+      saveDiagnosis({
+        session_id: `diag_${Date.now()}`,
+        crop, disease_name: structured.disease_name,
+        disease_name_bn: structured.disease_name_bn,
+        confidence: 'low', confidence_pct: offlineConfidence,
+        severity: structured.severity, biotic_abiotic: structured.biotic_abiotic,
+        cause_type: structured.cause_type, etl_exceeded: structured.etl_exceeded,
+        provider: 'Offline Fallback', symptoms: plainText.slice(0, 500),
+        infected_part: infectedPart, district, image_attached: imageAttached,
+        elapsed_ms: elapsed,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       ok: true,
-      text: cleanText,
+      offline: true,
+      confidence_pct: offlineConfidence,
+      provider: "CABI Offline Engine (AI unavailable)",
       structured,
-      provider: emergencyResult.provider,
-      attempts,
-      elapsed_ms: Date.now() - startTime,
+      needs_ai_review: true,
+      elapsed_ms: elapsed,
     });
+
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error.message || "Diagnosis failed" }, { status: 500 });
   }
 }
