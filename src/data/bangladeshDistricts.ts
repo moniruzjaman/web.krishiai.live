@@ -112,7 +112,7 @@ export const BANGLADESH_DISTRICTS = [
 /**
  * Division name mapping (Bengali -> English).
  */
-const DIVISION_MAP = {
+const DIVISION_MAP: Record<string, string> = {
   'ঢাকা': 'Dhaka',
   'চট্টগ্রাম': 'Chittagong',
   'রাজশাহী': 'Rajshahi',
@@ -128,7 +128,7 @@ const DIVISION_MAP = {
  * @param {string} divisionBn - Bengali division name
  * @returns {Array} Districts in that division
  */
-export function getDistrictsByDivision(divisionBn) {
+export function getDistrictsByDivision(divisionBn: string) {
   return BANGLADESH_DISTRICTS.filter(d => d.division === divisionBn);
 }
 
@@ -157,7 +157,7 @@ export function getDivisions() {
  * @param {number} lon
  * @returns {Object} Nearest district
  */
-export function findNearestDistrict(lat, lon) {
+export function findNearestDistrict(lat: number, lon: number) {
   let nearest = BANGLADESH_DISTRICTS[0];
   let minDist = Infinity;
 
@@ -178,7 +178,7 @@ export function findNearestDistrict(lat, lon) {
  * @param {string} districtId
  * @returns {number} Price multiplier (1.0 = national average)
  */
-export function getDistrictPriceAdjust(districtId) {
+export function getDistrictPriceAdjust(districtId: string) {
   const district = BANGLADESH_DISTRICTS.find(d => d.id === districtId);
   return district?.priceAdjust ?? 1.0;
 }
@@ -188,7 +188,7 @@ export function getDistrictPriceAdjust(districtId) {
  * @param {string} id
  * @returns {Object|undefined}
  */
-export function getDistrictById(id) {
+export function getDistrictById(id: string) {
   return BANGLADESH_DISTRICTS.find(d => d.id === id);
 }
 
@@ -197,7 +197,7 @@ export function getDistrictById(id) {
  * @param {string} districtId
  * @returns {Array<string>} Bengali crop names
  */
-export function getDistrictMajorCrops(districtId) {
+export function getDistrictMajorCrops(districtId: string) {
   const district = BANGLADESH_DISTRICTS.find(d => d.id === districtId);
   return district?.majorCrops ?? [];
 }

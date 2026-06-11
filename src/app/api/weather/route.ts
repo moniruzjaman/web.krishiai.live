@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
   "https://web.krishiai.live",
 ];
 
-function isAllowedOrigin(origin: string | null): boolean {
+function isAllowedOrigin(origin: string | null): origin is string {
   if (!origin) return false;
   if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
   return ALLOWED_ORIGINS.includes(origin);

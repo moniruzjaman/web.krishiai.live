@@ -2,7 +2,7 @@
 // Covers the top 10 Bangladesh crops with at least 5 diseases each.
 // Symptom arrays are in Bengali for matching against user symptom chips.
 
-export const CROP_DISEASES = {
+export const CROP_DISEASES: Record<string, { en: string; diseases: any[] }> = {
   'ধান': { // Rice
     en: 'Rice',
     diseases: [
@@ -617,7 +617,7 @@ export const CROP_DISEASES = {
 /**
  * Map of Bengali crop names to their keys in CROP_DISEASES
  */
-export const CROP_NAME_MAP = {
+export const CROP_NAME_MAP: Record<string, string> = {
   'ধান': 'ধান',
   'পাট': 'পাট',
   'আলু': 'আলু',
@@ -672,7 +672,7 @@ export const CROP_NAME_MAP = {
  * @param {string} cropInput - Crop name in Bengali, English, or mixed format
  * @returns {string|null} - Key in CROP_DISEASES or null
  */
-export function resolveCropKey(cropInput) {
+export function resolveCropKey(cropInput: string) {
   if (!cropInput) return null;
 
   // Direct match
@@ -694,7 +694,7 @@ export function resolveCropKey(cropInput) {
  * @param {string} cropInput - Crop name in any format
  * @returns {Array} - Array of disease objects, or empty array
  */
-export function getDiseasesForCrop(cropInput) {
+export function getDiseasesForCrop(cropInput: string) {
   const key = resolveCropKey(cropInput);
   if (!key || !CROP_DISEASES[key]) return [];
   return CROP_DISEASES[key].diseases;
@@ -706,7 +706,7 @@ export function getDiseasesForCrop(cropInput) {
  * @param {string[]} userSymptoms - Array of symptom strings (Bengali)
  * @returns {Array} - Ranked array of {disease, score, maxScore, matchRatio}
  */
-export function matchDiseasesBySymptoms(cropInput, userSymptoms) {
+export function matchDiseasesBySymptoms(cropInput: string, userSymptoms: string[]) {
   const diseases = getDiseasesForCrop(cropInput);
   if (!diseases.length || !userSymptoms || !userSymptoms.length) return [];
 
@@ -758,7 +758,7 @@ export function matchDiseasesBySymptoms(cropInput, userSymptoms) {
  * @param {string} b - Second symptom string (lowercased)
  * @returns {boolean} - True if significant overlap
  */
-function hasKeywordOverlap(a, b) {
+function hasKeywordOverlap(a: string, b: string) {
   // Bengali-specific: check for shared significant words (2+ chars)
   const wordsA = a.split(/\s+/).filter(w => w.length >= 2);
   const wordsB = b.split(/\s+/).filter(w => w.length >= 2);
@@ -783,13 +783,13 @@ function hasKeywordOverlap(a, b) {
  * @param {string} season - Current season
  * @returns {string} - "high", "medium", or "low"
  */
-export function estimateInoculumPressure(cropInput, season) {
+export function estimateInoculumPressure(cropInput: string, season: string) {
   const key = resolveCropKey(cropInput);
   if (!key || !CROP_DISEASES[key]) return 'low';
 
   const diseases = CROP_DISEASES[key].diseases;
   const seasonDiseases = diseases.filter(d =>
-    d.season.some(s => {
+    d.season.some((s: string) => {
       const sLower = s.toLowerCase();
       const seasonLower = (season || '').toLowerCase();
       return sLower.includes(seasonLower) || seasonLower.includes(sLower) || s === 'Year-round';
@@ -807,9 +807,9 @@ export function estimateInoculumPressure(cropInput, season) {
  * @param {string} variety - Variety name (optional)
  * @returns {string} - "high", "medium", or "low"
  */
-export function getVarietySusceptibility(cropInput, variety) {
+export function getVarietySusceptibility(cropInput: string, variety: string) {
   // Known susceptible varieties in Bangladesh
-  const susceptibleVarieties = {
+  const susceptibleVarieties: Record<string, string[]> = {
     'ধান': ['পুশা', 'BR-3', 'বিআর-৩', 'irri', 'IRRI'],
     'আলু': ['ডায়মন্ট', 'কার্ডিনাল'],
     'টমেটো': ['পুসা রুবি', 'বারি টমেটো-২'],

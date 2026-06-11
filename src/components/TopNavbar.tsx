@@ -146,19 +146,8 @@ export default function TopNavbar() {
         </button>
 
         {/* Logo */}
-        <div className="w-[30px] h-[30px] bg-[#1b8a3e] rounded-full flex items-center justify-center shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M17 8C8 10 5.9 16.17 3.82 19.83c.17-.05.33-.12.5-.17C6 19 7.5 18.5 9 18.5c3.5 0 5.5-2 8-4.5S21 8 21 8c-1.5 1-3.5 1.5-5.5 1.5C14 9.5 15.5 8 17 8z"
-              fill="#fff"
-            />
-            <path
-              d="M3.82 19.83C3.27 20.72 3 21.5 3 22c0 0 2-1 4.17-2.17"
-              stroke="#fff"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+        <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+          <img src="/logo.jpeg" alt="KrishiAI Logo" width="30" height="30" className="w-full h-full object-cover rounded-full" />
         </div>
 
         {/* Spacer */}
@@ -225,16 +214,8 @@ export default function TopNavbar() {
         </button>
 
         {/* Avatar */}
-        <div className="w-[34px] h-[34px] bg-[#1b8a3e] rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 relative cursor-pointer">
-          ক
-          <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] bg-white dark:bg-gray-900 rounded-full flex items-center justify-center">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M17 8C8 10 5.9 16.17 3.82 19.83c.17-.05.33-.12.5-.17C6 19 7.5 18.5 9 18.5c3.5 0 5.5-2 8-4.5S21 8 21 8c-1.5 1-3.5 1.5-5.5 1.5C14 9.5 15.5 8 17 8z"
-                fill="#1b4332"
-              />
-            </svg>
-          </div>
+        <div className="w-[34px] h-[34px] rounded-full shrink-0 relative cursor-pointer overflow-hidden">
+          <img src="/logo.jpeg" alt="KrishiAI" width="34" height="34" className="w-full h-full object-cover rounded-full" />
         </div>
       </header>
     </>

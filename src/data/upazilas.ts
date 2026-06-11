@@ -673,7 +673,7 @@ export const UPAZILAS = [
  * const dhakaUpazilas = getUpazilasByDistrict('dhaka');
  * // => [{ id: 'dhaka_sadar', name: 'ঢাকা সদর', ... }, ...]
  */
-export function getUpazilasByDistrict(districtId) {
+export function getUpazilasByDistrict(districtId: string) {
   return UPAZILAS.filter(u => u.districtId === districtId);
 }
 
@@ -688,7 +688,7 @@ export function getUpazilasByDistrict(districtId) {
  * const savar = getUpazilaById('dhaka_savar');
  * // => { id: 'dhaka_savar', name: 'সাভার', nameEn: 'Savar', districtId: 'dhaka', lat: 23.8591, lon: 90.2568 }
  */
-export function getUpazilaById(id) {
+export function getUpazilaById(id: string) {
   return UPAZILAS.find(u => u.id === id);
 }
 

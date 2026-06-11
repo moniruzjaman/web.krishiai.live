@@ -20,7 +20,7 @@ function extractPlainUserText(messages: any[]): string {
   return messages
     .flatMap((m) => {
       if (!Array.isArray(m.content)) return typeof m.content === "string" ? [m.content] : [];
-      return m.content.filter((b) => b.type === "text" && b.text).map((b) => b.text);
+      return m.content.filter((b: any) => b.type === "text" && b.text).map((b: any) => b.text);
     })
     .join("\n");
 }
@@ -104,7 +104,7 @@ async function tryOpenRouter(messages: any[], modelId: string) {
     if (Array.isArray(m.content)) {
       return {
         role: m.role,
-        content: m.content.map((b) => {
+        content: m.content.map((b: any) => {
           if (b.type === "text") return { type: "text", text: b.text };
           if (b.type === "image" && b.source?.type === "base64") {
             return {
@@ -152,7 +152,7 @@ async function tryGroq(messages: any[]) {
     if (Array.isArray(m.content)) {
       return {
         role: m.role,
-        content: m.content.map((b) => {
+        content: m.content.map((b: any) => {
           if (b.type === "text") return { type: "text", text: b.text };
           if (b.type === "image" && b.source?.type === "base64") {
             return {
@@ -197,7 +197,7 @@ async function tryHuggingFace(messages: any[]) {
   let base64Image = "";
 
   if (Array.isArray(lastMsg.content)) {
-    const imgBlock = lastMsg.content.find((b) => b.type === "image");
+    const imgBlock = lastMsg.content.find((b: any) => b.type === "image");
     if (imgBlock?.source?.data) {
       base64Image = imgBlock.source.data;
     }

@@ -2,7 +2,7 @@
 // Maps Bengali symptom chip values from the UI to English keywords
 // used by the offline diagnostic engine's exclusion gates.
 
-export const BENGALI_KEYWORD_MAP = {
+export const BENGALI_KEYWORD_MAP: Record<string, string> = {
   // ─── Leaf symptoms ─────────────────────────────────────────────────────
   'পাতা হলুদ হয়ে যাচ্ছে': 'yellow leaves chlorosis yellowing',
   'পাতায় বাদামি গোলাকার দাগ': 'brown spots lesions circular leaf spots',
@@ -102,7 +102,7 @@ export const BENGALI_KEYWORD_MAP = {
  * @param {string} bengaliText - Symptom text in Bengali
  * @returns {string} - English keywords or the original text if no match
  */
-export function translateBengaliToEnglish(bengaliText) {
+export function translateBengaliToEnglish(bengaliText: string) {
   if (!bengaliText) return '';
 
   // Try exact match first (prioritize longer keys)
@@ -123,7 +123,7 @@ export function translateBengaliToEnglish(bengaliText) {
  * @param {string[]} bengaliSymptoms - Array of Bengali symptom strings
  * @returns {string} - Space-separated English keywords
  */
-export function translateSymptomsToEnglish(bengaliSymptoms) {
+export function translateSymptomsToEnglish(bengaliSymptoms: string[]) {
   if (!Array.isArray(bengaliSymptoms)) return '';
   const translated = bengaliSymptoms
     .map(s => translateBengaliToEnglish(s))

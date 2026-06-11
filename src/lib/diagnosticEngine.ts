@@ -11,12 +11,12 @@ import { matchDiseasesBySymptoms, estimateInoculumPressure, getVarietySusceptibi
  * @param {Object} symptoms - Observed symptoms from user (may contain Bengali)
  * @returns {Object} - Symptoms with an added _englishText field for keyword matching
  */
-function translateSymptoms(symptoms) {
+function translateSymptoms(symptoms: Record<string, any>) {
   const allValues = Object.values(symptoms).map(v => String(v || '')).filter(v => v && v !== 'N/A');
   const englishText = translateSymptomsToEnglish(allValues);
 
   // Also translate each individual field for fine-grained matching
-  const translated = {};
+  const translated: Record<string, any> = {};
   for (const [key, value] of Object.entries(symptoms)) {
     if (value && String(value) !== 'N/A') {
       translated[key] = translateBengaliToEnglish(String(value));
@@ -37,7 +37,7 @@ function translateSymptoms(symptoms) {
  * @param {Object} symptoms - Observed symptoms from user
  * @returns {string} - "abiotic", "biotic", or "uncertain"
  */
-function assessAbioticBiotic(symptoms) {
+function assessAbioticBiotic(symptoms: Record<string, any>) {
   const abioticIndicators = [
     "uniformly distributed",
     "machinery tracks",
@@ -116,7 +116,7 @@ function assessAbioticBiotic(symptoms) {
  * @param {Object} symptoms - Observed symptoms
  * @returns {Object} - Excluded causes and remaining suspects
  */
-function applyExclusionGates(abioticBiotic, symptoms) {
+function applyExclusionGates(abioticBiotic: string, symptoms: Record<string, any>) {
   const excluded = [];
   const suspects = [];
   const translated = translateSymptoms(symptoms);
@@ -275,13 +275,13 @@ function applyExclusionGates(abioticBiotic, symptoms) {
  * @param {string} cropInput - Crop name for database lookup (optional)
  * @returns {Object} - Disease triangle assessment with field observation guidance
  */
-function assessDiseaseTriangle(hostInfo, pathogenInfo, envInfo, cropInput) {
+function assessDiseaseTriangle(hostInfo: any, pathogenInfo: any, envInfo: any, cropInput: string) {
    const assessment = {
      host: "",
      pathogen: "",
      environment: "",
      riskLevel: "low",
-     fieldObservationGuidance: [] // New field to guide users on what observations to collect
+     fieldObservationGuidance: [] as string[] // New field to guide users on what observations to collect
    };
 
    // Use crop-specific variety susceptibility if available
@@ -361,8 +361,8 @@ function assessDiseaseTriangle(hostInfo, pathogenInfo, envInfo, cropInput) {
  * @param {Array} suspects - Array of suspected causes
  * @returns {Array} - Field confirmation methods with priority levels and interpretation guidance
  */
-function getFieldConfirmationMethods(suspects) {
-   const methods = [];
+function getFieldConfirmationMethods(suspects: any[]) {
+   const methods: string[] = [];
    
    suspects.forEach(suspect => {
      switch (suspect) {
@@ -423,8 +423,8 @@ function getFieldConfirmationMethods(suspects) {
  * @param {Object} diagnosis - Diagnosis object with suspects, confidence, cropDiseaseMatches, etc.
  * @returns {Object} - IPM recommendations
  */
-function generateIPMRecommendations(diagnosis) {
-  const recommendations = {
+function generateIPMRecommendations(diagnosis: any) {
+  const recommendations: { cultural: string[]; biological: string[]; chemical: string[]; prevention: string[] } = {
     cultural: [],
     biological: [],
     chemical: [],
@@ -438,7 +438,7 @@ function generateIPMRecommendations(diagnosis) {
 
     // Add disease-specific recommendations
     if (disease.recommendations && disease.recommendations.length > 0) {
-      disease.recommendations.forEach(rec => {
+      disease.recommendations.forEach((rec: string) => {
         // Classify recommendation into appropriate category based on content
         const recLower = rec.toLowerCase();
         if (recLower.includes('স্প্রে') || recLower.includes('প্রয়োগ') || recLower.includes('spray') ||
@@ -498,7 +498,7 @@ function generateIPMRecommendations(diagnosis) {
   // Add generic chemical controls if none from disease matches
   if (recommendations.chemical.length === 0) {
     if (diagnosis.confidence === "high" || diagnosis.confidence === "medium") {
-      diagnosis.suspects.forEach(suspect => {
+      diagnosis.suspects.forEach((suspect: string) => {
         switch (suspect) {
           case "true fungi":
             recommendations.chemical.push("প্রোপিকোনাজোল, ট্রাইসাইক্লাজোল, কার্বেন্ডাজিম বা টেবুকোনাজোল ব্যবহার করুন");
@@ -550,7 +550,7 @@ function generateIPMRecommendations(diagnosis) {
  * @param {Object} inputData - Contains symptoms, host info, pathogen info, env info, crop
  * @returns {Object} - Complete diagnosis in CABI format with disease matches
  */
-function diagnoseOffline(inputData) {
+function diagnoseOffline(inputData: any) {
   const { symptoms, hostInfo = {}, pathogenInfo = {}, envInfo = {}, crop } = inputData;
   
   // Step 1: Abiotic vs Biotic assessment (uses Bengali-aware text)
@@ -560,7 +560,7 @@ function diagnoseOffline(inputData) {
   const { excluded, suspects } = applyExclusionGates(abioticBiotic, symptoms);
   
   // Step 3: Crop-specific disease matching
-  let cropDiseaseMatches = [];
+  let cropDiseaseMatches: any[] = [];
   let cropKey = null;
 
   if (crop) {
@@ -568,7 +568,7 @@ function diagnoseOffline(inputData) {
 
     if (cropKey && CROP_DISEASES[cropKey]) {
       // Collect all symptom text (both Bengali original and translated English)
-      const allSymptomTexts = [];
+      const allSymptomTexts: string[] = [];
       for (const val of Object.values(symptoms)) {
         if (val && String(val) !== 'N/A') {
           // Split comma-separated or multi-line symptom strings
