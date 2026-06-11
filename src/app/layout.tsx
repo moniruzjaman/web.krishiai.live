@@ -5,6 +5,7 @@ import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
 import { LocationProvider } from "@/context/LocationContext";
 import ClientShell from "@/components/ClientShell";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
@@ -60,18 +61,20 @@ export default function RootLayout({
         className="antialiased bg-background text-foreground"
         style={{ fontFamily: "var(--font-bengali), sans-serif" }}
       >
-        <LocationProvider>
-          {/* Mobile shell — max-width centered, sticky nav */}
-          <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
-            <TopNavbar />
-            <main className="flex-1 pb-16">
-              {children}
-            </main>
-            <BottomNav />
-          </div>
-        </LocationProvider>
-        <ClientShell />
-        <Toaster />
+        <Providers>
+          <LocationProvider>
+            {/* Mobile shell — max-width centered, sticky nav */}
+            <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
+              <TopNavbar />
+              <main className="flex-1 pb-16">
+                {children}
+              </main>
+              <BottomNav />
+            </div>
+          </LocationProvider>
+          <ClientShell />
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

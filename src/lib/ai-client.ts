@@ -172,18 +172,23 @@ export async function callAI(
   messages: AIMessage[],
   options: AICallOptions
 ): Promise<AIResponse> {
-  const { checkQuota, logUsage } = await import('./supabase/quota')
-  
-  // Check quota
-  const { allowed, status } = await checkQuota(options.feature, options.userId)
-  if (!allowed) {
-    return {
-      text: `আপনার দৈনিক কোটা শেষ হয়ে গেছে (${status.used}/${status.dailyLimit})। আগামীকাল আবার চেষ্টা করুন।`,
-      provider: 'quota-exceeded',
-      model: 'none',
-      tokensUsed: 0,
-      quotaRemaining: 0
+  // Check quota — wrap in try/catch to prevent Supabase errors from crashing
+  let quotaResult = { allowed: true as boolean, status: { used: 0, dailyLimit: 10, monthlyLimit: 100, remaining: 10, isExceeded: false } }
+  try {
+    const { checkQuota, logUsage } = await import('./supabase/quota')
+    quotaResult = await checkQuota(options.feature, options.userId)
+    
+    if (!quotaResult.allowed) {
+      return {
+        text: `আপনার দৈনিক কোটা শেষ হয়ে গেছে (${quotaResult.status.used}/${quotaResult.status.dailyLimit})। আগামীকাল আবার চেষ্টা করুন।`,
+        provider: 'quota-exceeded',
+        model: 'none',
+        tokensUsed: 0,
+        quotaRemaining: 0
+      }
     }
+  } catch (e) {
+    console.warn('[ai] Quota check failed, allowing request:', e)
   }
 
   // Provider waterfall: Gemini → OpenRouter → Groq → Offline
@@ -192,9 +197,12 @@ export async function callAI(
   for (const provider of providers) {
     const result = await provider(messages, options)
     if (result) {
-      // Log successful usage
-      await logUsage(options.feature, result.provider, result.model, result.tokensUsed, options.userId)
-      result.quotaRemaining = status.remaining - 1
+      // Log successful usage — best effort
+      try {
+        const { logUsage } = await import('./supabase/quota')
+        await logUsage(options.feature, result.provider, result.model, result.tokensUsed, options.userId)
+      } catch { /* ignore quota logging errors */ }
+      result.quotaRemaining = quotaResult.status.remaining - 1
       return result
     }
   }
@@ -205,7 +213,7 @@ export async function callAI(
     provider: 'offline',
     model: 'none',
     tokensUsed: 0,
-    quotaRemaining: status.remaining
+    quotaRemaining: quotaResult.status.remaining
   }
 }
 
