@@ -557,6 +557,10 @@ export default function CABIDiagnosisPage() {
     setCorrectDiagnosis("");
 
     try {
+      // Set up timeout for the fetch call (10s max)
+      const controller = new AbortController();
+      const fetchTimeout = setTimeout(() => controller.abort(), 12_000);
+
       const res = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -569,7 +573,10 @@ export default function CABIDiagnosisPage() {
           eliminationAnswers,
           triangleAnswers,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(fetchTimeout);
 
       const data = await res.json();
 
@@ -612,10 +619,18 @@ export default function CABIDiagnosisPage() {
           elapsed_ms: data.elapsed_ms || 0,
         });
       } else {
-        setError(data.error || "রোগ নির্ণয় ব্যর্থ হয়েছে");
+        // Show the actual error from the API with a helpful message
+        const apiError = data.error || "রোগ নির্ণয় ব্যর্থ হয়েছে";
+        const hint = data.hint ? `\n💡 ${data.hint}` : "";
+        setError(`${apiError}${hint}`);
       }
-    } catch {
-      setError("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।");
+    } catch (fetchErr: any) {
+      // Distinguish between abort/timeout and actual network errors
+      if (fetchErr?.name === "AbortError") {
+        setError("অনুরোধ সময়মতো সম্পন্ন হয়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+      } else {
+        setError("নেটওয়ার্ক সমস্যা। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।");
+      }
     }
 
     setAnalyzing(false);

@@ -18,14 +18,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { diagnoseOffline } from "@/lib/cabi/diagnosticEngine";
-import { saveDiagnosis, hasTurso } from "@/lib/turso";
+import { saveDiagnosis, saveDiagnosisFeedback, hasTurso } from "@/lib/turso";
 import {
   FRAC_GROUPS, IRAC_GROUPS, PLANTWISE_RED_LIST,
   getFRACOptionsForDisease, getIRACOptionsForPest, isRedListed
 } from "@/lib/cabi/resistanceDB";
 
+// ─── Vercel Function Config ──────────────────────────────────────────────────
+export const maxDuration = 10; // 10 seconds (hobby plan limit)
+
 // ─── Constants ──────────────────────────────────────────────────────────────
-const AI_TIMEOUT_MS = 8_000;        // 8s max for AI call (Vercel hobby = 10s total)
+const AI_TIMEOUT_MS = 6_000;        // 6s max for AI call (leaves 4s buffer for Vercel 10s)
 const CONFIDENCE_THRESHOLD = 70;     // Offline confidence above this → skip AI
 const MAX_IMAGE_CHARS = 800_000;     // ~600KB base64
 
@@ -547,10 +550,11 @@ export async function POST(req: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 3: Low confidence — try ONE AI provider (8s timeout)
+    // STEP 3: Low confidence — try ONE AI provider (6s timeout)
     // ═══════════════════════════════════════════════════════════════════════
     let aiResult: { text: string; provider: string } | null = null;
     let aiProvider = "";
+    let aiError = "";
 
     const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
       Promise.race([promise, new Promise<never>((_, rej) => setTimeout(() => rej(new Error('AI timeout')), ms))]);
@@ -561,8 +565,10 @@ export async function POST(req: NextRequest) {
         aiResult = await withTimeout(tryGemini(messages, imageAttached), AI_TIMEOUT_MS);
         aiProvider = aiResult.provider;
       } catch (e: any) {
-        // Gemini failed, try OpenRouter
+        aiError = `Gemini: ${e?.message || 'failed'}`;
       }
+    } else {
+      aiError = 'GEMINI_API_KEY not set';
     }
 
     // If Gemini failed, try OpenRouter
@@ -572,8 +578,12 @@ export async function POST(req: NextRequest) {
         aiResult = await withTimeout(tryOpenRouter(messages, modelId), AI_TIMEOUT_MS);
         aiProvider = aiResult.provider;
       } catch (e: any) {
-        // OpenRouter also failed
+        aiError += ` | OpenRouter: ${e?.message || 'failed'}`;
       }
+    }
+
+    if (!aiResult && !process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+      aiError = 'No AI API keys configured';
     }
 
     const elapsed = Date.now() - startTime;
@@ -630,6 +640,7 @@ export async function POST(req: NextRequest) {
 
     // ═══════════════════════════════════════════════════════════════════════
     // STEP 5: AI also failed — return offline result with "low confidence" tag
+    //         ALWAYS return ok:true so frontend never shows "network error"
     // ═══════════════════════════════════════════════════════════════════════
     if (hasTurso()) {
       saveDiagnosis({
@@ -652,10 +663,17 @@ export async function POST(req: NextRequest) {
       provider: "CABI Offline Engine (AI unavailable)",
       structured,
       needs_ai_review: true,
+      ai_error: aiError || undefined,
       elapsed_ms: elapsed,
     });
 
   } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error.message || "Diagnosis failed" }, { status: 500 });
+    // Even on unexpected errors, return a structured response so the
+    // frontend never shows a generic "network error" message.
+    return NextResponse.json({
+      ok: false,
+      error: error.message || "Diagnosis failed",
+      hint: "Check that GEMINI_API_KEY or OPENROUTER_API_KEY is set in Vercel environment variables.",
+    }, { status: 500 });
   }
 }

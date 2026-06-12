@@ -2,10 +2,15 @@
  * /api/diagnose/feedback — Diagnosis Feedback Endpoint
  *
  * Accepts user feedback on diagnosis accuracy.
- * Stores feedback for model improvement and quality tracking.
+ * Saves feedback to Turso DB for model improvement and quality tracking.
+ * Falls back to console logging if Turso is not configured.
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { saveDiagnosisFeedback, hasTurso } from "@/lib/turso";
+
+// ─── Vercel Function Config ──────────────────────────────────────────────────
+export const maxDuration = 10;
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,22 +24,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Log feedback (in production, save to database)
-    console.warn("[DIAGNOSIS FEEDBACK]", {
+    // Save to Turso DB if configured
+    if (hasTurso()) {
+      try {
+        await saveDiagnosisFeedback({
+          session_id,
+          crop: crop || "unknown",
+          disease_name,
+          approved: !!approved,
+          user_comment,
+          correct_diagnosis,
+        });
+      } catch (dbErr: any) {
+        console.error("Turso feedback save error:", dbErr?.message || dbErr);
+        // Continue — don't fail the request if DB write fails
+      }
+    }
+
+    // Always log feedback for debugging
+    console.log("[DIAGNOSIS FEEDBACK]", {
       session_id,
       crop,
       disease_name,
       approved,
       user_comment: user_comment || "",
       correct_diagnosis: correct_diagnosis || "",
+      turso_saved: hasTurso(),
       timestamp: new Date().toISOString(),
     });
 
-    // In a production system, this would save to Turso/Supabase
-    // For now, we acknowledge the feedback
     return NextResponse.json({
       ok: true,
-      message: approved ? "ধন্যবাদ! আপনার মতামত গ্রহণ করা হয়েছে।" : "ধন্যবাদ! আপনার সংশোধন সিস্টেম উন্নত করতে সাহায্য করবে।",
+      message: approved
+        ? "ধন্যবাদ! আপনার মতামত গ্রহণ করা হয়েছে।"
+        : "ধন্যবাদ! আপনার সংশোধন সিস্টেম উন্নত করতে সাহায্য করবে।",
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Feedback submission failed";
