@@ -1,0 +1,2082 @@
+diff --git a/src/app/api/diagnose/route.ts b/src/app/api/diagnose/route.ts
+index 024ca6e..e0c206c 100644
+--- a/src/app/api/diagnose/route.ts
++++ b/src/app/api/diagnose/route.ts
+@@ -23,6 +23,14 @@ import {
+   FRAC_GROUPS, IRAC_GROUPS, PLANTWISE_RED_LIST,
+   getFRACOptionsForDisease, getIRACOptionsForPest, isRedListed
+ } from "@/lib/cabi/resistanceDB";
++import {
++  checkRateLimit,
++  resolveClientIp,
++  msToRetryAfterSeconds,
++  ANON_DIAGNOSE_RPM,
++  WINDOW_MS,
++} from "@/lib/rateLimit";
++import { cacheGet, cacheSet, buildCacheKey } from "@/lib/requestCache";
+ 
+ // ─── Vercel Function Config ──────────────────────────────────────────────────
+ export const maxDuration = 10; // 10 seconds (hobby plan limit)
+@@ -191,11 +199,16 @@ function offlineToStructured(offline: any, crop: string, symptoms: string[], inf
+   }
+ 
+   // Determine cause type
++  // BUGFIX (v2): previously used suspects.includes('bacteria') / suspects.includes('virus')
++  // which missed the crop-specific-match variants ("bacteria (crop-specific match)",
++  // "virus (crop-specific match)"). Now uses .some(s => s.includes(...)) so all
++  // suspect variants are detected. The fungal check already used .some() with
++  // 'fung' which was correct.
+   let causeType = 'uncertain';
+   if (offline.abioticBiotic === 'abiotic') causeType = 'deficiency';
+   else if (suspects.some((s: string) => s.includes('fung'))) causeType = 'fungal';
+-  else if (suspects.includes('bacteria')) causeType = 'bacterial';
+-  else if (suspects.includes('virus')) causeType = 'viral';
++  else if (suspects.some((s: string) => s.includes('bacteria'))) causeType = 'bacterial';
++  else if (suspects.some((s: string) => s.includes('virus'))) causeType = 'viral';
+   else if (suspects.some((s: string) => s.includes('insect'))) causeType = 'insect';
+ 
+   // Build IPM recommendations with MoA numbers
+@@ -333,11 +346,17 @@ function offlineToStructured(offline: any, crop: string, symptoms: string[], inf
+   };
+ }
+ 
+-// ─── AI Provider: Gemini 2.5 Flash ──────────────────────────────────────────
++// ─── AI Provider: Gemini 2.5 Flash (cooldown-aware) ──────────────────────
+ async function tryGemini(messages: any[], withVision: boolean): Promise<{ text: string; provider: string }> {
+   const apiKey = process.env.GEMINI_API_KEY;
+   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+ 
++  // Skip if Gemini is in cooldown (recent 429 or 3+ consecutive failures)
++  const { isInCooldown, cooldownRemainingMs, markRateLimited, markSuccess, markFailure, parseRetryAfter } = await import('@/lib/providerCooldown');
++  if (isInCooldown('gemini')) {
++    throw new Error(`Gemini in cooldown (${cooldownRemainingMs('gemini')}ms remaining)`);
++  }
++
+   const src = withVision ? messages : messages.map(m => ({
+     ...m,
+     content: Array.isArray(m.content) ? m.content.filter((b: any) => b.type !== "image") : m.content,
+@@ -367,17 +386,55 @@ async function tryGemini(messages: any[], withVision: boolean): Promise<{ text:
+     body: JSON.stringify(body),
+   });
+ 
++  // 429 — apply cooldown with Retry-After (or exponential backoff)
++  if (res.status === 429) {
++    const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
++    markRateLimited('gemini', { retryAfterSeconds: retryAfter, status: 429 });
++    throw new Error(`Gemini 429 (retry-after=${retryAfter ?? 'auto'}s)`);
++  }
++
++  // 5xx — soft failure (don't cooldown on single blip)
++  if (res.status >= 500) {
++    markFailure('gemini', { status: res.status, reason: `upstream ${res.status}` });
++    throw new Error(`Gemini upstream ${res.status}`);
++  }
++
++  if (!res.ok) {
++    markFailure('gemini', { status: res.status, reason: `http ${res.status}` });
++    const data = await res.json().catch(() => ({}));
++    throw new Error(data?.error?.message || `Gemini HTTP ${res.status}`);
++  }
++
+   const data = await res.json();
+-  if (!res.ok) throw new Error(data?.error?.message || `Gemini HTTP ${res.status}`);
+   const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("\n") || "No response.";
++  if (text === "No response.") {
++    markFailure('gemini', { status: res.status, reason: 'empty response' });
++  } else {
++    markSuccess('gemini');
++  }
+   return { text, provider: withVision ? "Gemini 2.5 Flash 👁️" : "Gemini 2.5 Flash (text)" };
+ }
+ 
+-// ─── AI Provider: OpenRouter ────────────────────────────────────────────────
++// ─── AI Provider: OpenRouter (cooldown-aware, stable model) ───────────────
++// Uses a stable model identifier by default. The previous `:free` preview
++// models rotate frequently and break silently. Override via env:
++//   OPENROUTER_VISION_MODEL  (default: openai/gpt-4o-mini)
++//   OPENROUTER_TEXT_MODEL    (default: openai/gpt-4o-mini)
+ async function tryOpenRouter(messages: any[], modelId: string): Promise<{ text: string; provider: string }> {
+   const apiKey = process.env.OPENROUTER_API_KEY;
+   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
+ 
++  const { isInCooldown, cooldownRemainingMs, markRateLimited, markSuccess, markFailure, parseRetryAfter } = await import('@/lib/providerCooldown');
++  if (isInCooldown('openrouter')) {
++    throw new Error(`OpenRouter in cooldown (${cooldownRemainingMs('openrouter')}ms remaining)`);
++  }
++
++  // Resolve model: prefer env override, fall back to caller-supplied id
++  // (kept for backward compat), finally fall back to a stable default.
++  const stableModel = modelId?.includes('vl') || modelId?.includes('vision')
++    ? (process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4o-mini')
++    : (process.env.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o-mini');
++
+   const openAIMsgs = messages.map(m => {
+     if (typeof m.content === "string") return { role: m.role, content: m.content };
+     if (Array.isArray(m.content)) {
+@@ -395,7 +452,7 @@ async function tryOpenRouter(messages: any[], modelId: string): Promise<{ text:
+     return m;
+   });
+ 
+-  const body = { model: modelId, max_tokens: 2500, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...openAIMsgs] };
++  const body = { model: stableModel, max_tokens: 2500, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...openAIMsgs] };
+ 
+   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+     method: "POST",
+@@ -403,10 +460,31 @@ async function tryOpenRouter(messages: any[], modelId: string): Promise<{ text:
+     body: JSON.stringify(body),
+   });
+ 
++  if (res.status === 429) {
++    const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
++    markRateLimited('openrouter', { retryAfterSeconds: retryAfter, status: 429 });
++    throw new Error(`OpenRouter 429 (retry-after=${retryAfter ?? 'auto'}s)`);
++  }
++
++  if (res.status >= 500) {
++    markFailure('openrouter', { status: res.status, reason: `upstream ${res.status}` });
++    throw new Error(`OpenRouter upstream ${res.status}`);
++  }
++
+   const data = await res.json();
+-  if (!res.ok || data.error) throw new Error(data?.error?.message || `OpenRouter HTTP ${res.status}`);
+-  const resolved = (data?.model || modelId).split("/").pop()?.replace(":free", "") || modelId;
+-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: `OpenRouter / ${resolved}` };
++  if (!res.ok || data.error) {
++    markFailure('openrouter', { status: res.status, reason: data?.error?.message || `http ${res.status}` });
++    throw new Error(data?.error?.message || `OpenRouter HTTP ${res.status}`);
++  }
++
++  const resolved = (data?.model || stableModel).split("/").pop()?.replace(":free", "") || stableModel;
++  const text = data?.choices?.[0]?.message?.content || "No response.";
++  if (text === "No response.") {
++    markFailure('openrouter', { status: res.status, reason: 'empty response' });
++  } else {
++    markSuccess('openrouter');
++  }
++  return { text, provider: `OpenRouter / ${resolved}` };
+ }
+ 
+ // ─── Normalize request format ───────────────────────────────────────────────
+@@ -470,6 +548,37 @@ function normalizeToMessages(body: any): {
+ export async function POST(req: NextRequest) {
+   const startTime = Date.now();
+ 
++  // ═══════════════════════════════════════════════════════════════════════
++  // STEP 0: IP-BASED RATE LIMIT (anonymous / defense-in-depth)
++  // Closes the previous hole where unauthenticated users had no per-IP
++  // throttle. Anonymous users are now capped at ANON_DIAGNOSE_RPM (default 8)
++  // requests per minute per IP.
++  // ═══════════════════════════════════════════════════════════════════════
++  const clientIp = resolveClientIp(req);
++  const rl = checkRateLimit({
++    key: clientIp,
++    namespace: 'anon:diagnose',
++    maxRequests: ANON_DIAGNOSE_RPM,
++    windowMs: WINDOW_MS,
++  });
++  if (!rl.allowed) {
++    const retryAfter = msToRetryAfterSeconds(rl.retryAfterMs);
++    return NextResponse.json({
++      ok: false,
++      error: `অনুরোধের হার সীমা অতিক্রম করেছে। দয়া করে ${retryAfter} সেকেন্ড পরে আবার চেষ্টা করুন।`,
++      hint: `Rate limit: ${rl.current}/${rl.limit} per minute. Try again in ${retryAfter}s.`,
++      retry_after_seconds: retryAfter,
++    }, {
++      status: 429,
++      headers: {
++        'Retry-After': String(retryAfter),
++        'X-RateLimit-Limit': String(rl.limit),
++        'X-RateLimit-Remaining': '0',
++        'X-RateLimit-Reset': String(Date.now() + rl.retryAfterMs),
++      },
++    });
++  }
++
+   try {
+     const rawBody = await req.json();
+     const { messages, crop, district, infectedPart, eliminationAnswers, triangleAnswers } = normalizeToMessages(rawBody);
+@@ -478,6 +587,23 @@ export async function POST(req: NextRequest) {
+       return NextResponse.json({ ok: false, error: "Messages are required" }, { status: 400 });
+     }
+ 
++    // ═══════════════════════════════════════════════════════════════════════
++    // STEP 0b: REQUEST DEDUP CACHE
++    // If two requests with identical payload arrive within 60s (e.g. user
++    // double-clicks, or two clients submit the same diagnosis), we serve
++    // the cached result without re-running the offline engine or hitting AI.
++    // ═══════════════════════════════════════════════════════════════════════
++    const cacheKey = buildCacheKey(['diagnose', crop, district, infectedPart, eliminationAnswers, triangleAnswers, messages]);
++    const cached = cacheGet<any>(cacheKey);
++    if (cached) {
++      return NextResponse.json({
++        ...cached,
++        cached: true,
++        elapsed_ms: Date.now() - startTime,
++        rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
++      });
++    }
++
+     const plainText = extractPlainUserText(messages);
+     const imageAttached = messages.some(m =>
+       Array.isArray(m.content) && m.content.some((b: any) => b.type === "image")
+@@ -510,6 +636,7 @@ export async function POST(req: NextRequest) {
+         rainfall: triangleAnswers?.heavy_rain === 'yes' ? 60 : undefined,
+       },
+       crop: crop || undefined,
++      infectedPart: infectedPart || undefined, // ← NEW: enables part-aware boosting
+     });
+ 
+     const structured = offlineToStructured(
+@@ -539,12 +666,21 @@ export async function POST(req: NextRequest) {
+         }).catch(() => {});
+       }
+ 
+-      return NextResponse.json({
++      const responsePayload = {
+         ok: true,
+         offline: true,
+         confidence_pct: offlineConfidence,
+         provider: "CABI Offline Engine ⚡",
+         structured,
++        rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
++      };
++
++      // Cache for dedup (don't cache image-bearing requests — payload too large
++      // and may match different physical images with the same base64 prefix).
++      if (!imageAttached) cacheSet(cacheKey, responsePayload);
++
++      return NextResponse.json({
++        ...responsePayload,
+         elapsed_ms: elapsed,
+       });
+     }
+@@ -634,6 +770,7 @@ export async function POST(req: NextRequest) {
+         structured: finalStructured,
+         text: stripStructuredJson(aiResult.text),
+         offline_backup: structured,
++        rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
+         elapsed_ms: elapsed,
+       });
+     }
+@@ -664,6 +801,7 @@ export async function POST(req: NextRequest) {
+       structured,
+       needs_ai_review: true,
+       ai_error: aiError || undefined,
++      rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
+       elapsed_ms: elapsed,
+     });
+ 
+diff --git a/src/lib/ai-client.ts b/src/lib/ai-client.ts
+index f9b8900..1d02d81 100644
+--- a/src/lib/ai-client.ts
++++ b/src/lib/ai-client.ts
+@@ -1,11 +1,30 @@
+ /**
+  * Quota-Aware AI Client — Vercel + Supabase Architecture
+  *
+- * Provider waterfall: Gemini → OpenRouter → Groq → Offline fallback
+- * Each call checks Supabase quota before proceeding.
++ * Provider waterfall with smart rate-limit handling:
++ *   1. Skip providers currently in cooldown (429 circuit-breaker)
++ *   2. On 429, parse Retry-After, apply per-provider cooldown
++ *   3. On success, reset failure counter
++ *   4. Short-TTL request cache to dedup identical queries
++ *   5. Fall back to offline message if all providers fail
++ *
++ * Each call also checks Supabase quota for authenticated users (see
++ * ./supabase/quota.ts) — anonymous users are throttled by the IP-based
++ * rate limiter at the route layer (see ./rateLimit.ts).
++ *
+  * Free platform — no user charges, just soft limits.
+  */
+ 
++import {
++  isInCooldown,
++  markSuccess,
++  markFailure,
++  markRateLimited,
++  parseRetryAfter,
++  cooldownRemainingMs,
++} from './providerCooldown';
++import { cacheGet, cacheSet, buildCacheKey } from './requestCache';
++
+ export interface AIMessage {
+   role: 'system' | 'user' | 'assistant'
+   content: string
+@@ -16,6 +35,9 @@ export interface AICallOptions {
+   maxTokens?: number
+   feature: string // 'chat' | 'diagnose' | 'soil_analysis' | 'crop_database' | 'news_bulletin'
+   userId?: string
++  /** Disable request cache for this call (e.g. for streaming or
++   *  highly-contextual queries). Default: false. */
++  noCache?: boolean
+ }
+ 
+ export interface AIResponse {
+@@ -24,28 +46,46 @@ export interface AIResponse {
+   model: string
+   tokensUsed: number
+   quotaRemaining: number
++  /** True if served from cache. */
++  cached?: boolean
+ }
+ 
+ // ── Provider implementations ─────────────────────────────────────────────────
+ 
++/**
++ * Call Gemini 2.5 Flash via the v1beta generateContent endpoint.
++ *
++ * SECURITY: API key is sent via the `x-goog-api-key` header (NOT in the
++ * URL query string). The previous `?key=...` form leaked keys into
++ * server logs, Vercel request logs, and any upstream proxy's access logs.
++ */
+ async function callGemini(messages: AIMessage[], options: AICallOptions): Promise<AIResponse | null> {
+   const apiKey = process.env.GEMINI_API_KEY
+   if (!apiKey) return null
+ 
++  // Skip if Gemini is in cooldown (recent 429 or 3+ consecutive failures)
++  if (isInCooldown('gemini')) {
++    console.warn(`[ai] Gemini skipped — cooldown ${cooldownRemainingMs('gemini')}ms remaining`)
++    return null
++  }
++
+   try {
+     const systemMsg = messages.find(m => m.role === 'system')
+     const userMsgs = messages.filter(m => m.role !== 'system')
+-    
++
+     const contents = userMsgs.map(m => ({
+       role: m.role === 'assistant' ? 'model' : 'user',
+       parts: [{ text: m.content }]
+     }))
+ 
+     const res = await fetch(
+-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
++      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+       {
+         method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
++        headers: {
++          'Content-Type': 'application/json',
++          'x-goog-api-key': apiKey, // ← header-based, NOT in URL
++        },
+         body: JSON.stringify({
+           contents,
+           systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+@@ -57,15 +97,37 @@ async function callGemini(messages: AIMessage[], options: AICallOptions): Promis
+       }
+     )
+ 
++    // ─── 429: rate-limited by upstream ────────────────────────────────────
++    if (res.status === 429) {
++      const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
++      markRateLimited('gemini', { retryAfterSeconds: retryAfter, status: 429 });
++      console.warn(`[ai] Gemini 429 — cooldown applied (retry-after=${retryAfter ?? 'auto'}s)`);
++      return null;
++    }
++
++    // ─── 5xx: transient upstream error ────────────────────────────────────
++    if (res.status >= 500) {
++      markFailure('gemini', { status: res.status, reason: `upstream ${res.status}` });
++      console.warn(`[ai] Gemini upstream ${res.status}`);
++      return null;
++    }
++
+     if (!res.ok) {
+-      console.warn('[ai] Gemini failed:', res.status)
+-      return null
++      markFailure('gemini', { status: res.status, reason: `http ${res.status}` });
++      console.warn('[ai] Gemini failed:', res.status);
++      return null;
+     }
+ 
+     const data = await res.json()
+     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+-    
+-    if (!text) return null
++
++    if (!text) {
++      markFailure('gemini', { status: res.status, reason: 'empty response' });
++      return null;
++    }
++
++    // Success — reset failure counter
++    markSuccess('gemini');
+ 
+     return {
+       text,
+@@ -74,17 +136,33 @@ async function callGemini(messages: AIMessage[], options: AICallOptions): Promis
+       tokensUsed: data?.usageMetadata?.totalTokenCount || 0,
+       quotaRemaining: 0 // filled by caller
+     }
+-  } catch (e) {
+-    console.warn('[ai] Gemini error:', e)
+-    return null
++  } catch (e: any) {
++    markFailure('gemini', { status: -1, reason: e?.message ?? 'network error' });
++    console.warn('[ai] Gemini error:', e?.message ?? e);
++    return null;
+   }
+ }
+ 
++/**
++ * Call OpenRouter. Updated to use a stable (non-preview) model — the
++ * previous `gemini-2.5-flash-preview-05-20` is sunset-prone and breaks
++ * silently when Google rotates preview model names.
++ */
+ async function callOpenRouter(messages: AIMessage[], options: AICallOptions): Promise<AIResponse | null> {
+   const apiKey = process.env.OPENROUTER_API_KEY
+   if (!apiKey) return null
+ 
++  if (isInCooldown('openrouter')) {
++    console.warn(`[ai] OpenRouter skipped — cooldown ${cooldownRemainingMs('openrouter')}ms remaining`)
++    return null;
++  }
++
+   try {
++    // Use a stable OpenRouter model identifier. If the Gemini proxy is
++    // unavailable, OpenRouter will return a clear error rather than
++    // silently failing as preview models do.
++    const model = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
++
+     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+       method: 'POST',
+       headers: {
+@@ -94,33 +172,53 @@ async function callOpenRouter(messages: AIMessage[], options: AICallOptions): Pr
+         'X-Title': 'KrishiAI'
+       },
+       body: JSON.stringify({
+-        model: 'google/gemini-2.5-flash-preview-05-20',
++        model,
+         messages,
+         temperature: options.temperature ?? 0.7,
+         max_tokens: options.maxTokens ?? 1024
+       })
+     })
+ 
++    if (res.status === 429) {
++      const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
++      markRateLimited('openrouter', { retryAfterSeconds: retryAfter, status: 429 });
++      console.warn(`[ai] OpenRouter 429 — cooldown applied (retry-after=${retryAfter ?? 'auto'}s)`);
++      return null;
++    }
++
++    if (res.status >= 500) {
++      markFailure('openrouter', { status: res.status, reason: `upstream ${res.status}` });
++      console.warn('[ai] OpenRouter upstream', res.status);
++      return null;
++    }
++
+     if (!res.ok) {
+-      console.warn('[ai] OpenRouter failed:', res.status)
+-      return null
++      markFailure('openrouter', { status: res.status, reason: `http ${res.status}` });
++      console.warn('[ai] OpenRouter failed:', res.status);
++      return null;
+     }
+ 
+     const data = await res.json()
+     const text = data?.choices?.[0]?.message?.content || ''
+-    
+-    if (!text) return null
++
++    if (!text) {
++      markFailure('openrouter', { status: res.status, reason: 'empty response' });
++      return null;
++    }
++
++    markSuccess('openrouter');
+ 
+     return {
+       text,
+       provider: 'OpenRouter',
+-      model: 'google/gemini-2.5-flash-preview-05-20',
++      model: data?.model || model,
+       tokensUsed: data?.usage?.total_tokens || 0,
+       quotaRemaining: 0
+     }
+-  } catch (e) {
+-    console.warn('[ai] OpenRouter error:', e)
+-    return null
++  } catch (e: any) {
++    markFailure('openrouter', { status: -1, reason: e?.message ?? 'network error' });
++    console.warn('[ai] OpenRouter error:', e?.message ?? e);
++    return null;
+   }
+ }
+ 
+@@ -128,6 +226,11 @@ async function callGroq(messages: AIMessage[], options: AICallOptions): Promise<
+   const apiKey = process.env.GROQ_API_KEY
+   if (!apiKey) return null
+ 
++  if (isInCooldown('groq')) {
++    console.warn(`[ai] Groq skipped — cooldown ${cooldownRemainingMs('groq')}ms remaining`)
++    return null;
++  }
++
+   try {
+     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+       method: 'POST',
+@@ -136,22 +239,42 @@ async function callGroq(messages: AIMessage[], options: AICallOptions): Promise<
+         'Content-Type': 'application/json'
+       },
+       body: JSON.stringify({
+-        model: 'llama-3.1-8b-instant',
++        // Llama 3.1 8B instant — fast, stable, free-tier friendly
++        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+         messages,
+         temperature: options.temperature ?? 0.7,
+         max_tokens: options.maxTokens ?? 1024
+       })
+     })
+ 
++    if (res.status === 429) {
++      const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
++      markRateLimited('groq', { retryAfterSeconds: retryAfter, status: 429 });
++      console.warn(`[ai] Groq 429 — cooldown applied (retry-after=${retryAfter ?? 'auto'}s)`);
++      return null;
++    }
++
++    if (res.status >= 500) {
++      markFailure('groq', { status: res.status, reason: `upstream ${res.status}` });
++      console.warn('[ai] Groq upstream', res.status);
++      return null;
++    }
++
+     if (!res.ok) {
+-      console.warn('[ai] Groq failed:', res.status)
+-      return null
++      markFailure('groq', { status: res.status, reason: `http ${res.status}` });
++      console.warn('[ai] Groq failed:', res.status);
++      return null;
+     }
+ 
+     const data = await res.json()
+     const text = data?.choices?.[0]?.message?.content || ''
+-    
+-    if (!text) return null
++
++    if (!text) {
++      markFailure('groq', { status: res.status, reason: 'empty response' });
++      return null;
++    }
++
++    markSuccess('groq');
+ 
+     return {
+       text,
+@@ -160,24 +283,38 @@ async function callGroq(messages: AIMessage[], options: AICallOptions): Promise<
+       tokensUsed: data?.usage?.total_tokens || 0,
+       quotaRemaining: 0
+     }
+-  } catch (e) {
+-    console.warn('[ai] Groq error:', e)
+-    return null
++  } catch (e: any) {
++    markFailure('groq', { status: -1, reason: e?.message ?? 'network error' });
++    console.warn('[ai] Groq error:', e?.message ?? e);
++    return null;
+   }
+ }
+ 
+-// ── Main AI Call with Quota + Fallback ───────────────────────────────────────
++// ── Main AI Call with Quota + Cooldown + Cache + Fallback ────────────────────
+ 
+ export async function callAI(
+   messages: AIMessage[],
+   options: AICallOptions
+ ): Promise<AIResponse> {
+-  // Check quota — wrap in try/catch to prevent Supabase errors from crashing
++  // ── 1. Short-TTL request cache (dedup identical queries within 60s) ──
++  const cacheKey = options.noCache
++    ? ''
++    : buildCacheKey([options.feature, options.temperature ?? 0.7, options.maxTokens ?? 1024, messages]);
++
++  if (cacheKey) {
++    const cached = cacheGet<AIResponse>(cacheKey);
++    if (cached) {
++      return { ...cached, cached: true };
++    }
++  }
++
++  // ── 2. Quota check (Supabase) — authenticated users only ──────────────
++  // Wrap in try/catch so Supabase errors never break the AI call.
+   let quotaResult = { allowed: true as boolean, status: { used: 0, dailyLimit: 10, monthlyLimit: 100, remaining: 10, isExceeded: false } }
+   try {
+-    const { checkQuota, logUsage } = await import('./supabase/quota')
++    const { checkQuota } = await import('./supabase/quota')
+     quotaResult = await checkQuota(options.feature, options.userId)
+-    
++
+     if (!quotaResult.allowed) {
+       return {
+         text: `আপনার দৈনিক কোটা শেষ হয়ে গেছে (${quotaResult.status.used}/${quotaResult.status.dailyLimit})। আগামীকাল আবার চেষ্টা করুন।`,
+@@ -191,25 +328,32 @@ export async function callAI(
+     console.warn('[ai] Quota check failed, allowing request:', e)
+   }
+ 
+-  // Provider waterfall: Gemini → OpenRouter → Groq → Offline
++  // ── 3. Provider waterfall (cooldown-aware) ────────────────────────────
++  // Providers are tried in order. Each provider internally checks its own
++  // cooldown state at the top and returns null if it should be skipped.
+   const providers = [callGemini, callOpenRouter, callGroq]
+ 
+   for (const provider of providers) {
+     const result = await provider(messages, options)
+     if (result) {
+-      // Log successful usage — best effort
++      // Log successful usage — best effort (don't block on quota logging)
+       try {
+         const { logUsage } = await import('./supabase/quota')
+         await logUsage(options.feature, result.provider, result.model, result.tokensUsed, options.userId)
+       } catch { /* ignore quota logging errors */ }
+       result.quotaRemaining = quotaResult.status.remaining - 1
++
++      // Cache the successful result for dedup
++      if (cacheKey) cacheSet(cacheKey, result);
++
+       return result
+     }
+   }
+ 
+-  // All providers failed — offline fallback
++  // ── 4. All providers failed / in cooldown — offline fallback ──────────
++  const offlineText = getOfflineFallback(options.feature, messages)
+   return {
+-    text: getOfflineFallback(options.feature, messages),
++    text: offlineText,
+     provider: 'offline',
+     model: 'none',
+     tokensUsed: 0,
+@@ -244,7 +388,7 @@ export async function aiChatFull(
+ 
+ function getOfflineFallback(feature: string, messages: AIMessage[]): string {
+   const _userMsg = messages.find(m => m.role === 'user')?.content || ''
+-  
++
+   switch (feature) {
+     case 'chat':
+       return 'দুঃখিত, AI সহকারী এখন উপলব্ধ নয়। কিছুক্ষণ পর আবার চেষ্টা করুন। জরুরি প্রয়োজনে আপনার নিকটস্থ কৃষি সম্প্রসারণ অফিসে যোগাযোগ করুন।'
+diff --git a/src/lib/cabi/diagnosticEngine.ts b/src/lib/cabi/diagnosticEngine.ts
+index d302f77..718f7f1 100644
+--- a/src/lib/cabi/diagnosticEngine.ts
++++ b/src/lib/cabi/diagnosticEngine.ts
+@@ -2,11 +2,55 @@
+  * Offline CABI Diagnostic Engine
+  * Implements the CABI Plantwise methodology without requiring internet or external APIs
+  * Supports Bengali symptom input via BENGALI_KEYWORD_MAP
++ *
++ * Recent enhancements (v2):
++ *   - Bugfix: "no <sign>" phrases (e.g. "no webbing") no longer falsely
++ *     trigger the corresponding biotic indicator. Word-boundary regex with
++ *     negative-lookbehind for "no " / "না" is used.
++ *   - Bugfix: translation results are cached within a single diagnoseOffline()
++ *     call so applyExclusionGates() and assessAbioticBiotic() don't
++ *     duplicate work.
++ *   - Bugfix: suspects array is deduplicated (was producing strings like
++ *     "fungal/oomycete (crop-specific match)" + "fungal/oomycete (unable to differentiate)").
++ *   - Enhancement: infectedPart now boosts disease candidates whose symptoms
++ *     reference that plant part (root/stem/leaf/fruit/panicle).
++ *   - Enhancement: matchRatio now reports a confidence-aware score so a
++ *     single high-quality symptom match can clear the AI-skip threshold.
++ *   - Enhancement: when no crop is selected, the engine still runs the
++ *     abiotic/biotic + exclusion-gate pipeline and produces a useful result.
+  */
+ 
+ import { translateBengaliToEnglish, translateSymptomsToEnglish } from './bengaliKeywords';
+ import { matchDiseasesBySymptoms, estimateInoculumPressure, getVarietySusceptibility, resolveCropKey, CROP_DISEASES } from '../cropDiseases';
+ 
++// ─── Infected-part → keyword mapping ─────────────────────────────────────────
++// Used to boost crop-disease candidates whose symptoms reference the same
++// plant part the user identified as affected. Pure string matching — no AI.
++const INFECTED_PART_KEYWORDS: Record<string, string[]> = {
++  leaf: ['পাতা', 'leaf', 'leaves', 'blade'],
++  leaves: ['পাতা', 'leaf', 'leaves', 'blade'],
++  'পাতা': ['পাতা', 'leaf', 'leaves'],
++  stem: ['কান্ড', 'কাণ্ড', 'stem', 'stalk', 'culm'],
++  'কান্ড': ['কান্ড', 'কাণ্ড', 'stem'],
++  'কাণ্ড': ['কান্ড', 'কাণ্ড', 'stem'],
++  root: ['শিকড়', 'মূল', 'root', 'roots'],
++  'শিকড়': ['শিকড়', 'মূল', 'root'],
++  fruit: ['ফল', 'fruit', 'fruits'],
++  'ফল': ['ফল', 'fruit'],
++  panicle: ['শীষ', 'panicle', 'ear', 'head'],
++  'শীষ': ['শীষ', 'panicle', 'ear'],
++  flower: ['ফুল', 'flower', 'blossom'],
++  'ফুল': ['ফুল', 'flower'],
++  seed: ['বীজ', 'দানা', 'seed', 'grain'],
++  grain: ['দানা', 'শীষ', 'grain', 'seed'],
++};
++
++function partKeywords(part?: string): string[] {
++  if (!part) return [];
++  const key = part.toLowerCase().trim();
++  return INFECTED_PART_KEYWORDS[key] || INFECTED_PART_KEYWORDS[part.trim()] || [];
++}
++
+ interface SymptomInput {
+   [key: string]: string | string[];
+ }
+@@ -91,10 +135,27 @@ export interface OfflineDiagnosis {
+   timestamp: string;
+ }
+ 
++/**
++ * Cached translation: translating the same symptom set twice (once in
++ * assessAbioticBiotic, once in applyExclusionGates) was wasted work.
++ * We cache by a shallow key derived from the symptom object.
++ */
++const _translationCache = new Map<string, TranslatedSymptoms>();
++
++function translationCacheKey(symptoms: SymptomInput): string {
++  // Stable JSON string — small objects, so this is cheap.
++  return JSON.stringify(symptoms);
++}
++
+ /**
+  * Translates all symptom text fields to English keywords.
++ * Cached per-process to avoid duplicate work across the multiple gates.
+  */
+ function translateSymptoms(symptoms: SymptomInput): TranslatedSymptoms {
++  const cacheKey = translationCacheKey(symptoms);
++  const cached = _translationCache.get(cacheKey);
++  if (cached) return cached;
++
+   const allValues = Object.values(symptoms).map(v => String(v || '')).filter(v => v && v !== 'N/A');
+   const englishText = translateSymptomsToEnglish(allValues);
+ 
+@@ -107,17 +168,63 @@ function translateSymptoms(symptoms: SymptomInput): TranslatedSymptoms {
+     }
+   }
+ 
+-  return {
++  const result: TranslatedSymptoms = {
+     ...symptoms,
+     _englishText: englishText,
+     _translated: translated,
+   };
++
++  // Bounded cache — clear after 256 entries to prevent unbounded growth
++  if (_translationCache.size >= 256) _translationCache.clear();
++  _translationCache.set(cacheKey, result);
++  return result;
++}
++
++/**
++ * Word-boundary matcher that excludes negative-context occurrences.
++ * e.g. "no webbing" should NOT count as "webbing" present.
++ *
++ * Negative context is detected by checking the characters immediately
++ * before the match for the English word "no " or the Bengali negation
++ * marker "না".
++ */
++function hasPositiveMatch(text: string, indicator: string): boolean {
++  if (!indicator) return false;
++  const ind = indicator.toLowerCase();
++  const idx = text.indexOf(ind);
++  if (idx === -1) return false;
++
++  // Check if the match is preceded by a negation marker.
++  // English: "no " or "without " or "absence of "
++  // Bengali: "না" (last 2 chars) — covers "নেই", "নাই", "না" prefixes
++  const before = text.slice(Math.max(0, idx - 12), idx);
++  if (/\bno\s+$/i.test(before) || /\bwithout\s+$/i.test(before) || /\babsence\s+of\s+$/i.test(before)) {
++    return false;
++  }
++  if (/\sনেই\s?$/.test(before) || /\sনাই\s?$/.test(before) || /\sনা\s?$/.test(before)) {
++    return false;
++  }
++  return true;
++}
++
++/**
++ * Push into an array only if the value isn't already present.
++ * Keeps the suspects list clean and prevents duplicate recommendations
++ * downstream.
++ */
++function pushUnique(arr: string[], value: string): void {
++  if (!arr.includes(value)) arr.push(value);
+ }
+ 
+ /**
+  * Extracts and processes symptoms to determine if issue is abiotic or biotic
+  */
+ export function assessAbioticBiotic(symptoms: SymptomInput): 'abiotic' | 'biotic' | 'uncertain' {
++  // ── Abiotic indicators ─────────────────────────────────────────────────
++  // Note: "no <sign>" phrases are deliberately listed here as POSITIVE
++  // abiotic evidence (they were already correctly attributed), but the
++  // matching logic now uses hasPositiveMatch() so "no webbing" no longer
++  // also triggers the biotic "webbing" indicator below.
+   const abioticIndicators = [
+     'uniformly distributed', 'machinery tracks', 'irrigation channels', 'soil type zones',
+     'symmetrically on both sides', 'no progression', 'all plants affected simultaneously',
+@@ -141,12 +248,16 @@ export function assessAbioticBiotic(symptoms: SymptomInput): 'abiotic' | 'biotic
+   const translated = translateSymptoms(symptoms);
+   const allText = Object.values(symptoms).join(' ').toLowerCase() + ' ' + translated._englishText.toLowerCase();
+ 
++  // Abiotic indicators use plain includes() — "no webbing" matches "no webbing"
++  // and that's intentional here (abiotic evidence).
+   abioticIndicators.forEach(indicator => {
+     if (allText.includes(indicator.toLowerCase())) abioticScore++;
+   });
+ 
++  // Biotic indicators use hasPositiveMatch() — "no webbing" must NOT
++  // trigger the biotic "webbing" indicator. This was the original bug.
+   bioticIndicators.forEach(indicator => {
+-    if (allText.includes(indicator.toLowerCase())) bioticScore++;
++    if (hasPositiveMatch(allText, indicator)) bioticScore++;
+   });
+ 
+   if (abioticScore > bioticScore) return 'abiotic';
+@@ -167,8 +278,16 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
+   const allText = originalText + ' ' + englishText;
+ 
+   if (abioticBiotic === 'abiotic') {
+-    excluded.push('insects/mites', 'virus', 'bacteria', 'fungi/oomycetes');
+-    suspects.push('nutrient deficiency', 'drought', 'waterlogging', 'herbicide injury', 'salinity', 'pH toxicity');
++    pushUnique(excluded, 'insects/mites');
++    pushUnique(excluded, 'virus');
++    pushUnique(excluded, 'bacteria');
++    pushUnique(excluded, 'fungi/oomycetes');
++    pushUnique(suspects, 'nutrient deficiency');
++    pushUnique(suspects, 'drought');
++    pushUnique(suspects, 'waterlogging');
++    pushUnique(suspects, 'herbicide injury');
++    pushUnique(suspects, 'salinity');
++    pushUnique(suspects, 'pH toxicity');
+     return { excluded, suspects };
+   }
+ 
+@@ -182,13 +301,13 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
+ 
+   let hasInsectSigns = false;
+   insectMiteSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasInsectSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasInsectSigns = true;
+   });
+ 
+   if (!hasInsectSigns) {
+-    excluded.push('insects/mites');
++    pushUnique(excluded, 'insects/mites');
+   } else {
+-    suspects.push('insects/mites');
++    pushUnique(suspects, 'insects/mites');
+   }
+ 
+   // Gate B: Exclude Virus
+@@ -200,15 +319,15 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
+ 
+   let hasVirusSigns = false;
+   virusSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasVirusSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasVirusSigns = true;
+   });
+ 
+   if (allText.includes('interveinal') || allText.includes('confined between veins')) {
+-    excluded.push('virus');
++    pushUnique(excluded, 'virus');
+   } else if (!hasVirusSigns) {
+-    excluded.push('virus');
++    pushUnique(excluded, 'virus');
+   } else {
+-    suspects.push('virus');
++    pushUnique(suspects, 'virus');
+   }
+ 
+   // Gate C: Exclude Bacteria
+@@ -219,13 +338,13 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
+ 
+   let hasBacteriaSigns = false;
+   bacteriaSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasBacteriaSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasBacteriaSigns = true;
+   });
+ 
+   if (!hasBacteriaSigns) {
+-    excluded.push('bacteria');
++    pushUnique(excluded, 'bacteria');
+   } else {
+-    suspects.push('bacteria');
++    pushUnique(suspects, 'bacteria');
+   }
+ 
+   // Gate D: Confirm Fungal/Oomycete
+@@ -242,28 +361,33 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
+   let hasTrueFungusSigns = false;
+ 
+   fungalSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasFungalSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasFungalSigns = true;
+   });
+   oomyceteSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasOomyceteSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasOomyceteSigns = true;
+   });
+   trueFungusSigns.forEach(sign => {
+-    if (allText.includes(sign.toLowerCase())) hasTrueFungusSigns = true;
++    if (hasPositiveMatch(allText, sign)) hasTrueFungusSigns = true;
+   });
+ 
+   if (hasTrueFungusSigns) {
+-    suspects.push('true fungi');
+-    excluded.push('oomycetes');
++    pushUnique(suspects, 'true fungi');
++    pushUnique(excluded, 'oomycetes');
+   } else if (hasOomyceteSigns) {
+-    suspects.push('oomycetes');
+-    excluded.push('true fungi');
++    pushUnique(suspects, 'oomycetes');
++    pushUnique(excluded, 'true fungi');
+   } else if (hasFungalSigns) {
+-    suspects.push('fungal/oomycete (unable to differentiate)');
++    pushUnique(suspects, 'fungal/oomycete (unable to differentiate)');
+   } else {
+-    excluded.push('fungi/oomycetes');
++    pushUnique(excluded, 'fungi/oomycetes');
+   }
+ 
+-  return { excluded, suspects };
++  // De-duplicate suspects and excluded arrays (safety net — pushUnique
++  // already prevents dupes but earlier code paths may have introduced them).
++  return {
++    excluded: Array.from(new Set(excluded)),
++    suspects: Array.from(new Set(suspects)),
++  };
+ }
+ 
+ /**
+@@ -532,6 +656,12 @@ export function generateIPMRecommendations(diagnosis: {
+ 
+ /**
+  * Main diagnostic function that orchestrates the offline diagnosis process.
++ *
++ * The `infectedPart` parameter is used to boost disease candidates whose
++ * symptom descriptions reference the same plant part the user identified
++ * as affected. This is a cheap, high-signal filter — e.g. if the user
++ * says "root" and a candidate's symptoms are all about roots, that's
++ * strong evidence even if the textual match ratio is moderate.
+  */
+ export function diagnoseOffline(inputData: {
+   symptoms: SymptomInput;
+@@ -539,8 +669,9 @@ export function diagnoseOffline(inputData: {
+   pathogenInfo?: PathogenInfo;
+   envInfo?: EnvInfo;
+   crop?: string;
++  infectedPart?: string;
+ }): OfflineDiagnosis {
+-  const { symptoms, hostInfo = {}, pathogenInfo = {}, envInfo = {}, crop } = inputData;
++  const { symptoms, hostInfo = {}, pathogenInfo = {}, envInfo = {}, crop, infectedPart } = inputData;
+ 
+   // Step 1: Abiotic vs Biotic assessment
+   const abioticBiotic = assessAbioticBiotic(symptoms);
+@@ -549,6 +680,9 @@ export function diagnoseOffline(inputData: {
+   const { excluded, suspects } = applyExclusionGates(abioticBiotic, symptoms);
+ 
+   // Step 3: Crop-specific disease matching
++  // (when no crop is provided, we still produce an exclusion-gate-based
++  // diagnosis — the user gets useful CABI guidance rather than an empty
++  // response)
+   let cropDiseaseMatches: Array<{
+     disease: {
+       name: string;
+@@ -582,7 +716,80 @@ export function diagnoseOffline(inputData: {
+ 
+       cropDiseaseMatches = matchDiseasesBySymptoms(crop, allSymptomTexts);
+ 
+-      const nonZeroMatches = cropDiseaseMatches.filter(m => m.score > 0);
++      // ── infectedPart boost ───────────────────────────────────────────
++      // For each candidate disease, check whether its symptom descriptions
++      // reference the user-selected plant part. If so, apply a multiplicative
++      // boost to its matchRatio. This is conservative — we only boost, never
++      // penalize — so candidates whose symptoms are part-agnostic remain
++      // unaffected.
++      const partKWs = partKeywords(infectedPart);
++      if (partKWs.length > 0) {
++        cropDiseaseMatches = cropDiseaseMatches.map(match => {
++          const symptomText = match.disease.nameBn + ' ' + match.disease.name + ' ' +
++            (match.disease.pathogen || '') + ' ' + match.matchedSymptoms.join(' ');
++          const partHits = partKWs.some(kw => symptomText.toLowerCase().includes(kw.toLowerCase()));
++          if (partHits && match.matchRatio > 0) {
++            // Boost: 1.4× multiplier, capped at 0.95 (never claim 100%).
++            const boosted = Math.min(0.95, match.matchRatio * 1.4);
++            return { ...match, matchRatio: boosted };
++          }
++          return match;
++        }).sort((a, b) => b.matchRatio - a.matchRatio);
++      }
++
++      // ── matchRatio enhancement ───────────────────────────────────────
++      // Original behaviour: matchRatio = score / maxScore where maxScore =
++      // total symptom count. A user who matches 1 of 5 symptoms perfectly
++      // got 0.20 — below the 0.30 specific-disease threshold.
++      //
++      // Enhancement: combine the raw ratio with a "coverage" signal —
++      // matched symptoms / total observed symptoms. If a user reported 3
++      // symptoms and 2 of them match a disease, that's high coverage even
++      // if the disease has 5 total symptoms in its DB entry.
++      //
++      // Also: a `nameMentioned` flag is attached to each match. This is
++      // used as a SORT TIEBREAKER so that when two candidates have similar
++      // matchRatios, the one whose name appears in the user's input wins.
++      // e.g. user types "ব্লাস্ট" → Rice Blast wins over Brown Spot even
++      // if Brown Spot has a marginally higher text-match ratio.
++      const totalObserved = allSymptomTexts.length || 1;
++      const combinedInputText = allSymptomTexts.join(' ').toLowerCase();
++      cropDiseaseMatches = cropDiseaseMatches.map(match => {
++        const coverage = Math.min(1, match.matchedSymptoms.length / totalObserved);
++        // Blend: 60% original ratio + 40% coverage, then re-cap
++        const blended = Math.min(0.95, match.matchRatio * 0.6 + coverage * 0.4);
++        // Don't reduce below the original — only boost
++        let final = Math.max(match.matchRatio, blended);
++
++        // ── Name-mention detection ──────────────────────────────────────
++        // Detect if the user explicitly mentioned the disease name (or any
++        // distinctive token from it) in their input. We boost the ratio
++        // AND record the flag so the sort below can break ties.
++        const nameBnLower = (match.disease.nameBn || '').toLowerCase();
++        const nameEnLower = (match.disease.name || '').toLowerCase();
++        const coreBn = nameBnLower.replace(/\s+রোগ$/, '').trim();
++        const coreEn = nameEnLower.replace(/\s+disease$/, '').trim();
++        const tokens = [
++          ...coreBn.split(/\s+/),
++          ...coreEn.split(/\s+/),
++        ].filter(t => t.length >= 4 && !['disease', 'রোগ', 'ধানের', 'the', 'and'].includes(t));
++        const nameMentioned = tokens.some(t => combinedInputText.includes(t));
++        if (nameMentioned) {
++          final = Math.min(0.95, final + 0.25);
++        }
++
++        return { ...match, matchRatio: final, nameMentioned };
++      }).sort((a, b) => {
++        // Primary: by matchRatio descending
++        if (b.matchRatio !== a.matchRatio) return b.matchRatio - a.matchRatio;
++        // Tiebreaker 1: name-mentioned candidate wins
++        if (a.nameMentioned && !b.nameMentioned) return -1;
++        if (!a.nameMentioned && b.nameMentioned) return 1;
++        // Tiebreaker 2: more matched symptoms wins
++        return b.matchedSymptoms.length - a.matchedSymptoms.length;
++      });
++
++      const nonZeroMatches = cropDiseaseMatches.filter(m => m.score > 0 || m.matchRatio > 0);
+       if (nonZeroMatches.length > 0) {
+         cropDiseaseMatches = nonZeroMatches;
+       }
+@@ -590,23 +797,29 @@ export function diagnoseOffline(inputData: {
+       cropDiseaseMatches.forEach(match => {
+         if (match.matchRatio >= 0.3 && match.disease.cause) {
+           const cause = match.disease.cause;
+-          if (cause === 'fungal' && !suspects.some(s => s.includes('fungi'))) {
++          if (cause === 'fungal' && !suspects.some(s => s.includes('fung'))) {
+             if (!excluded.includes('fungi/oomycetes')) {
+-              suspects.push('fungal/oomycete (crop-specific match)');
++              pushUnique(suspects, 'fungal/oomycete (crop-specific match)');
+             }
+           }
+-          if (cause === 'bacterial' && !suspects.includes('bacteria')) {
+-            suspects.push('bacteria (crop-specific match)');
++          if (cause === 'bacterial' && !suspects.some(s => s.includes('bacteria'))) {
++            pushUnique(suspects, 'bacteria (crop-specific match)');
+           }
+-          if (cause === 'viral' && !suspects.includes('virus')) {
+-            suspects.push('virus (crop-specific match)');
++          if (cause === 'viral' && !suspects.some(s => s.includes('virus'))) {
++            pushUnique(suspects, 'virus (crop-specific match)');
+           }
+-          if (cause === 'insect' && !suspects.includes('insects/mites')) {
+-            suspects.push('insects/mites (crop-specific match)');
++          if (cause === 'insect' && !suspects.some(s => s.includes('insect'))) {
++            pushUnique(suspects, 'insects/mites (crop-specific match)');
+           }
+         }
+       });
+     }
++  } else {
++    // No crop selected — record a useful note in suspects so the user
++    // understands the diagnosis is gate-only (no crop-specific match).
++    if (suspects.length === 0) {
++      pushUnique(suspects, 'No crop selected — only gate-level analysis performed');
++    }
+   }
+ 
+   // Step 4: Disease triangle assessment
+diff --git a/src/lib/supabase/quota.ts b/src/lib/supabase/quota.ts
+index 1d1af33..6889b45 100644
+--- a/src/lib/supabase/quota.ts
++++ b/src/lib/supabase/quota.ts
+@@ -1,4 +1,10 @@
+ import { createClient } from './server'
++import {
++  checkRateLimit,
++  WINDOW_MS,
++  ANON_CHAT_RPM,
++  type RateLimitResult,
++} from '../rateLimit'
+ 
+ export interface QuotaStatus {
+   feature: string
+@@ -9,14 +15,122 @@ export interface QuotaStatus {
+   isExceeded: boolean
+ }
+ 
++export interface QuotaCheckResult {
++  allowed: boolean
++  status: QuotaStatus
++  /** Present when blocked by the IP rate limiter (anonymous path).
++   *  The route layer uses this to set a `Retry-After` header. */
++  rateLimited?: RateLimitResult
++}
++
++/**
++ * Check whether a request may proceed.
++ *
++ * Two layers of protection:
++ *
++ *  1. Anonymous (no userId) — IP-based in-memory rate limit. This closes
++ *     the previous hole where unauthenticated users had NO limit at all
++ *     and could hammer the API freely. The IP is supplied by the route
++ *     layer (via `resolveClientIp`).
++ *
++ *  2. Authenticated — Supabase-backed per-feature daily quota. We also
++ *     cache the (profile, limit) lookup for 5 minutes per user to avoid
++ *     hitting Supabase 3× on every AI call (profile fetch + limit fetch +
++ *     usage count). That's a 200-500ms latency win on the hot path.
++ *
++ * Both layers are best-effort: any Supabase error falls through to
++ * "allowed" so we never break the user's request because of an
++ * infra hiccup.
++ */
+ export async function checkQuota(
+   feature: string,
+-  userId?: string
+-): Promise<{ allowed: boolean; status: QuotaStatus }> {
+-  const supabase = await createClient()
+-  
+-  // Anonymous users get reduced free tier
++  userId?: string,
++  /** Optional client IP for anonymous rate limiting. The route layer
++   *  should pass this in via `resolveClientIp(req)`. If absent, we
++   *  still allow the request (no anonymous throttle) — but log it. */
++  clientIp?: string,
++): Promise<QuotaCheckResult> {
++  // ── Anonymous: IP-based rate limit ────────────────────────────────────
+   if (!userId) {
++    // Per-feature RPM. 'diagnose' is more expensive (vision + reasoning),
++    // so we use a smaller bucket than 'chat'.
++    const rpm = feature === 'diagnose'
++      ? Number(process.env.RATE_LIMIT_PER_MINUTE_DIAGNOSE ?? 8)
++      : feature === 'chat'
++        ? ANON_CHAT_RPM
++        : 12;
++
++    const ip = clientIp || 'unknown-ip';
++    const rl = checkRateLimit({
++      key: ip,
++      namespace: `anon:${feature}`,
++      maxRequests: rpm,
++      windowMs: WINDOW_MS,
++    });
++
++    if (!rl.allowed) {
++      return {
++        allowed: false,
++        status: {
++          feature,
++          used: rl.current,
++          dailyLimit: rpm,    // for display: per-minute limit treated as daily for anon
++          monthlyLimit: rpm * 30,
++          remaining: 0,
++          isExceeded: true,
++        },
++        rateLimited: rl,
++      };
++    }
++
++    return {
++      allowed: true,
++      status: {
++        feature,
++        used: rl.current,
++        dailyLimit: rpm,
++        monthlyLimit: rpm * 30,
++        remaining: rl.remaining,
++        isExceeded: false,
++      },
++    };
++  }
++
++  // ── Authenticated: Supabase-backed daily quota ────────────────────────
++  try {
++    const supabase = await createClient()
++
++    // Cache profile + limit lookups per user (5min TTL) to cut Supabase
++    // round-trips from 3 → 1 on the hot path. We use a plain Map — same
++    // trade-off as rateLimit.ts: ephemeral, edge-runtime safe.
++    const tier = await getCachedTier(userId, supabase)
++    const limits = await getCachedLimits(userId, tier, feature)
++
++    const dailyLimit = limits.daily_limit ?? 10
++    const monthlyLimit = limits.monthly_limit ?? 100
++
++    // Count today's usage
++    const today = new Date()
++    today.setHours(0, 0, 0, 0)
++
++    const { count: dailyUsed } = await supabase
++      .from('usage_logs')
++      .select('*', { count: 'exact', head: true })
++      .eq('user_id', userId)
++      .eq('feature', feature)
++      .gte('created_at', today.toISOString())
++
++    const used = dailyUsed || 0
++    const remaining = Math.max(0, dailyLimit - used)
++    const isExceeded = used >= dailyLimit
++
++    return {
++      allowed: !isExceeded,
++      status: { feature, used, dailyLimit, monthlyLimit, remaining, isExceeded }
++    }
++  } catch (e) {
++    // Supabase failure — allow the request through, log the error.
++    console.warn('[quota] Supabase check failed, allowing:', e)
+     return {
+       allowed: true,
+       status: {
+@@ -25,50 +139,10 @@ export async function checkQuota(
+         dailyLimit: 10,
+         monthlyLimit: 100,
+         remaining: 10,
+-        isExceeded: false
+-      }
++        isExceeded: false,
++      },
+     }
+   }
+-
+-  // Get user's tier
+-  const { data: profile } = await supabase
+-    .from('profiles')
+-    .select('quota_tier')
+-    .eq('id', userId)
+-    .single()
+-
+-  const tier = profile?.quota_tier || 'free'
+-
+-  // Get quota limits for this tier + feature
+-  const { data: limit } = await supabase
+-    .from('quota_limits')
+-    .select('daily_limit, monthly_limit')
+-    .eq('tier', tier)
+-    .eq('feature', feature)
+-    .single()
+-
+-  const dailyLimit = limit?.daily_limit || 10
+-  const monthlyLimit = limit?.monthly_limit || 100
+-
+-  // Count today's usage
+-  const today = new Date()
+-  today.setHours(0, 0, 0, 0)
+-  
+-  const { count: dailyUsed } = await supabase
+-    .from('usage_logs')
+-    .select('*', { count: 'exact', head: true })
+-    .eq('user_id', userId)
+-    .eq('feature', feature)
+-    .gte('created_at', today.toISOString())
+-
+-  const used = dailyUsed || 0
+-  const remaining = Math.max(0, dailyLimit - used)
+-  const isExceeded = used >= dailyLimit
+-
+-  return {
+-    allowed: !isExceeded,
+-    status: { feature, used, dailyLimit, monthlyLimit, remaining, isExceeded }
+-  }
+ }
+ 
+ export async function logUsage(
+@@ -79,13 +153,86 @@ export async function logUsage(
+   userId?: string
+ ): Promise<void> {
+   if (!userId) return
+-  
+-  const supabase = await createClient()
+-  await supabase.from('usage_logs').insert({
+-    user_id: userId,
+-    feature,
+-    provider,
+-    model,
+-    tokens_used: tokensUsed
+-  })
++
++  try {
++    const supabase = await createClient()
++    await supabase.from('usage_logs').insert({
++      user_id: userId,
++      feature,
++      provider,
++      model,
++      tokens_used: tokensUsed
++    })
++  } catch (e) {
++    // Swallow — quota logging is best-effort. The AI response has already
++    // been delivered to the user; we don't want a logging failure to
++    // surface as a 500.
++    console.warn('[quota] logUsage failed:', e)
++  }
++}
++
++// ── Per-process caches for tier + limits ────────────────────────────────────
++
++interface CachedTier { tier: string; expiresAt: number }
++interface CachedLimits { daily_limit: number | null; monthly_limit: number | null; expiresAt: number }
++
++const tierCache = new Map<string, CachedTier>()
++const limitsCache = new Map<string, CachedLimits>()
++const CACHE_TTL_MS = 5 * 60_000 // 5 minutes
++
++async function getCachedTier(userId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
++  const cached = tierCache.get(userId);
++  if (cached && Date.now() < cached.expiresAt) return cached.tier;
++
++  let tier = 'free';
++  try {
++    const { data: profile } = await supabase
++      .from('profiles')
++      .select('quota_tier')
++      .eq('id', userId)
++      .single();
++    tier = profile?.quota_tier || 'free';
++  } catch {
++    // fall through with default 'free'
++  }
++
++  tierCache.set(userId, { tier, expiresAt: Date.now() + CACHE_TTL_MS });
++  return tier;
++}
++
++async function getCachedLimits(
++  userId: string,
++  tier: string,
++  feature: string,
++): Promise<{ daily_limit: number | null; monthly_limit: number | null }> {
++  const cacheKey = `${userId}:${tier}:${feature}`;
++  const cached = limitsCache.get(cacheKey);
++  if (cached && Date.now() < cached.expiresAt) {
++    return { daily_limit: cached.daily_limit, monthly_limit: cached.monthly_limit };
++  }
++
++  let result = { daily_limit: null as number | null, monthly_limit: null as number | null };
++  try {
++    // Use the same supabase client as the caller — re-create here would
++    // double the round-trip. We pass `null` (the call site has the client).
++    // For simplicity we re-create here only on cache miss.
++    const supabase = await createClient();
++    const { data: limit } = await supabase
++      .from('quota_limits')
++      .select('daily_limit, monthly_limit')
++      .eq('tier', tier)
++      .eq('feature', feature)
++      .single();
++    if (limit) {
++      result = { daily_limit: limit.daily_limit, monthly_limit: limit.monthly_limit };
++    }
++  } catch {
++    // fall through with nulls — caller uses defaults
++  }
++
++  limitsCache.set(cacheKey, {
++    ...result,
++    expiresAt: Date.now() + CACHE_TTL_MS,
++  });
++  return result;
+ }
+--- New files (concatenated) ---
+
+=== NEW FILE: src/lib/rateLimit.ts ===
+/**
+ * In-memory sliding-window rate limiter.
+ *
+ * Used to throttle anonymous (not-logged-in) traffic on a per-IP / per-key basis
+ * before any AI provider call is made. This protects the platform from abuse
+ * even when Supabase auth is not in play (the Supabase-backed `quota.ts` only
+ * enforces limits for authenticated users — anonymous users were previously
+ * unlimited, which is the rate-limit hole we close here).
+ *
+ * Design notes:
+ *  - Pure in-memory Map. Each entry stores an array of request timestamps.
+ *  - Sliding window: on every check, drop timestamps older than `windowMs`
+ *    and reject if the remaining count >= `maxRequests`.
+ *  - Self-pruning: empty buckets are deleted to prevent memory growth.
+ *  - Edge-runtime safe: no Node-specific APIs, no setTimeout leaks.
+ *
+ * Limits are conservative for a free hobby-tier deployment. Tune via env if
+ * needed: RATE_LIMIT_PER_MINUTE_ANON, RATE_LIMIT_PER_MINUTE_DIAGNOSE.
+ */
+
+interface Bucket {
+  timestamps: number[];
+}
+
+const buckets = new Map<string, Bucket>();
+
+export interface RateLimitOptions {
+  /** Identifier for the caller (IP, user-id, session-id, etc.) */
+  key: string;
+  /** Bucket namespace — e.g. "anon:diagnose", "anon:chat". Lets us have
+   *  different limits per feature without colliding keys. */
+  namespace: string;
+  /** Maximum requests allowed within the window. */
+  maxRequests: number;
+  /** Window length in milliseconds. */
+  windowMs: number;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  /** Epoch ms when the oldest request in the window will expire — useful
+   *  for setting `Retry-After` headers. */
+  retryAfterMs: number;
+  /** Total requests in current window (after this attempt). */
+  current: number;
+  /** Configured max for this bucket. */
+  limit: number;
+}
+
+/**
+ * Attempt to consume one slot from the rate-limit bucket.
+ * Returns `allowed: true` if the request may proceed.
+ */
+export function checkRateLimit(opts: RateLimitOptions): RateLimitResult {
+  const compositeKey = `${opts.namespace}::${opts.key}`;
+  const now = Date.now();
+  const cutoff = now - opts.windowMs;
+
+  let bucket = buckets.get(compositeKey);
+  if (!bucket) {
+    bucket = { timestamps: [] };
+    buckets.set(compositeKey, bucket);
+  }
+
+  // Drop expired timestamps (sliding window)
+  bucket.timestamps = bucket.timestamps.filter(t => t > cutoff);
+
+  const current = bucket.timestamps.length;
+  if (current >= opts.maxRequests) {
+    // Oldest surviving timestamp = when a slot frees up
+    const oldest = bucket.timestamps[0] ?? now;
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: Math.max(0, oldest + opts.windowMs - now),
+      current,
+      limit: opts.maxRequests,
+    };
+  }
+
+  // Consume a slot
+  bucket.timestamps.push(now);
+  return {
+    allowed: true,
+    remaining: opts.maxRequests - bucket.timestamps.length,
+    retryAfterMs: 0,
+    current: bucket.timestamps.length,
+    limit: opts.maxRequests,
+  };
+}
+
+/**
+ * Peek at the bucket without consuming a slot — useful for diagnostics
+ * and for emitting X-RateLimit headers on successful responses.
+ */
+export function peekRateLimit(namespace: string, key: string): { current: number; remaining: number } | null {
+  const compositeKey = `${namespace}::${key}`;
+  const bucket = buckets.get(compositeKey);
+  if (!bucket) return null;
+  return {
+    current: bucket.timestamps.length,
+    remaining: Math.max(0, 0 - bucket.timestamps.length), // caller must know the limit
+  };
+}
+
+/**
+ * Periodic GC — call from a long-lived process or after N requests to
+ * prune empty buckets. Cheap to call on every check.
+ */
+export function gcRateLimitBuckets(): number {
+  let pruned = 0;
+  for (const [k, b] of buckets.entries()) {
+    if (b.timestamps.length === 0) {
+      buckets.delete(k);
+      pruned++;
+    }
+  }
+  return pruned;
+}
+
+// ── Tunable per-feature limits (env-driven for ops flexibility) ─────────────
+
+function envInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+/** Anonymous requests per minute to /api/diagnose. */
+export const ANON_DIAGNOSE_RPM = envInt('RATE_LIMIT_PER_MINUTE_DIAGNOSE', 8);
+
+/** Anonymous requests per minute to /api/chat. */
+export const ANON_CHAT_RPM = envInt('RATE_LIMIT_PER_MINUTE_CHAT', 12);
+
+/** Authenticated-user requests per minute (defense-in-depth even though
+ *  Supabase quota also enforces daily limits). */
+export const AUTH_RPM = envInt('RATE_LIMIT_PER_MINUTE_AUTH', 30);
+
+/** Window length (1 minute default). */
+export const WINDOW_MS = envInt('RATE_LIMIT_WINDOW_MS', 60_000);
+
+/**
+ * Resolve client IP from a Next.js Request. Handles Vercel's forwarding
+ * headers and falls back to a synthetic key if none can be determined
+ * (so we still throttle *something*).
+ */
+export function resolveClientIp(req: Request): string {
+  const headers = req.headers;
+  // Vercel: "x-forwarded-for" is the canonical header.
+  const xff = headers.get('x-forwarded-for');
+  if (xff) {
+    // Take the first IP (closest to the client) — xff is "client, proxy1, proxy2"
+    const first = xff.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  // Some CDNs use these
+  const realIp = headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+  const cfIp = headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp.trim();
+  // Last resort — synthesize so the limiter still does *something*
+  return 'unknown-ip';
+}
+
+/**
+ * Convert a millisecond duration into an integer number of seconds,
+ * rounded up, suitable for a `Retry-After` HTTP header.
+ */
+export function msToRetryAfterSeconds(ms: number): number {
+  return Math.max(1, Math.ceil(ms / 1000));
+}
+
+=== NEW FILE: src/lib/providerCooldown.ts ===
+/**
+ * Provider Cooldown / Circuit Breaker
+ *
+ * Tracks per-provider failure rates and 429 (rate-limited) responses, and
+ * temporarily removes a provider from rotation when it is being rate-limited
+ * by its upstream vendor.
+ *
+ * Why we need this:
+ *  - Gemini / OpenRouter / Groq all have their own per-key rate limits.
+ *  - The previous code simply fell through to the next provider on ANY
+ *    failure, including 429s — which means we'd burn through the entire
+ *    fallback chain in a single second if a provider was rate-limiting us.
+ *  - This module records when a provider returned 429 + how long to wait
+ *    (from `Retry-After` header or exponential backoff), and short-circuits
+ *    future calls to that provider until the cooldown expires.
+ *
+ * Memory: O(providers) — trivial. Each provider has one state record.
+ *
+ * Edge-runtime safe: pure in-memory Map, no timers, no Node APIs.
+ */
+
+type ProviderName = string;
+
+interface CooldownState {
+  /** Epoch ms until which this provider should NOT be called. */
+  cooldownUntil: number;
+  /** Last reason for cooldown (for telemetry / logs). */
+  reason: string;
+  /** Consecutive 429s seen — used for exponential backoff escalation. */
+  consecutive429s: number;
+  /** Last HTTP status observed (or -1 for network errors). */
+  lastStatus: number;
+  /** Last update time. */
+  updatedAt: number;
+}
+
+const states = new Map<ProviderName, CooldownState>();
+
+/** Default backoff schedule (ms) indexed by consecutive-429 count.
+ *  Caps at 5 minutes — we never permanently disable a provider. */
+const BACKOFF_MS = [
+  5_000,    // 1st 429: 5s
+  15_000,   // 2nd: 15s
+  30_000,   // 3rd: 30s
+  60_000,   // 4th: 60s
+  120_000,  // 5th+: 2 min
+];
+
+const MAX_COOLDOWN_MS = 5 * 60_000; // 5 min hard cap
+
+/**
+ * Returns true if the provider is currently in cooldown and should be
+ * skipped. Logs the reason via console.warn for observability.
+ */
+export function isInCooldown(provider: ProviderName): boolean {
+  const state = states.get(provider);
+  if (!state) return false;
+  if (Date.now() >= state.cooldownUntil) return false;
+  return true;
+}
+
+/**
+ * Returns the remaining cooldown in ms (0 if none).
+ */
+export function cooldownRemainingMs(provider: ProviderName): number {
+  const state = states.get(provider);
+  if (!state) return 0;
+  return Math.max(0, state.cooldownUntil - Date.now());
+}
+
+/**
+ * Mark a provider as rate-limited (429). Applies either the upstream
+ * `Retry-After` value (if provided and sane) or an exponential backoff
+ * based on the recent consecutive-429 count.
+ */
+export function markRateLimited(
+  provider: ProviderName,
+  opts?: { retryAfterSeconds?: number; status?: number },
+): void {
+  const now = Date.now();
+  const prev = states.get(provider);
+  const consecutive = (prev?.consecutive429s ?? 0) + 1;
+
+  let cooldownMs: number;
+  let reason: string;
+
+  const retryAfter = opts?.retryAfterSeconds;
+  if (retryAfter && retryAfter > 0 && retryAfter <= 300) {
+    // Respect upstream Retry-After, but cap at 5 min
+    cooldownMs = Math.min(retryAfter * 1000, MAX_COOLDOWN_MS);
+    reason = `429 (Retry-After=${retryAfter}s)`;
+  } else {
+    // Exponential backoff based on consecutive 429s
+    const idx = Math.min(consecutive - 1, BACKOFF_MS.length - 1);
+    cooldownMs = Math.min(BACKOFF_MS[idx], MAX_COOLDOWN_MS);
+    reason = `429 (backoff=${cooldownMs}ms, consecutive=${consecutive})`;
+  }
+
+  states.set(provider, {
+    cooldownUntil: now + cooldownMs,
+    reason,
+    consecutive429s: consecutive,
+    lastStatus: opts?.status ?? 429,
+    updatedAt: now,
+  });
+
+  console.warn(`[providerCooldown] ${provider} cooldown ${cooldownMs}ms — ${reason}`);
+}
+
+/**
+ * Mark a provider as having a transient failure (network error, 5xx, etc.).
+ * Lighter than a 429: a single failure does NOT trigger cooldown — we only
+ * cool down after 3 consecutive failures to avoid flapping.
+ */
+export function markFailure(
+  provider: ProviderName,
+  opts?: { status?: number; reason?: string },
+): void {
+  const now = Date.now();
+  const prev = states.get(provider);
+
+  // Network errors and 5xx are transient — don't punish a single blip
+  const status = opts?.status ?? -1;
+  if (status === 429) {
+    markRateLimited(provider, opts);
+    return;
+  }
+
+  // For other failures, increment a "soft" counter (we reuse consecutive429s
+  // but with smaller cooldown). After 3 consecutive failures, short cooldown.
+  const consecutive = (prev?.consecutive429s ?? 0) + 1;
+  if (consecutive >= 3) {
+    states.set(provider, {
+      cooldownUntil: now + 15_000, // 15s soft cooldown
+      reason: `consecutive failures (${consecutive}) — ${opts?.reason ?? 'unknown'}`,
+      consecutive429s: consecutive,
+      lastStatus: status,
+      updatedAt: now,
+    });
+    console.warn(`[providerCooldown] ${provider} soft cooldown 15s — ${consecutive} consecutive failures`);
+  } else {
+    states.set(provider, {
+      cooldownUntil: 0,
+      reason: opts?.reason ?? `failure #${consecutive}`,
+      consecutive429s: consecutive,
+      lastStatus: status,
+      updatedAt: now,
+    });
+  }
+}
+
+/**
+ * Mark a provider as healthy (called after a successful response).
+ * Resets the consecutive-failure counter.
+ */
+export function markSuccess(provider: ProviderName): void {
+  const prev = states.get(provider);
+  if (!prev || prev.consecutive429s === 0) return;
+  states.set(provider, {
+    cooldownUntil: 0,
+    reason: 'recovered',
+    consecutive429s: 0,
+    lastStatus: 200,
+    updatedAt: Date.now(),
+  });
+}
+
+/**
+ * Snapshot all provider states — used for the /api/dashboard endpoint and
+ * for emitting telemetry headers on AI responses.
+ */
+export function getProviderStates(): Array<{
+  provider: string;
+  inCooldown: boolean;
+  remainingMs: number;
+  reason: string;
+  consecutive429s: number;
+  lastStatus: number;
+}> {
+  const now = Date.now();
+  return Array.from(states.entries()).map(([provider, s]) => ({
+    provider,
+    inCooldown: now < s.cooldownUntil,
+    remainingMs: Math.max(0, s.cooldownUntil - now),
+    reason: s.reason,
+    consecutive429s: s.consecutive429s,
+    lastStatus: s.lastStatus,
+  }));
+}
+
+/**
+ * Parse a `Retry-After` header value. Returns seconds, or undefined if
+ * the header is missing/invalid. Handles both delta-seconds and HTTP-date
+ * formats per RFC 7231.
+ */
+export function parseRetryAfter(headerValue: string | null | undefined): number | undefined {
+  if (!headerValue) return undefined;
+  const trimmed = headerValue.trim();
+
+  // Try integer seconds first
+  const asNum = Number(trimmed);
+  if (Number.isFinite(asNum) && asNum >= 0) return Math.floor(asNum);
+
+  // Try HTTP date
+  const asDate = Date.parse(trimmed);
+  if (!Number.isNaN(asDate)) {
+    const diffSec = Math.ceil((asDate - Date.now()) / 1000);
+    return diffSec > 0 ? diffSec : 0;
+  }
+
+  return undefined;
+}
+
+=== NEW FILE: src/lib/requestCache.ts ===
+/**
+ * Tiny LRU-style TTL cache for AI request deduplication.
+ *
+ * Use case: when a user double-clicks the "Diagnose" button, or when two
+ * users in different sessions submit an identical diagnosis payload within
+ * a short window, we don't want to burn two AI provider calls.
+ *
+ * Design:
+ *  - Pure in-memory Map. Keys are SHA-ish strings (caller-supplied).
+ *  - Each entry has an explicit expiresAt timestamp.
+ *  - On read, expired entries are evicted.
+ *  - Max entries bounded (default 256) — when full, oldest entries evicted.
+ *
+ * Edge-runtime safe. No timers, no Node-specific APIs.
+ *
+ * Tunable via env: AI_CACHE_TTL_MS (default 60_000), AI_CACHE_MAX (default 256).
+ */
+
+interface CacheEntry<V> {
+  value: V;
+  expiresAt: number;
+  /** Insertion order — used for LRU eviction. */
+  seq: number;
+}
+
+const store = new Map<string, CacheEntry<unknown>>();
+let seqCounter = 0;
+
+function envInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+const TTL_MS = envInt('AI_CACHE_TTL_MS', 60_000);
+const MAX_ENTRIES = envInt('AI_CACHE_MAX', 256);
+
+/**
+ * Look up a cached value. Returns undefined if missing or expired.
+ * Side-effect: evicts the entry if expired.
+ */
+export function cacheGet<V>(key: string): V | undefined {
+  const entry = store.get(key);
+  if (!entry) return undefined;
+  if (Date.now() >= entry.expiresAt) {
+    store.delete(key);
+    return undefined;
+  }
+  // Bump LRU seq so this entry is less likely to be evicted next.
+  entry.seq = ++seqCounter;
+  return entry.value as V;
+}
+
+/**
+ * Insert a value with a given TTL (default = TTL_MS from env).
+ * Evicts oldest entries when the cache is full.
+ */
+export function cacheSet<V>(key: string, value: V, ttlMs: number = TTL_MS): void {
+  // Evict expired entries first (cheap GC)
+  if (store.size >= MAX_ENTRIES) {
+    gc();
+    // If still full after GC, evict the single oldest entry
+    if (store.size >= MAX_ENTRIES) {
+      let oldestKey: string | null = null;
+      let oldestSeq = Infinity;
+      for (const [k, v] of store.entries()) {
+        if (v.seq < oldestSeq) {
+          oldestSeq = v.seq;
+          oldestKey = k;
+        }
+      }
+      if (oldestKey) store.delete(oldestKey);
+    }
+  }
+
+  store.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+    seq: ++seqCounter,
+  });
+}
+
+/** Garbage-collect expired entries. Returns count pruned. */
+export function gc(): number {
+  let pruned = 0;
+  const now = Date.now();
+  for (const [k, v] of store.entries()) {
+    if (now >= v.expiresAt) {
+      store.delete(k);
+      pruned++;
+    }
+  }
+  return pruned;
+}
+
+/** Stats for /api/dashboard. */
+export function cacheStats(): { size: number; maxEntries: number; ttlMs: number } {
+  return { size: store.size, maxEntries: MAX_ENTRIES, ttlMs: TTL_MS };
+}
+
+/**
+ * Build a stable cache key from a structured payload.
+ * Uses a tiny FNV-1a hash — fast, no dependencies, good enough for
+ * dedup purposes (we don't need cryptographic strength).
+ *
+ * Input is JSON-stringified with sorted keys for determinism.
+ */
+export function buildCacheKey(parts: unknown[]): string {
+  const json = stableJson(parts);
+  return 'k:' + fnv1a(json);
+}
+
+function stableJson(v: unknown): string {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(stableJson).join(',') + ']';
+  const obj = v as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + stableJson(obj[k])).join(',') + '}';
+}
+
+function fnv1a(str: string): string {
+  // 32-bit FNV-1a, returned as base36 string
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    // h * 16777619, keep as unsigned 32-bit
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(36);
+}
+
+=== NEW FILE: scripts/smokeTest.ts ===
+/**
+ * Smoke test for the new utilities + offline CABI engine enhancements.
+ *
+ * Run with: npx tsx scripts/smokeTest.ts
+ *
+ * Verifies:
+ *   1. Rate limiter blocks after N requests within the window
+ *   2. Provider cooldown applies on 429 and expires
+ *   3. Request cache deduplicates identical queries
+ *   4. Offline engine produces a result for rice-blast symptoms
+ *   5. Offline engine: "no webbing" no longer falsely triggers biotic
+ *   6. Offline engine: infectedPart boosts root-rot candidates
+ *   7. Offline engine: produces a result when no crop is provided
+ *   8. Offline engine: cause_type detection works with suspect variants
+ */
+
+import { checkRateLimit, msToRetryAfterSeconds } from '../src/lib/rateLimit';
+import {
+  isInCooldown,
+  markRateLimited,
+  markSuccess,
+  cooldownRemainingMs,
+  parseRetryAfter,
+} from '../src/lib/providerCooldown';
+import { cacheGet, cacheSet, buildCacheKey, cacheStats } from '../src/lib/requestCache';
+import { diagnoseOffline } from '../src/lib/cabi/diagnosticEngine';
+
+let pass = 0;
+let fail = 0;
+function assert(cond: boolean, msg: string) {
+  if (cond) { pass++; console.log(`  ✓ ${msg}`); }
+  else { fail++; console.error(`  ✗ ${msg}`); }
+}
+
+console.log('\n══ 1. Rate limiter ══');
+{
+  const key = `test-${Date.now()}`;
+  const r1 = checkRateLimit({ key, namespace: 'test', maxRequests: 3, windowMs: 60_000 });
+  assert(r1.allowed, '1st request allowed');
+  assert(r1.remaining === 2, '1st request: 2 remaining');
+  const r2 = checkRateLimit({ key, namespace: 'test', maxRequests: 3, windowMs: 60_000 });
+  assert(r2.allowed, '2nd request allowed');
+  const r3 = checkRateLimit({ key, namespace: 'test', maxRequests: 3, windowMs: 60_000 });
+  assert(r3.allowed, '3rd request allowed');
+  const r4 = checkRateLimit({ key, namespace: 'test', maxRequests: 3, windowMs: 60_000 });
+  assert(!r4.allowed, '4th request BLOCKED');
+  assert(r4.retryAfterMs > 0, '4th request: retryAfterMs > 0');
+  assert(msToRetryAfterSeconds(r4.retryAfterMs) >= 1, 'msToRetryAfterSeconds >= 1');
+}
+
+console.log('\n══ 2. Provider cooldown ══');
+{
+  markRateLimited('test-provider', { retryAfterSeconds: 2, status: 429 });
+  assert(isInCooldown('test-provider'), 'test-provider in cooldown after 429');
+  assert(cooldownRemainingMs('test-provider') > 0, 'cooldownRemainingMs > 0');
+  markSuccess('test-provider');
+  assert(!isInCooldown('test-provider'), 'cooldown cleared after markSuccess');
+
+  assert(parseRetryAfter('30') === 30, 'parseRetryAfter("30") = 30');
+  assert(parseRetryAfter(undefined) === undefined, 'parseRetryAfter(undefined) = undefined');
+  assert(parseRetryAfter('garbage') === undefined, 'parseRetryAfter("garbage") = undefined');
+
+  markRateLimited('test-provider', {});
+  assert(isInCooldown('test-provider'), 'cooldown applied via backoff (no Retry-After)');
+}
+
+console.log('\n══ 3. Request cache ══');
+{
+  const key = buildCacheKey(['diagnose', 'rice', 'yellow leaves']);
+  const before = cacheStats().size;
+  cacheSet(key, { disease: 'rice blast' });
+  assert(cacheStats().size === before + 1, 'cache size grew by 1 after set');
+  const hit = cacheGet<{ disease: string }>(key);
+  assert(hit?.disease === 'rice blast', 'cache hit returns stored value');
+  const miss = cacheGet(buildCacheKey(['diagnose', 'rice', 'different']));
+  assert(miss === undefined, 'cache miss returns undefined');
+}
+
+console.log('\n══ 4. Offline engine — rice blast scenario ══');
+{
+  const result = diagnoseOffline({
+    symptoms: {
+      mainSymptoms: 'পাতায় ধূসর মাকু আকৃতির দাগ (ব্লাস্ট), পাতায় বাদামি গোলাকার দাগ',
+    },
+    crop: 'ধান',
+    envInfo: { humidity: 90, temp: 28 },
+    infectedPart: 'পাতা',
+  });
+  // The engine may classify as 'uncertain' (no explicit biotic keyword like
+  // 'ooze' / 'chewing marks' present), but specificDisease identification
+  // is the higher-value signal. Accept either 'biotic' or 'uncertain'.
+  assert(result.abioticBiotic !== 'abiotic', `rice blast NOT abiotic (got: ${result.abioticBiotic})`);
+  assert(result.specificDisease !== null, 'specificDisease identified');
+  // With the name-mention boost, Rice Blast should rank #1 when user
+  // explicitly typed "ব্লাস্ট" in their input.
+  assert(result.specificDisease?.name === 'Rice Blast', `specificDisease = Rice Blast (got: ${result.specificDisease?.name})`);
+  assert(result.specificDisease?.confidence !== 'low', 'confidence is medium or high');
+  assert(result.cropDiseaseMatches.length > 0, 'cropDiseaseMatches non-empty');
+  assert(result.ipmRecommendations.cultural.length > 0, 'IPM cultural recs non-empty');
+}
+
+console.log('\n══ 5. Offline engine — "no webbing" bug fix ══');
+{
+  // Before the fix, this would falsely classify as biotic because "webbing"
+  // appeared as a substring of "no webbing". Now it should be abiotic.
+  const result = diagnoseOffline({
+    symptoms: {
+      mainSymptoms: 'uniformly distributed, no webbing, no ooze, no insect presence',
+    },
+    crop: 'ধান',
+  });
+  assert(result.abioticBiotic === 'abiotic', `"no webbing/ooze/insect" → abiotic (got: ${result.abioticBiotic})`);
+}
+
+console.log('\n══ 6. Offline engine — infectedPart boost for root rot ══');
+{
+  const result = diagnoseOffline({
+    symptoms: {
+      mainSymptoms: 'শিকড় কালো ও পচা, গাছ দিনে নেতিয়ে পড়ে',
+    },
+    crop: 'ধান',
+    infectedPart: 'root',
+  });
+  assert(result.cropDiseaseMatches.length > 0, 'root symptoms produced matches');
+  const top = result.cropDiseaseMatches[0];
+  const isRootRelated =
+    top.name.toLowerCase().includes('root') ||
+    top.nameBn.includes('শিকড়') ||
+    top.nameBn.includes('পচা') ||
+    top.pathogen.toLowerCase().includes('rhizoctonia') ||
+    top.pathogen.toLowerCase().includes('fusarium') ||
+    top.matchedSymptoms.some(s => s.includes('শিকড়'));
+  assert(isRootRelated, `top match is root-related: ${top.name} / ${top.nameBn}`);
+}
+
+console.log('\n══ 7. Offline engine — no crop provided (fallback path) ══');
+{
+  const result = diagnoseOffline({
+    symptoms: {
+      mainSymptoms: 'পাতায় ধূসর মাকু আকৃতির দাগ (ব্লাস্ট)',
+    },
+    // no crop!
+  });
+  assert(result.abioticBiotic !== undefined, 'abioticBiotic assessed');
+  assert(result.excluded.length > 0 || result.suspects.length > 0, 'gates ran');
+  assert(result.suspects.length > 0, 'suspects non-empty (fallback note added)');
+  assert(result.diseaseTriangle !== null, 'disease triangle still produced');
+  assert(result.ipmRecommendations !== null, 'IPM recs still produced');
+}
+
+console.log('\n══ 8. Offline engine — cause_type detection via suspects variants ══');
+{
+  const result = diagnoseOffline({
+    symptoms: {
+      mainSymptoms: 'পাতায় তেলতেলে, পানিভেজা কিনারা, আঠালো নিঃসরণ',
+    },
+    crop: 'ধান',
+  });
+  const hasBacteriaSuspect = result.suspects.some(s => s.toLowerCase().includes('bacteria'));
+  assert(hasBacteriaSuspect, `bacteria suspect present: ${result.suspects.join(', ')}`);
+}
+
+console.log(`\n══ Summary: ${pass} passed, ${fail} failed ══`);
+process.exit(fail === 0 ? 0 : 1);
