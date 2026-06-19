@@ -21,7 +21,7 @@ export function isAppInstalled(): boolean {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
     window.matchMedia("(display-mode: fullscreen)").matches ||
-    (window.navigator as Record<string, unknown>).standalone === true
+    (window.navigator as unknown as Record<string, unknown>).standalone === true
   );
 }
 
