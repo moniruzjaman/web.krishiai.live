@@ -12,7 +12,8 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
+import type { FormEvent } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -66,30 +67,20 @@ function saveMessages(msgs: Message[]) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const stored = loadMessages();
+    return stored.length > 0 ? stored : [{ ...WELCOME_MESSAGE, timestamp: Date.now() }];
+  });
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load persisted messages on mount (client-only to avoid hydration mismatch)
+  // Save messages when they change
   useEffect(() => {
-    const stored = loadMessages();
-    if (stored.length > 0) {
-      setMessages(stored);
-    } else {
-      // Set welcome timestamp to now
-      setMessages([{ ...WELCOME_MESSAGE, timestamp: Date.now() }]);
-    }
-    setLoaded(true);
-  }, []);
-
-  // Save messages when they change (after initial load)
-  useEffect(() => {
-    if (loaded && messages.length > 0) {
+    if (messages.length > 0) {
       saveMessages(messages);
     }
-  }, [messages, loaded]);
+  }, [messages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -154,7 +145,7 @@ export default function ChatPage() {
     saveMessages(fresh);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
   };
@@ -175,12 +166,7 @@ export default function ChatPage() {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 min-h-screen flex flex-col">
       {/* Chat header */}
-      <div
-        className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10"
-        style={{
-          background: "linear-gradient(135deg,#1b4332,#2d6a4f)",
-        }}
-      >
+      <div className="chat-header px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
           <span className="text-xl">🤖</span>
         </div>
@@ -206,8 +192,7 @@ export default function ChatPage() {
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
-        style={{ maxHeight: "calc(100vh - 180px)" }}
+        className="chat-messages flex-1 overflow-y-auto px-4 py-4 space-y-4"
       >
         {messages.map((msg) => (
           <div
@@ -238,13 +223,9 @@ export default function ChatPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200 dark:border-gray-700 card-shadow">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce chat-dot-delay-1" />
                 <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                />
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce chat-dot-delay-2"
                 />
               </div>
             </div>

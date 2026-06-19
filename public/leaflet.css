@@ -23,7 +23,6 @@
 	-webkit-user-select: none;
 	   -moz-user-select: none;
 	        user-select: none;
-	  -webkit-user-drag: none;
 	}
 /* Prevents IE11 from highlighting tiles in blue */
 .leaflet-tile::selection {
@@ -62,8 +61,8 @@
 
 .leaflet-container img.leaflet-tile {
 	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
-	mix-blend-mode: plus-lighter;
-}
+	/* mix-blend-mode plus-lighter is intentionally omitted for browser compatibility. */
+	}
 
 .leaflet-container.leaflet-touch-zoom {
 	-ms-touch-action: pan-x pan-y;
@@ -102,6 +101,8 @@
 /* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
 .leaflet-overlay-pane svg {
 	-moz-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
 	}
 
 .leaflet-pane         { z-index: 400; }
@@ -547,6 +548,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 .leaflet-oldie .leaflet-popup-content-wrapper {
 	-ms-zoom: 1;
+	zoom: 1;
 	}
 .leaflet-oldie .leaflet-popup-tip {
 	width: 24px;

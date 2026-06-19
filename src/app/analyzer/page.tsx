@@ -21,6 +21,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import type { ChangeEvent } from "react";
 import type { DiagnosisImageEntry } from "@/lib/diseaseImages";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -144,6 +145,20 @@ const SYMPTOM_CATEGORIES = [
 const bn = (n: number | string) =>
   String(Math.round(Number(n))).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
+const percentWidthClass = (value: number) => {
+  if (value >= 100) return "w-full";
+  if (value >= 90) return "w-[90%]";
+  if (value >= 80) return "w-[80%]";
+  if (value >= 70) return "w-[70%]";
+  if (value >= 60) return "w-[60%]";
+  if (value >= 50) return "w-[50%]";
+  if (value >= 40) return "w-[40%]";
+  if (value >= 30) return "w-[30%]";
+  if (value >= 20) return "w-[20%]";
+  if (value >= 10) return "w-[10%]";
+  return "w-[4%]";
+};
+
 const CROP_ALIASES: Record<string, string[]> = {
   "আলু": ["potato"], "টমেটো": ["tomato"], "গম": ["wheat"],
   "ভুট্টা": ["maize", "corn"], "ধান": ["rice"], "পাট": ["jute"],
@@ -231,6 +246,7 @@ export default function CABIDiagnosisPage() {
       .catch(() => setIndexLoaded(true));
   }, [indexLoaded]);
 
+  const diagnosisJson = result?.json;
   const matchingImages: DiagnosisImageEntry[] = [];
   if (indexLoaded && diagnosisJson?.top_candidates?.length) {
     const top = diagnosisJson.top_candidates[0];
@@ -242,7 +258,8 @@ export default function CABIDiagnosisPage() {
       ...cabiImages.filter((img) => {
         if (img.type !== "disease") return false;
         if (cropKws.length > 0 && img.crop) {
-          const ok = cropKws.some((c) => img.crop!.toLowerCase().includes(c) || c.includes(img.crop!.toLowerCase()));
+          const imgCrop = img.crop.toLowerCase();
+          const ok = cropKws.some((c) => imgCrop.includes(c.toLowerCase()) || c.toLowerCase().includes(imgCrop));
           if (!ok) return false;
         }
         return img.keywords.some((k) => conditionKw.includes(k));
@@ -259,7 +276,7 @@ export default function CABIDiagnosisPage() {
     );
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
@@ -334,17 +351,10 @@ export default function CABIDiagnosisPage() {
     setError(null);
   };
 
-  const diagnosisJson = result?.json;
-
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div
-        className="relative px-4 pt-5 pb-7"
-        style={{
-          background: "linear-gradient(135deg,#1b4332,#2d6a4f)",
-        }}
-      >
+      <div className="relative px-4 pt-5 pb-7 bg-cabi-header">
         <div className="absolute -bottom-px left-0 right-0 h-5 bg-white dark:bg-gray-900 rounded-t-[20px]" />
         <div className="flex items-center gap-2 mb-2">
           <div className="text-[11px] text-white/50 tracking-widest font-bold">
@@ -423,11 +433,9 @@ export default function CABIDiagnosisPage() {
             📷 ছবি আপলোড (ঐচ্ছিক)
           </div>
           <div
-            className="relative rounded-2xl overflow-hidden"
-            style={{
-              background: selectedImage ? "transparent" : "linear-gradient(135deg,#f0fdf4,#ecfdf5)",
-              border: selectedImage ? "2px solid #1b8a3e" : "2px dashed #1b8a3e",
-            }}
+            className={`relative rounded-2xl overflow-hidden ${
+              selectedImage ? "border-2 border-[#1b8a3e]" : "border-2 border-dashed border-[#1b8a3e] bg-cabi-upload"
+            }`}
           >
             {selectedImage ? (
               <div className="relative">
@@ -468,8 +476,24 @@ export default function CABIDiagnosisPage() {
             >
               📁 গ্যালারি
             </button>
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" />
-            <input ref={galleryInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              aria-label="আক্রান্ত অংশের ক্যামেরা ছবি আপলোড করুন"
+              title="আক্রান্ত অংশের ক্যামেরা ছবি আপলোড করুন"
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              aria-label="আক্রান্ত অংশের গ্যালারি ছবি আপলোড করুন"
+              title="আক্রান্ত অংশের গ্যালারি ছবি আপলোড করুন"
+            />
           </div>
         </div>
 
@@ -605,8 +629,9 @@ export default function CABIDiagnosisPage() {
                     {/* Confidence bar */}
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
                       <div
-                        className={`h-2 rounded-full transition-all ${i === 0 ? "bg-amber-500" : "bg-gray-400"}`}
-                        style={{ width: `${Math.min(candidate.confidence_pct, 100)}%` }}
+                        className={`h-2 rounded-full transition-all ${
+                          i === 0 ? "bg-amber-500" : "bg-gray-400"
+                        } ${percentWidthClass(Math.min(candidate.confidence_pct, 100))}`}
                       />
                     </div>
                     <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">🔑 {candidate.key_feature}</div>
@@ -676,8 +701,9 @@ export default function CABIDiagnosisPage() {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                       <div
-                        className={`h-2.5 rounded-full ${item.color}`}
-                        style={{ width: `${item.score * 10}%` }}
+                        className={`h-2.5 rounded-full ${item.color} ${
+                          item.score >= 8 ? "w-full" : item.score >= 6 ? "w-[80%]" : item.score >= 4 ? "w-[60%]" : item.score >= 2 ? "w-[40%]" : "w-[20%]"
+                        }`}
                       />
                     </div>
                     <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{item.note}</div>

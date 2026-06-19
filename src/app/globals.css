@@ -273,3 +273,20 @@
 .scroll-snap-align-start {
   scroll-snap-align: start;
 }
+
+/* ── Chat page utilities ───────────────────────────────────────────────── */
+.chat-header {
+  background: linear-gradient(135deg, #1b4332, #2d6a4f);
+}
+
+.chat-messages {
+  max-height: calc(100vh - 180px);
+}
+
+.chat-dot-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.chat-dot-delay-2 {
+  animation-delay: 0.2s;
+}
