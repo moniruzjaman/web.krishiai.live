@@ -5,10 +5,18 @@
  * System prompt: Full CABI Plantwise Ready Reckoner + Exclusion Logic embedded
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders, corsNextResponse, handleOptions } from "@/lib/cors";
 import { diagnoseOffline } from "@/lib/cabi/diagnosticEngine";
 import { translateSymptomsToEnglish } from "@/lib/cabi/bengaliKeywords";
+import {
+  checkRateLimit,
+  resolveClientIp,
+  msToRetryAfterSeconds,
+  ANON_DIAGNOSE_RPM,
+  WINDOW_MS,
+} from "@/lib/rateLimit";
+import { cacheGet, cacheSet, buildCacheKey } from "@/lib/requestCache";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYSTEM PROMPT — CABI READY RECKONER + EXCLUSION LOGIC (FULL)
@@ -409,15 +417,55 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const overallTimeout = AbortSignal.timeout(OVERALL_TIMEOUT_MS);
 
+  // ── IP-based rate limit (anonymous defense-in-depth) ────────────────────
+  const clientIp = resolveClientIp(request);
+  const rl = checkRateLimit({
+    key: clientIp,
+    namespace: 'anon:diagnose',
+    maxRequests: ANON_DIAGNOSE_RPM,
+    windowMs: WINDOW_MS,
+  });
+  if (!rl.allowed) {
+    const retryAfter = msToRetryAfterSeconds(rl.retryAfterMs);
+    return NextResponse.json({
+      ok: false,
+      error: `অনুরোধের হার সীমা অতিক্রম করেছে। দয়া করে ${retryAfter} সেকেন্ড পরে আবার চেষ্টা করুন।`,
+      hint: `Rate limit: ${rl.current}/${rl.limit} per minute. Try again in ${retryAfter}s.`,
+      retry_after_seconds: retryAfter,
+    }, {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfter),
+        'X-RateLimit-Limit': String(rl.limit),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': String(Date.now() + rl.retryAfterMs),
+      },
+    });
+  }
+
   try {
     const body = await request.json();
-    const { image, symptoms = [], crop, weather, description } = body as {
+    const { image, symptoms = [], crop, weather, description, infectedPart } = body as {
       image?: string;
       symptoms?: string[];
       crop?: string;
       weather?: { temp?: number; humidity?: number; rain24h?: number };
       description?: string;
+      infectedPart?: string;
     };
+
+    // ── Request dedup cache ──────────────────────────────────────────────
+    const imageAttached = !!image;
+    const cacheKey = buildCacheKey(['diagnose', crop, infectedPart, symptoms, description, weather]);
+    const cached = cacheGet<any>(cacheKey);
+    if (cached) {
+      return corsNextResponse({
+        ...cached,
+        cached: true,
+        elapsed_ms: Date.now() - startTime,
+        rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
+      }, { origin });
+    }
 
     // Build user message
     const symptomText = Array.isArray(symptoms) ? symptoms.join(", ") : "";
@@ -507,6 +555,7 @@ CABI Plantwise পদ্ধতিতে বিশ্লেষণ করুন।
           symptoms: symptomObj,
           envInfo: weather || {},
           crop,
+          infectedPart,
         });
 
         // Format offline result as CABI-structured text
@@ -545,6 +594,11 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
 
         resultText = banglaSection;
         provider = "Offline CABI Engine";
+
+        // Cache offline result for dedup (skip image-bearing requests)
+        if (!imageAttached) {
+          cacheSet(cacheKey, { ok: true, provider, text: banglaSection });
+        }
       } catch (e) {
         console.warn("[diagnose] Offline engine failed:", e instanceof Error ? e.message : String(e));
       }
@@ -572,6 +626,7 @@ ${offlineResult.ipmRecommendations.prevention.join("; ")}
       bangla: banglaSection,
       english: englishSection,
       json: structuredJson,
+      rate_limit: { limit: rl.limit, remaining: rl.remaining, current: rl.current },
     }, {
       origin,
       methods: ["POST"],

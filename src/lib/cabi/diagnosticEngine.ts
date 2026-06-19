@@ -1,11 +1,30 @@
-/**
- * Offline CABI Diagnostic Engine
- * Implements the CABI Plantwise methodology without requiring internet or external APIs
- * Supports Bengali symptom input via BENGALI_KEYWORD_MAP
- */
-
 import { translateBengaliToEnglish, translateSymptomsToEnglish } from './bengaliKeywords';
 import { matchDiseasesBySymptoms, estimateInoculumPressure, getVarietySusceptibility, resolveCropKey, CROP_DISEASES } from '../cropDiseases';
+
+const INFECTED_PART_KEYWORDS: Record<string, string[]> = {
+  leaf: ['পাতা', 'leaf', 'leaves', 'blade'],
+  leaves: ['পাতা', 'leaf', 'leaves', 'blade'],
+  'পাতা': ['পাতা', 'leaf', 'leaves'],
+  stem: ['কান্ড', 'কাণ্ড', 'stem', 'stalk', 'culm'],
+  'কান্ড': ['কান্ড', 'কাণ্ড', 'stem'],
+  'কাণ্ড': ['কান্ড', 'কাণ্ড', 'stem'],
+  root: ['শিকড়', 'মূল', 'root', 'roots'],
+  'শিকড়': ['শিকড়', 'মূল', 'root'],
+  fruit: ['ফল', 'fruit', 'fruits'],
+  'ফল': ['ফল', 'fruit'],
+  panicle: ['শীষ', 'panicle', 'ear', 'head'],
+  'শীষ': ['শীষ', 'panicle', 'ear'],
+  flower: ['ফুল', 'flower', 'blossom'],
+  'ফুল': ['ফুল', 'flower'],
+  seed: ['বীজ', 'দানা', 'seed', 'grain'],
+  grain: ['দানা', 'শীষ', 'grain', 'seed'],
+};
+
+function partKeywords(part?: string): string[] {
+  if (!part) return [];
+  const key = part.toLowerCase().trim();
+  return INFECTED_PART_KEYWORDS[key] || INFECTED_PART_KEYWORDS[part.trim()] || [];
+}
 
 interface SymptomInput {
   [key: string]: string | string[];
@@ -91,10 +110,17 @@ export interface OfflineDiagnosis {
   timestamp: string;
 }
 
-/**
- * Translates all symptom text fields to English keywords.
- */
+const _translationCache = new Map<string, TranslatedSymptoms>();
+
+function translationCacheKey(symptoms: SymptomInput): string {
+  return JSON.stringify(symptoms);
+}
+
 function translateSymptoms(symptoms: SymptomInput): TranslatedSymptoms {
+  const cacheKey = translationCacheKey(symptoms);
+  const cached = _translationCache.get(cacheKey);
+  if (cached) return cached;
+
   const allValues = Object.values(symptoms).map(v => String(v || '')).filter(v => v && v !== 'N/A');
   const englishText = translateSymptomsToEnglish(allValues);
 
@@ -107,16 +133,37 @@ function translateSymptoms(symptoms: SymptomInput): TranslatedSymptoms {
     }
   }
 
-  return {
+  const result: TranslatedSymptoms = {
     ...symptoms,
     _englishText: englishText,
     _translated: translated,
   };
+
+  if (_translationCache.size >= 256) _translationCache.clear();
+  _translationCache.set(cacheKey, result);
+  return result;
 }
 
-/**
- * Extracts and processes symptoms to determine if issue is abiotic or biotic
- */
+function hasPositiveMatch(text: string, indicator: string): boolean {
+  if (!indicator) return false;
+  const ind = indicator.toLowerCase();
+  const idx = text.indexOf(ind);
+  if (idx === -1) return false;
+
+  const before = text.slice(Math.max(0, idx - 12), idx);
+  if (/\bno\s+$/i.test(before) || /\bwithout\s+$/i.test(before) || /\babsence\s+of\s+$/i.test(before)) {
+    return false;
+  }
+  if (/\sনেই\s?$/.test(before) || /\sনাই\s?$/.test(before) || /\sনা\s?$/.test(before)) {
+    return false;
+  }
+  return true;
+}
+
+function pushUnique(arr: string[], value: string): void {
+  if (!arr.includes(value)) arr.push(value);
+}
+
 export function assessAbioticBiotic(symptoms: SymptomInput): 'abiotic' | 'biotic' | 'uncertain' {
   const abioticIndicators = [
     'uniformly distributed', 'machinery tracks', 'irrigation channels', 'soil type zones',
@@ -146,7 +193,7 @@ export function assessAbioticBiotic(symptoms: SymptomInput): 'abiotic' | 'biotic
   });
 
   bioticIndicators.forEach(indicator => {
-    if (allText.includes(indicator.toLowerCase())) bioticScore++;
+    if (hasPositiveMatch(allText, indicator)) bioticScore++;
   });
 
   if (abioticScore > bioticScore) return 'abiotic';
@@ -154,9 +201,6 @@ export function assessAbioticBiotic(symptoms: SymptomInput): 'abiotic' | 'biotic
   return 'uncertain';
 }
 
-/**
- * Applies CABI exclusion gates to narrow down potential causes
- */
 export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInput): { excluded: string[]; suspects: string[] } {
   const excluded: string[] = [];
   const suspects: string[] = [];
@@ -167,12 +211,19 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
   const allText = originalText + ' ' + englishText;
 
   if (abioticBiotic === 'abiotic') {
-    excluded.push('insects/mites', 'virus', 'bacteria', 'fungi/oomycetes');
-    suspects.push('nutrient deficiency', 'drought', 'waterlogging', 'herbicide injury', 'salinity', 'pH toxicity');
+    pushUnique(excluded, 'insects/mites');
+    pushUnique(excluded, 'virus');
+    pushUnique(excluded, 'bacteria');
+    pushUnique(excluded, 'fungi/oomycetes');
+    pushUnique(suspects, 'nutrient deficiency');
+    pushUnique(suspects, 'drought');
+    pushUnique(suspects, 'waterlogging');
+    pushUnique(suspects, 'herbicide injury');
+    pushUnique(suspects, 'salinity');
+    pushUnique(suspects, 'pH toxicity');
     return { excluded, suspects };
   }
 
-  // Gate A: Exclude Insects/Mites
   const insectMiteSigns = [
     'chewing marks', 'holes', 'rolled leaves', 'mines', 'frass', 'cast skins', 'eggs', 'webbing', 'stippling',
     'leaf roller insect', 'chewing marks insect', 'sticky honeydew', 'whitefly insect',
@@ -182,16 +233,15 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
 
   let hasInsectSigns = false;
   insectMiteSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasInsectSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasInsectSigns = true;
   });
 
   if (!hasInsectSigns) {
-    excluded.push('insects/mites');
+    pushUnique(excluded, 'insects/mites');
   } else {
-    suspects.push('insects/mites');
+    pushUnique(suspects, 'insects/mites');
   }
 
-  // Gate B: Exclude Virus
   const virusSigns = [
     'mosaic', 'ring spots', 'chlorotic patterns following vein boundaries',
     'systemic distortion of young leaves', 'confined between veins',
@@ -200,18 +250,17 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
 
   let hasVirusSigns = false;
   virusSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasVirusSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasVirusSigns = true;
   });
 
   if (allText.includes('interveinal') || allText.includes('confined between veins')) {
-    excluded.push('virus');
+    pushUnique(excluded, 'virus');
   } else if (!hasVirusSigns) {
-    excluded.push('virus');
+    pushUnique(excluded, 'virus');
   } else {
-    suspects.push('virus');
+    pushUnique(suspects, 'virus');
   }
 
-  // Gate C: Exclude Bacteria
   const bacteriaSigns = [
     'water-soaked margins', 'bacterial ooze', 'sticky exudate',
     'water soaked oily', 'water soaked margins leaf edge yellow brown bacterial',
@@ -219,16 +268,15 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
 
   let hasBacteriaSigns = false;
   bacteriaSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasBacteriaSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasBacteriaSigns = true;
   });
 
   if (!hasBacteriaSigns) {
-    excluded.push('bacteria');
+    pushUnique(excluded, 'bacteria');
   } else {
-    suspects.push('bacteria');
+    pushUnique(suspects, 'bacteria');
   }
 
-  // Gate D: Confirm Fungal/Oomycete
   const fungalSigns = [
     'fruiting bodies', 'black pycnidia', 'pustules', 'powdery coating', 'cottony growth',
     'white powder mildew powdery coating', 'blast gray diamond lesions fungal',
@@ -242,33 +290,33 @@ export function applyExclusionGates(abioticBiotic: string, symptoms: SymptomInpu
   let hasTrueFungusSigns = false;
 
   fungalSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasFungalSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasFungalSigns = true;
   });
   oomyceteSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasOomyceteSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasOomyceteSigns = true;
   });
   trueFungusSigns.forEach(sign => {
-    if (allText.includes(sign.toLowerCase())) hasTrueFungusSigns = true;
+    if (hasPositiveMatch(allText, sign)) hasTrueFungusSigns = true;
   });
 
   if (hasTrueFungusSigns) {
-    suspects.push('true fungi');
-    excluded.push('oomycetes');
+    pushUnique(suspects, 'true fungi');
+    pushUnique(excluded, 'oomycetes');
   } else if (hasOomyceteSigns) {
-    suspects.push('oomycetes');
-    excluded.push('true fungi');
+    pushUnique(suspects, 'oomycetes');
+    pushUnique(excluded, 'true fungi');
   } else if (hasFungalSigns) {
-    suspects.push('fungal/oomycete (unable to differentiate)');
+    pushUnique(suspects, 'fungal/oomycete (unable to differentiate)');
   } else {
-    excluded.push('fungi/oomycetes');
+    pushUnique(excluded, 'fungi/oomycetes');
   }
 
-  return { excluded, suspects };
+  return {
+    excluded: Array.from(new Set(excluded)),
+    suspects: Array.from(new Set(suspects)),
+  };
 }
 
-/**
- * Assesses disease triangle using host, pathogen, and environment factors
- */
 export function assessDiseaseTriangle(
   hostInfo: HostInfo,
   pathogenInfo: PathogenInfo,
@@ -291,7 +339,6 @@ export function assessDiseaseTriangle(
     ? estimateInoculumPressure(cropInput, pathogenInfo.season)
     : (pathogenInfo.inoculumPressure || 'low');
 
-  // Host assessment
   if (effectiveVarietySusceptibility === 'high' ||
       hostInfo.growthStage === 'seedling' ||
       hostInfo.growthStage === 'vegetative') {
@@ -303,7 +350,6 @@ export function assessDiseaseTriangle(
     assessment.fieldObservationGuidance.push('Document variety and growth stage for baseline comparison');
   }
 
-  // Pathogen assessment
   if (effectiveInoculumPressure === 'high' || pathogenInfo.recentHistory === 'present') {
     assessment.pathogen = 'High pathogen pressure';
     if (assessment.riskLevel === 'medium') assessment.riskLevel = 'high';
@@ -314,7 +360,6 @@ export function assessDiseaseTriangle(
     assessment.fieldObservationGuidance.push('Survey field edges and nearby areas for disease presence');
   }
 
-  // Environment assessment
   if (envInfo) {
     const { temp, humidity, rainfall } = envInfo;
     if (humidity && humidity > 80 && temp && temp >= 26 && temp <= 35) {
@@ -349,9 +394,6 @@ export function assessDiseaseTriangle(
   return assessment;
 }
 
-/**
- * Provides field confirmation methods based on suspected cause
- */
 export function getFieldConfirmationMethods(suspects: string[]): string[] {
   const methods: string[] = [];
 
@@ -405,9 +447,6 @@ export function getFieldConfirmationMethods(suspects: string[]): string[] {
   return methods;
 }
 
-/**
- * Generates IPM recommendations based on diagnosis
- */
 export function generateIPMRecommendations(diagnosis: {
   suspects: string[];
   confidence: string;
@@ -470,7 +509,6 @@ export function generateIPMRecommendations(diagnosis: {
     }
   }
 
-  // Add generic cultural controls
   if (recommendations.cultural.length === 0) {
     recommendations.cultural.push('প্রতিরোধী জাত ব্যবহার করুন');
     recommendations.cultural.push('ফসল আবর্তন করুন');
@@ -530,25 +568,20 @@ export function generateIPMRecommendations(diagnosis: {
   return recommendations;
 }
 
-/**
- * Main diagnostic function that orchestrates the offline diagnosis process.
- */
 export function diagnoseOffline(inputData: {
   symptoms: SymptomInput;
   hostInfo?: HostInfo;
   pathogenInfo?: PathogenInfo;
   envInfo?: EnvInfo;
   crop?: string;
+  infectedPart?: string;
 }): OfflineDiagnosis {
-  const { symptoms, hostInfo = {}, pathogenInfo = {}, envInfo = {}, crop } = inputData;
+  const { symptoms, hostInfo = {}, pathogenInfo = {}, envInfo = {}, crop, infectedPart } = inputData;
 
-  // Step 1: Abiotic vs Biotic assessment
   const abioticBiotic = assessAbioticBiotic(symptoms);
 
-  // Step 2: Apply exclusion gates
   const { excluded, suspects } = applyExclusionGates(abioticBiotic, symptoms);
 
-  // Step 3: Crop-specific disease matching
   let cropDiseaseMatches: Array<{
     disease: {
       name: string;
@@ -582,7 +615,58 @@ export function diagnoseOffline(inputData: {
 
       cropDiseaseMatches = matchDiseasesBySymptoms(crop, allSymptomTexts);
 
-      const nonZeroMatches = cropDiseaseMatches.filter(m => m.score > 0);
+      const partKWs = partKeywords(infectedPart);
+      if (partKWs.length > 0) {
+        cropDiseaseMatches = cropDiseaseMatches.map(match => {
+          const symptomText = match.disease.nameBn + ' ' + match.disease.name + ' ' +
+            (match.disease.pathogen || '') + ' ' + match.matchedSymptoms.join(' ');
+          const partHits = partKWs.some(kw => symptomText.toLowerCase().includes(kw.toLowerCase()));
+          if (partHits && match.matchRatio > 0) {
+            const boosted = Math.min(0.95, match.matchRatio * 1.4);
+            return { ...match, matchRatio: boosted };
+          }
+          return match;
+        }).sort((a, b) => b.matchRatio - a.matchRatio);
+      }
+
+      const totalObserved = allSymptomTexts.length || 1;
+      const combinedInputText = allSymptomTexts.join(' ').toLowerCase();
+
+      const nameMentionedMap = new Map<string, boolean>();
+      const nameMentionedResults = cropDiseaseMatches.map(match => {
+        const nameBnLower = (match.disease.nameBn || '').toLowerCase();
+        const nameEnLower = (match.disease.name || '').toLowerCase();
+        const coreBn = nameBnLower.replace(/\s+রোগ$/, '').trim();
+        const coreEn = nameEnLower.replace(/\s+disease$/, '').trim();
+        const tokens = [
+          ...coreBn.split(/\s+/),
+          ...coreEn.split(/\s+/),
+        ].filter(t => t.length >= 4 && !['disease', 'রোগ', 'ধানের', 'the', 'and'].includes(t));
+        const mentioned = tokens.some(t => combinedInputText.includes(t));
+        nameMentionedMap.set(match.disease.name, mentioned);
+        return { ...match, _nameMentioned: mentioned };
+      });
+
+      const enhanced = nameMentionedResults.map(match => {
+        const coverage = Math.min(1, match.matchedSymptoms.length / totalObserved);
+        const blended = Math.min(0.95, match.matchRatio * 0.6 + coverage * 0.4);
+        let final = Math.max(match.matchRatio, blended);
+        if (match._nameMentioned) {
+          final = Math.min(0.95, final + 0.25);
+        }
+        return { ...match, matchRatio: final };
+      });
+
+      cropDiseaseMatches = enhanced.sort((a, b) => {
+        if (b.matchRatio !== a.matchRatio) return b.matchRatio - a.matchRatio;
+        const aMentioned = nameMentionedMap.get(a.disease.name) ?? false;
+        const bMentioned = nameMentionedMap.get(b.disease.name) ?? false;
+        if (aMentioned && !bMentioned) return -1;
+        if (!aMentioned && bMentioned) return 1;
+        return b.matchedSymptoms.length - a.matchedSymptoms.length;
+      });
+
+      const nonZeroMatches = cropDiseaseMatches.filter(m => m.score > 0 || m.matchRatio > 0);
       if (nonZeroMatches.length > 0) {
         cropDiseaseMatches = nonZeroMatches;
       }
@@ -590,39 +674,39 @@ export function diagnoseOffline(inputData: {
       cropDiseaseMatches.forEach(match => {
         if (match.matchRatio >= 0.3 && match.disease.cause) {
           const cause = match.disease.cause;
-          if (cause === 'fungal' && !suspects.some(s => s.includes('fungi'))) {
+          if (cause === 'fungal' && !suspects.some(s => s.includes('fung'))) {
             if (!excluded.includes('fungi/oomycetes')) {
-              suspects.push('fungal/oomycete (crop-specific match)');
+              pushUnique(suspects, 'fungal/oomycete (crop-specific match)');
             }
           }
-          if (cause === 'bacterial' && !suspects.includes('bacteria')) {
-            suspects.push('bacteria (crop-specific match)');
+          if (cause === 'bacterial' && !suspects.some(s => s.includes('bacteria'))) {
+            pushUnique(suspects, 'bacteria (crop-specific match)');
           }
-          if (cause === 'viral' && !suspects.includes('virus')) {
-            suspects.push('virus (crop-specific match)');
+          if (cause === 'viral' && !suspects.some(s => s.includes('virus'))) {
+            pushUnique(suspects, 'virus (crop-specific match)');
           }
-          if (cause === 'insect' && !suspects.includes('insects/mites')) {
-            suspects.push('insects/mites (crop-specific match)');
+          if (cause === 'insect' && !suspects.some(s => s.includes('insect'))) {
+            pushUnique(suspects, 'insects/mites (crop-specific match)');
           }
         }
       });
     }
+  } else {
+    if (suspects.length === 0) {
+      pushUnique(suspects, 'No crop selected — only gate-level analysis performed');
+    }
   }
 
-  // Step 4: Disease triangle assessment
   const triangle = assessDiseaseTriangle(hostInfo, pathogenInfo, envInfo, crop);
 
-  // Step 5: Field confirmation methods
   const fieldMethods = getFieldConfirmationMethods(suspects);
 
-  // Step 6: Generate IPM recommendations
   const ipmRecommendations = generateIPMRecommendations({
     suspects,
     confidence: suspects.length > 0 && excluded.length > 0 ? 'medium' : 'low',
     cropDiseaseMatches,
   });
 
-  // Determine primary suspect
   let primarySuspect: string;
   let specificDisease: SpecificDisease | null = null;
 
