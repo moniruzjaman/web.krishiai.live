@@ -115,8 +115,8 @@
   },
   "taskRoutes": {
     "chat":           ["gemini", "openrouter", "groq"],
-    "diagnose":       ["openrouter", "gemini", "groq"],
-    "soil_analysis":  ["gemini", "openrouter", "groq"],
+    "diagnose":       ["gemini", "openrouter", "groq"],
+    "soil_analysis":  ["gemini", "openrouter"],
     "crop_database":  ["gemini", "openrouter"],
     "news_bulletin":  ["groq", "gemini"],
     "schema":         ["gemini"],

@@ -54,8 +54,8 @@ export type TaskCategory =
 const TASK_PROVIDER_PRIORITY: Record<TaskCategory, string[]> = {
   // ── User-facing features ─────────────────────────────────────────────────
   chat:           ['gemini', 'openrouter', 'groq'],
-  diagnose:       ['openrouter', 'gemini', 'groq'],   // hybrid analysis → OpenRouter first
-  soil_analysis:  ['gemini', 'openrouter', 'groq'],     // structured classification with consensus
+  diagnose:       ['gemini', 'openrouter', 'groq'],     // Gemini primary, OpenRouter fallback on quota
+  soil_analysis:  ['gemini', 'openrouter'],              // structured classification with consensus
   crop_database:  ['gemini', 'openrouter'],            // rich content generation
   news_bulletin:  ['groq', 'gemini'],                  // fast text summary
 
