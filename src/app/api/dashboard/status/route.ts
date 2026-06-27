@@ -63,12 +63,12 @@ export async function GET(request: NextRequest) {
         gemini: {
           keyConfigured: providerKeys.gemini,
           health: orchestration.providers.find(p => p.name === 'gemini')?.status || 'healthy',
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.5-flash',
         },
         openrouter: {
           keyConfigured: providerKeys.openrouter,
           health: orchestration.providers.find(p => p.name === 'openrouter')?.status || 'healthy',
-          model: 'google/gemini-2.5-flash-preview-05-20',
+          model: 'google/gemini-3.5-flash-preview-05-20',
         },
         groq: {
           keyConfigured: providerKeys.groq,

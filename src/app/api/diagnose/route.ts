@@ -361,7 +361,7 @@ async function tryGemini(messages: any[], withVision: boolean): Promise<{ text: 
     generationConfig: { maxOutputTokens: 2500, temperature: 0.3 },
   };
 
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent", {
     method: "POST",
     headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),

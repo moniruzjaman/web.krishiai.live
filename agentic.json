@@ -92,7 +92,7 @@
   },
   "providers": {
     "gemini": {
-      "model": "gemini-2.5-flash",
+      "model": "gemini-3.5-flash",
       "apiKey": "GEMINI_API_KEY",
       "strengths": ["reasoning", "multimodal", "rich-content", "vision"],
       "freeTier": true,

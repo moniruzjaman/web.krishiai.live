@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       generationConfig: { maxOutputTokens: 1000, temperature: 0.5 },
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
