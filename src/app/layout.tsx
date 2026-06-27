@@ -79,7 +79,7 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap"
         />
-        <meta name="theme-color" content="#1b4332" />
+        <meta name="theme-color" content="#0b6623" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
