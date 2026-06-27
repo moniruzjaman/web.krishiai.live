@@ -1,19 +1,24 @@
 User-agent: Googlebot
 Allow: /
+Allow: /logo.jpeg
 Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
+Allow: /logo.jpeg
 Disallow: /api/
 
 User-agent: Twitterbot
 Allow: /
+Allow: /logo.jpeg
 Disallow: /api/
 
 User-agent: facebookexternalhit
 Allow: /
+Allow: /logo.jpeg
 Disallow: /api/
 
 User-agent: *
 Allow: /
+Allow: /logo.jpeg
 Disallow: /api/

@@ -1,0 +1,55 @@
+name: KrishiAI — Branding Check
+
+on:
+  push:
+    branches: [main, production, production-v2, v3.0.0, v4.0]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-branding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Verify branding files exist
+        run: |
+          for file in public/favicon.ico public/manifest.json public/robots.txt; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required branding file: $file"
+              exit 1
+            else
+              echo "✅ Found $file"
+            fi
+          done
+      - name: Verify meta tags in layout.tsx
+        run: |
+          if ! grep -q "openGraph" src/app/layout.tsx; then
+            echo "❌ Missing OpenGraph config in layout.tsx"
+            exit 1
+          fi
+          if ! grep -q "twitter:" src/app/layout.tsx; then
+            echo "❌ Missing Twitter card metadata in layout.tsx"
+            exit 1
+          fi
+          if ! grep -q "metadataBase" src/app/layout.tsx; then
+            echo "❌ Missing metadataBase URL in layout.tsx"
+            exit 1
+          fi
+          echo "✅ Meta tags verified in layout.tsx"
+      - name: Verify manifest theme colors
+        run: |
+          if ! grep -q '"theme_color": "#0b6623"' public/manifest.json; then
+            echo "❌ manifest.json theme_color not set to #0b6623"
+            exit 1
+          fi
+          if ! grep -q '"background_color": "#0b6623"' public/manifest.json; then
+            echo "❌ manifest.json background_color not set to #0b6623"
+            exit 1
+          fi
+          echo "✅ manifest.json theme colors verified"
+      - name: Verify Next.js build with branding assets
+        run: bun run build

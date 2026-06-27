@@ -9,9 +9,9 @@ import ClientShell from "@/components/ClientShell";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
+  title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
   description:
-    "বাংলাদেশের কৃষকদের জন্য তথ্য-প্রযুক্তি নির্ভর কৃষি সেবা — ফসলের রোগ চিহ্নিত করুন, সার ও বীজের পরামর্শ নিন।",
+    "KrishiAI integrates agriculture with AI-powered insights for smart farming, crop diagnosis, and modern agri-tech innovation.",
   keywords: [
     "কৃষি",
     "KrishiAI",
@@ -21,11 +21,17 @@ export const metadata: Metadata = {
     "ধান",
     "AI",
     "কৃষি প্রযুক্তি",
+    "smart farming",
+    "crop diagnosis",
+    "agri-tech",
   ],
   authors: [{ name: "KrishiAI Team" }],
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "64x64" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icons/icon-192.png",
   },
   appleWebApp: {
@@ -33,11 +39,29 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "KrishiAI",
   },
+  metadataBase: new URL("https://web.krishiai.live"),
   openGraph: {
-    title: "KrishiAI — চাষিদের জন্য স্মার্ট ও নির্ভরযোগ্য",
-    description: "বাংলাদেশের কৃষকদের জন্য AI-চালিত কৃষি প্ল্যাটফর্ম",
+    title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
+    description:
+      "Smart farming powered by AI – crop diagnosis, agri insights, and modern farming technology.",
     type: "website",
+    url: "/",
     siteName: "KrishiAI",
+    images: [
+      {
+        url: "/logo.jpeg",
+        width: 1200,
+        height: 630,
+        alt: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
+    description:
+      "Smart farming powered by AI – crop diagnosis, agri insights, and modern farming technology.",
+    images: ["/logo.jpeg"],
   },
 };
 

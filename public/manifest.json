@@ -1,5 +1,5 @@
 {
-  "name": "KrishiAI — কৃষি AI প্ল্যাটফর্ম",
+  "name": "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
   "short_name": "KrishiAI",
   "description": "বাংলাদেশের কৃষকদের জন্য AI-চালিত স্মার্ট কৃষি সেবা",
   "start_url": "/",
@@ -9,8 +9,8 @@
   "orientation": "portrait-primary",
   "dir": "ltr",
   "lang": "bn",
-  "background_color": "#1b4332",
-  "theme_color": "#1b4332",
+  "background_color": "#0b6623",
+  "theme_color": "#0b6623",
   "categories": ["agriculture", "education", "utilities", "productivity"],
   "icons": [
     {
