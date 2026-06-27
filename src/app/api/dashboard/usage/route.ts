@@ -1,5 +1,5 @@
 /**
- * /api/dashboard/usage — Usage Statistics for OpenProvider Dashboard
+ * /api/dashboard/usage — Usage Statistics for OpenRouter Dashboard
  *
  * Returns aggregated token usage, feature breakdown, and quota info.
  * Pulls from Supabase usage_logs when available, otherwise returns
@@ -8,7 +8,7 @@
 
 import { NextRequest } from 'next/server'
 import { handleOptions, corsNextResponse } from '@/lib/cors'
-import { getOrchestrationStats } from '@/lib/openprovider'
+import { getOrchestrationStats } from '@/lib/openrouter'
 
 export async function OPTIONS(request: NextRequest) {
   return handleOptions(request.headers.get('origin'), ['GET'])

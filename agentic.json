@@ -1,11 +1,11 @@
 {
   "$schema": "https://graphify.dev/schemas/agentic/v1",
-  "name": "KrishiAI OpenProvider Orchestration",
-  "version": "3.1.1",
-  "description": "Central orchestrator that routes AI tasks across providers with quota-aware fallback chains, including CABI Plantwise diagnosis pipeline",
+  "name": "KrishiAI OpenRouter Orchestration",
+  "version": "3.2.0",
+  "description": "Central orchestrator that routes AI tasks across providers with quota-aware fallback chains, including CABI Plantwise diagnosis pipeline and AI-hybrid analysis for crop diagnosis",
   "orchestrator": {
-    "name": "OpenProvider",
-    "module": "src/lib/openprovider.ts",
+    "name": "OpenRouter",
+    "module": "src/lib/openrouter.ts",
     "entry": "orchestrate()"
   },
   "agents": {
@@ -49,7 +49,7 @@
       "description": "Structured content generation, workflow automation, cloning",
       "taskTypes": ["automation"],
       "preferredProvider": "gemini",
-      "module": "src/lib/openprovider.ts"
+      "module": "src/lib/openrouter.ts"
     },
     "cabi-diagnosis": {
       "role": "CABI Plantwise Diagnosis Orchestrator",
@@ -68,6 +68,26 @@
         ],
         "systemPrompt": "Full CABI Plantwise Ready Reckoner with 6 parts: Diagnostic Protocol, Ready Reckoner Tables, Big 5 Recommendation Framework, FRAC/IRAC Resistance Management, Visual Analysis Protocol, Mandatory Output Format"
       }
+    },
+    "hybrid-analysis": {
+      "role": "Analysis AI Hybrid for Diagnosis",
+      "description": "Multi-model consensus diagnosis engine — runs vision analysis through Gemini + OpenRouter Qwen-VL simultaneously, cross-validates results, resolves disagreements via Groq tiebreaker, and merges into a single high-confidence diagnosis with confidence scoring",
+      "taskTypes": ["diagnose", "soil_analysis", "crop_database"],
+      "preferredProvider": "openrouter",
+      "module": "src/lib/hybrid-analysis.ts",
+      "orchestration": {
+        "mode": "consensus",
+        "pipeline": [
+          "parallel vision inference: Gemini 2.5 Flash + OpenRouter Qwen-VL-72B",
+          "structured JSON extraction from each model response",
+          "cross-validation: compare disease classification, confidence, and treatment overlap",
+          "if agreement > 80%: merge into unified diagnosis",
+          "if agreement < 80%: Groq Llama tiebreaker vote",
+          "final synthesis: weighted confidence score + Bangla/English dual-language output"
+        ],
+        "confidenceThreshold": 0.8,
+        "timeout": "15s"
+      }
     }
   },
   "providers": {
@@ -81,22 +101,22 @@
     "openrouter": {
       "model": "qwen/qwen2.5-vl-72b-instruct:free",
       "apiKey": "OPENROUTER_API_KEY",
-      "strengths": ["vision", "wide-model-access", "free-tier"],
+      "strengths": ["vision", "wide-model-access", "free-tier", "consensus"],
       "freeTier": true,
       "priority": 2
     },
     "groq": {
       "model": "llama-3.2-11b-vision-preview",
       "apiKey": "GROQ_API_KEY",
-      "strengths": ["fast-text", "vision", "structured-output", "low-latency"],
+      "strengths": ["fast-text", "vision", "structured-output", "low-latency", "tiebreaker"],
       "freeTier": true,
       "priority": 3
     }
   },
   "taskRoutes": {
     "chat":           ["gemini", "openrouter", "groq"],
-    "diagnose":       ["gemini", "openrouter", "groq"],
-    "soil_analysis":  ["gemini", "groq"],
+    "diagnose":       ["openrouter", "gemini", "groq"],
+    "soil_analysis":  ["gemini", "openrouter", "groq"],
     "crop_database":  ["gemini", "openrouter"],
     "news_bulletin":  ["groq", "gemini"],
     "schema":         ["gemini"],

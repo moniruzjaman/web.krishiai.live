@@ -1,5 +1,5 @@
 /**
- * OpenProvider — Central Orchestrator for KrishiAI
+ * OpenRouter — Central Orchestrator for KrishiAI
  *
  * Dynamically routes AI tasks across providers based on task type,
  * provider health, and quota availability. Inspired by the
@@ -7,7 +7,7 @@
  * to the optimal AI provider, with graceful fallback chains.
  *
  * ┌───────────────┐
- * │ OpenProvider   │  ← central orchestrator
+ * │ OpenRouter     │  ← central orchestrator
  * └───────┬───────┘
  *         │
  *    ┌────┼──────────┐
@@ -54,8 +54,8 @@ export type TaskCategory =
 const TASK_PROVIDER_PRIORITY: Record<TaskCategory, string[]> = {
   // ── User-facing features ─────────────────────────────────────────────────
   chat:           ['gemini', 'openrouter', 'groq'],
-  diagnose:       ['gemini', 'openrouter', 'groq'],   // reasoning-heavy → Gemini first
-  soil_analysis:  ['gemini', 'groq'],                  // structured classification
+  diagnose:       ['openrouter', 'gemini', 'groq'],   // hybrid analysis → OpenRouter first
+  soil_analysis:  ['gemini', 'openrouter', 'groq'],     // structured classification with consensus
   crop_database:  ['gemini', 'openrouter'],            // rich content generation
   news_bulletin:  ['groq', 'gemini'],                  // fast text summary
 
@@ -134,10 +134,10 @@ export interface OrchestrationResult {
   fallbackChain: string[]   // The full chain attempted
 }
 
-// ── Main OpenProvider Router ────────────────────────────────────────────────
+// ── Main OpenRouter Router ────────────────────────────────────────────────
 
 /**
- * Routes an AI task through the OpenProvider orchestration hub.
+ * Routes an AI task through the OpenRouter orchestration hub.
  *
  * 1. Classifies the task type
  * 2. Looks up the preferred provider chain for that task

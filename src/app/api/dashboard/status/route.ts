@@ -1,12 +1,12 @@
 /**
- * /api/dashboard/status — System Status for OpenProvider Dashboard
+ * /api/dashboard/status — System Status for OpenRouter Dashboard
  *
  * Returns provider health, DB connectivity, and orchestration stats.
  */
 
 import { NextRequest } from 'next/server'
 import { handleOptions, corsNextResponse } from '@/lib/cors'
-import { getOrchestrationStats, getTaskRoutingMap } from '@/lib/openprovider'
+import { getOrchestrationStats, getTaskRoutingMap } from '@/lib/openrouter'
 
 export async function OPTIONS(request: NextRequest) {
   return handleOptions(request.headers.get('origin'), ['GET'])
