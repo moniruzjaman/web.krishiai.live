@@ -68,9 +68,6 @@ async function callGeminiMultimodal(
   if (!apiKey) return null;
 
   try {
-    // Check if any message has an attachment
-    const hasAttachment = contents.some((m) => m.attachment);
-
     const geminiContents = contents
       .filter((m) => m.role === "user")
       .map((m) => {
@@ -247,7 +244,7 @@ ${seasonContext}`;
       },
       { origin, methods: ["POST"] }
     );
-  } catch (e) {
+  } catch {
     return corsNextResponse(
       {
         ok: false,

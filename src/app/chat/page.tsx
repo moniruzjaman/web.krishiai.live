@@ -15,6 +15,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Attachment {
@@ -130,7 +131,7 @@ export default function ChatPage() {
   }, [messages, isTyping]);
 
   // ── File handling ─────────────────────────────────────────────────────────
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -237,7 +238,7 @@ export default function ChatPage() {
     saveMessages(fresh);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     sendMessage(input, attachment);
   };

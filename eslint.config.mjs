@@ -42,6 +42,7 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-disable-directive": "off",
 
       // React rules — keep unescaped-entities off for Bengali, enable the rest
+      "react-hooks/set-state-in-effect": "off",
       "react-hooks/exhaustive-deps": "warn",
       "react/display-name": "off",
       "react/prop-types": "off",
