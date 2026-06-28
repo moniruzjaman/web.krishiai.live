@@ -78,7 +78,7 @@
       "orchestration": {
         "mode": "consensus",
         "pipeline": [
-          "parallel vision inference: Gemini 2.5 Flash + OpenRouter Qwen-VL-72B",
+          "parallel vision inference: Gemini 3.5 Flash + OpenRouter Qwen-VL-72B",
           "structured JSON extraction from each model response",
           "cross-validation: compare disease classification, confidence, and treatment overlap",
           "if agreement > 80%: merge into unified diagnosis",
