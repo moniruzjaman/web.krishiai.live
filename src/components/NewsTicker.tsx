@@ -1,11 +1,12 @@
 /**
- * NewsTicker — Horizontal scrolling agriculture news with datetime
+ * NewsTicker — Horizontal scrolling agriculture news with datetime & live indicator
  * Fetches from /api/news and displays headlines in a smooth infinite scroll.
+ * Animation is defined in globals.css for reliability across Next.js versions.
  */
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface NewsItem {
   title: string;
@@ -16,7 +17,6 @@ interface NewsItem {
 export default function NewsTicker() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchNews = useCallback(async () => {
     try {
@@ -75,22 +75,24 @@ export default function NewsTicker() {
 
   // Duplicate items for seamless loop
   const displayItems = [...news, ...news];
+  // Duration scales with content length
+  const duration = Math.max(30, news.length * 8);
 
   return (
     <div className="w-full bg-gradient-to-r from-[#0b6623] to-[#1b8a3e] overflow-hidden relative">
-      {/* Label */}
+      {/* Label with LIVE indicator */}
       <div className="absolute left-0 top-0 bottom-0 z-10 bg-[#0b6623] px-3 flex items-center gap-1.5 border-r border-white/20">
-        <span className="text-[11px]">📰</span>
+        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse-dot flex-shrink-0" />
         <span className="text-[10px] font-bold text-white whitespace-nowrap">
-          সর্বশেষ
+          লাইভ
         </span>
       </div>
 
       {/* Scrolling container */}
-      <div className="pl-[72px] overflow-hidden">
+      <div className="pl-[62px] overflow-hidden">
         <div
-          ref={scrollRef}
-          className="flex items-center py-2 animate-ticker-scroll whitespace-nowrap"
+          className="ticker-track flex items-center py-2 whitespace-nowrap"
+          style={{ animationDuration: `${duration}s` }}
         >
           {displayItems.map((item, i) => (
             <span key={i} className="inline-flex items-center gap-2 mx-4">
@@ -112,19 +114,6 @@ export default function NewsTicker() {
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes ticker-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-ticker-scroll {
-          animation: ticker-scroll ${Math.max(30, news.length * 8)}s linear infinite;
-        }
-        .animate-ticker-scroll:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
     </div>
   );
 }

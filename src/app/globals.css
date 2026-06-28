@@ -259,6 +259,20 @@
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
 }
 
+/* ── News ticker infinite horizontal scroll ─────────────────────────── */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
 /* ── Scrollbar-none utility (hides scrollbar while keeping scroll) ────── */
 .scrollbar-none {
   scrollbar-width: none;

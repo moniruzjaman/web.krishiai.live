@@ -207,8 +207,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-      {/* ═══ NEWS TICKER ════════════════════════════════════════════════════════ */}
-      <NewsTicker />
       {/* ═══ HERO ═══════════════════════════════════════════════════════════════ */}
       <section className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] px-4 pt-8 pb-10 sm:px-6 sm:pt-12 sm:pb-14 lg:px-8 relative overflow-hidden">
         {/* Background decoration */}
@@ -269,6 +267,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ═══ NEWS TICKER ════════════════════════════════════════════════════════ */}
+      <NewsTicker />
 
       {/* ═══ SEASONAL TIP BANNER ═══════════════════════════════════════════════ */}
       {seasonalTip && (
