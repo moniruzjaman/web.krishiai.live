@@ -1,9 +1,9 @@
 /**
- * /api/chat — KrishiAI Chat API
+ * /api/chat — KrishiAI Chat API (Multimodal)
  *
- * Uses Supabase + AI Provider Fallback (Gemini → OpenRouter → Groq → Offline)
- * for AI-powered agricultural chat with quota-tier management.
- * Provides Bengali-first responses with agricultural context.
+ * Supports text + image/PDF/doc attachments via Gemini 3.5 Flash.
+ * Provider waterfall: Gemini (multimodal) → OpenRouter → Groq → Offline
+ * Returns provider + model name for transparency.
  */
 
 import { NextRequest } from "next/server";
@@ -52,6 +52,87 @@ function getSeasonContext(): string {
 const MAX_MESSAGE_LENGTH = 5000;
 const MAX_MESSAGES = 20;
 
+// ── Multimodal Gemini call ──────────────────────────────────────────────────
+interface ChatAttachment {
+  type: string;
+  mimeType: string;
+  base64: string;
+  name: string;
+}
+
+async function callGeminiMultimodal(
+  contents: Array<{ role: string; content: string; attachment?: ChatAttachment }>,
+  systemPrompt: string
+): Promise<{ text: string; provider: string; model: string; tokensUsed: number } | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    // Check if any message has an attachment
+    const hasAttachment = contents.some((m) => m.attachment);
+
+    const geminiContents = contents
+      .filter((m) => m.role === "user")
+      .map((m) => {
+        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
+
+        // Add text part
+        if (m.content) {
+          parts.push({ text: m.content || "এই ফাইলটি বিশ্লেষণ করুন।" });
+        }
+
+        // Add inline data for attachment (image or PDF)
+        if (m.attachment) {
+          parts.push({
+            inlineData: {
+              mimeType: m.attachment.mimeType,
+              data: m.attachment.base64,
+            },
+          });
+        }
+
+        return { role: "user" as const, parts };
+      });
+
+    // If no user messages have attachments, fall back to text-only
+    if (geminiContents.length === 0) return null;
+
+    const body: Record<string, unknown> = {
+      contents: geminiContents,
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+    };
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!res.ok) {
+      console.warn("[chat/multimodal] Gemini failed:", res.status);
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+
+    return {
+      text,
+      provider: "Gemini",
+      model: "gemini-3.5-flash",
+      tokensUsed: data?.usageMetadata?.totalTokenCount || 0,
+    };
+  } catch (e) {
+    console.warn("[chat/multimodal] Gemini error:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
 
@@ -73,13 +154,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate message content lengths
     for (const msg of messages) {
       if (msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
-      return corsNextResponse(
-        { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
-        { status: 400, origin }
-      );
+        return corsNextResponse(
+          { ok: false, error: "বার্তা অত্যন্ত দীর্ঘ" },
+          { status: 400, origin }
+        );
       }
     }
 
@@ -98,59 +178,82 @@ export async function POST(request: NextRequest) {
 
 ${seasonContext}`;
 
-    // Build conversation with system prompt
-    const chatMessages = [
-      { role: "system" as const, content: systemPrompt },
-      ...messages.slice(-10).map((m: { role: string; content: string }) => ({
-        role: m.role === "user" ? "user" as const : "assistant" as const,
-        content: m.content,
-      })),
-    ];
+    // Check if the latest message has an attachment
+    const lastMsg = messages[messages.length - 1];
+    const hasAttachment = lastMsg?.attachment;
 
     let reply = "";
     let model = "";
     let provider = "";
 
-    // 1. Quota-aware AI client with provider fallback
-    try {
-      const { aiChatFull } = await import("@/lib/ai-client");
-      const result = await aiChatFull(chatMessages, { feature: 'chat' });
-      if (result.provider !== 'offline' && result.provider !== 'quota-exceeded') {
-        reply = result.text;
-        model = result.model;
-        provider = result.provider;
-      } else if (result.provider === 'quota-exceeded') {
-        return corsNextResponse(
-          { ok: false, error: result.text },
-          { status: 429, origin }
-        );
+    if (hasAttachment) {
+      // ── Multimodal path: Gemini direct with inline data ──
+      const userContents = messages
+        .slice(-10)
+        .map((m: { role: string; content: string; attachment?: ChatAttachment }) => ({
+          role: m.role === "user" ? "user" : "assistant",
+          content: m.content,
+          attachment: m.attachment,
+        }));
+
+      const multimodalResult = await callGeminiMultimodal(userContents, systemPrompt);
+      if (multimodalResult) {
+        reply = multimodalResult.text;
+        model = multimodalResult.model;
+        provider = multimodalResult.provider;
       }
-    } catch (e) {
-      console.warn("[chat] AI client failed:", e instanceof Error ? e.message : String(e));
+    } else {
+      // ── Text-only path: standard AI client waterfall ──
+      const chatMessages = [
+        { role: "system" as const, content: systemPrompt },
+        ...messages.slice(-10).map((m: { role: string; content: string }) => ({
+          role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+          content: m.content,
+        })),
+      ];
+
+      try {
+        const { aiChatFull } = await import("@/lib/ai-client");
+        const result = await aiChatFull(chatMessages, { feature: "chat" });
+        if (result.provider !== "offline" && result.provider !== "quota-exceeded") {
+          reply = result.text;
+          model = result.model;
+          provider = result.provider;
+        } else if (result.provider === "quota-exceeded") {
+          return corsNextResponse(
+            { ok: false, error: result.text },
+            { status: 429, origin }
+          );
+        }
+      } catch (e) {
+        console.warn("[chat] AI client failed:", e instanceof Error ? e.message : String(e));
+      }
     }
 
-    // 2. Offline fallback: Season-aware generic response
+    // Offline fallback
     if (!reply) {
       const m = new Date().getMonth() + 1;
       const seasonName = m >= 11 || m <= 2 ? "রবি" : m <= 5 ? "বোরো/প্রাক-খরিফ" : m <= 8 ? "খরিফ/আমন" : "আমন/রবি প্রস্তুতি";
       reply = `দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। বর্তমানে ${seasonName} মৌসুম চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।`;
+      provider = "fallback";
     }
 
-    return corsNextResponse({
-      ok: true,
-      reply,
-      model: model || "fallback",
-      provider: provider || "fallback",
-    }, {
-      origin,
-      methods: ["POST"],
-    });
+    return corsNextResponse(
+      {
+        ok: true,
+        reply,
+        model: model || "fallback",
+        provider: provider || "fallback",
+      },
+      { origin, methods: ["POST"] }
+    );
   } catch (e) {
     return corsNextResponse(
       {
         ok: false,
         error: "AI সহকারী এখন উপলব্ধ নয়",
         reply: "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। কিছুক্ষণ পর আবার চেষ্টা করুন।",
+        provider: "fallback",
       },
       { status: 503, origin }
     );

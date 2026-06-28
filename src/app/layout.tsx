@@ -11,7 +11,7 @@ import Providers from "@/components/Providers";
 export const metadata: Metadata = {
   title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
   description:
-    "KrishiAI integrates agriculture with AI-powered insights for smart farming, crop diagnosis, and modern agri-tech innovation.",
+    "চাষাবাদের জন্য স্মার্ট ও নির্ভরযোগ্য",
   keywords: [
     "কৃষি",
     "KrishiAI",
@@ -42,8 +42,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://web.krishiai.live"),
   openGraph: {
     title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
-    description:
-      "Smart farming powered by AI – crop diagnosis, agri insights, and modern farming technology.",
+    description: "চাষাবাদের জন্য স্মার্ট ও নির্ভরযোগ্য",
     type: "website",
     url: "/",
     siteName: "KrishiAI",
@@ -59,8 +58,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
-    description:
-      "Smart farming powered by AI – crop diagnosis, agri insights, and modern farming technology.",
+    description: "চাষাবাদের জন্য স্মার্ট ও নির্ভরযোগ্য",
     images: ["/logo.jpeg"],
   },
 };
