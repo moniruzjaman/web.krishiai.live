@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   if (!cropParam && !compareParam && cachedPrices && now - cachedPricesAt < PRICES_CACHE_TTL) {
     return corsNextResponse(cachedPrices, {
       origin,
-      headers: { "Cache-Control": "public, s-maxage=300" },
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
     });
   }
 

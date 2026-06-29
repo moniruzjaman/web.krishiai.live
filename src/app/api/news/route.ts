@@ -1162,7 +1162,10 @@ export async function GET(request: NextRequest) {
   // Check cache (auto-invalidate on day change or after 30 min)
   if (!forceRefresh && !dayChanged && cachedResponse && Date.now() - cachedAt < CACHE_TTL) {
     const origin = request.headers.get("origin");
-    return corsNextResponse(cachedResponse, { origin });
+    return corsNextResponse(cachedResponse, {
+      origin,
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=300" },
+    });
   }
 
   const ctx = bdAgriContext();
@@ -1326,7 +1329,10 @@ export async function GET(request: NextRequest) {
   cachedDate = today;
 
   const origin = request.headers.get("origin");
-  return corsNextResponse(response, { origin });
+  return corsNextResponse(response, {
+    origin,
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=300" },
+  });
 }
 
 export async function OPTIONS(request: NextRequest) {

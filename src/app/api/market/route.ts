@@ -318,7 +318,7 @@ function getSeasonalPrices(district?: string): MarketPrice[] {
 let cachedPrices: MarketPrice[] | null = null;
 let cachedAt = 0;
 let cachedSource = "DAM (কৃষি বিপণন অধিদপ্তর)";
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 export async function GET(request: NextRequest) {
   const origin = request.headers.get("origin");
@@ -345,7 +345,7 @@ export async function GET(request: NextRequest) {
       {
         origin,
         headers: {
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300",
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
         },
       }
     );
@@ -383,7 +383,7 @@ export async function GET(request: NextRequest) {
     {
       origin,
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=1800",
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
       },
     }
   );

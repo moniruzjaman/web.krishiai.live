@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return corsNextResponse(
       { ok: true, category, crops: cached.data },
-      { origin, headers: { "Cache-Control": "public, s-maxage=600" } }
+      { origin, headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } }
     );
   }
 
@@ -133,7 +133,7 @@ Return ONLY the JSON array, no other text.`;
 
     return corsNextResponse(
       { ok: true, category, crops: cropsWithIds },
-      { origin, headers: { "Cache-Control": "public, s-maxage=600" } }
+      { origin, headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } }
     );
   } catch (error: any) {
     console.error("[crop-database] Error:", error.message);

@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       { ...cached.data, city, lat, lon },
       {
         origin,
-        headers: { "Cache-Control": "public, s-maxage=300" },
+        headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=300" },
       }
     );
   }
