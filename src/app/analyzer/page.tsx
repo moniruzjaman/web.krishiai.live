@@ -484,6 +484,8 @@ export default function CABIDiagnosisPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
+
     if (file.size > 10 * 1024 * 1024) {
       setError("ছবি অত্যন্ত বড়। সর্বোচ্চ ১০ মেগাবাইটের ছবি আপলোড করুন।");
       return;
@@ -492,10 +494,25 @@ export default function CABIDiagnosisPage() {
       setError("শুধুমাত্র ছবি ফাইল আপলোড করুন।");
       return;
     }
+
+    // AI Scanner quality gate: reject images that are too small to give
+    // the vision models useful leaf/lesion detail.
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setSelectedImage(ev.target?.result as string);
+      const dataUrl = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        if (img.width < 480 || img.height < 480) {
+          setError("ছবিটি খুব ছোট। অন্তত ৪৮০×৪৮০ পিক্সেলের পরিষ্কার ছবি নিন।");
+          return;
+        }
+        setSelectedImage(dataUrl);
+        setError(null);
+      };
+      img.onerror = () => setError("ছবিটি পড়া যায়নি। অন্য একটি ছবি নির্বাচন করুন।");
+      img.src = dataUrl;
     };
+    reader.onerror = () => setError("ছবি পড়তে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
     reader.readAsDataURL(file);
     e.target.value = "";
   };
@@ -761,7 +778,7 @@ export default function CABIDiagnosisPage() {
         {currentStep === 1 && !result && !analyzing && (
           <div className="space-y-4">
             <div className="text-[15px] font-bold text-gray-900 dark:text-gray-100 mb-1">
-              📷 ধাপ ১: আক্রান্ত গাছের ছবি দিন
+              📷 ধাপ ১: AI Scanner — আক্রান্ত গাছের ছবি দিন
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
               স্পষ্ট ছবি দিলে নির্ণয় আরও সঠিক হবে। আক্রান্ত অংশের কাছ থেকে ছবি নিন।
@@ -815,10 +832,10 @@ export default function CABIDiagnosisPage() {
                     </svg>
                   </div>
                   <p className="text-[13px] font-bold text-gray-600 dark:text-gray-400 text-center mb-1">
-                    আক্রান্ত অংশের ছবি আপলোড করুন
+                    AI বিশ্লেষণের জন্য আক্রান্ত অংশের ছবি নিন
                   </p>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
-                    ক্যামেরা বা গ্যালারি থেকে নির্বাচন করুন
+                    ক্যামেরা দিয়ে স্ক্যান করুন বা গ্যালারি থেকে নির্বাচন করুন
                   </p>
                 </div>
               )}
@@ -856,7 +873,7 @@ export default function CABIDiagnosisPage() {
             </div>
 
             <p className="text-[10px] text-gray-400 text-center">
-              ছবি ঐচ্ছিক, কিন্তু নির্ণয়ের মান বাড়ায়
+              💡 পরিষ্কার, কাছাকাছি ও ভালো আলোতে ছবি দিলে AI নির্ণয় আরও নির্ভুল হয়
             </p>
           </div>
         )}
