@@ -4,6 +4,16 @@ import Link from "next/link";
 
 const TOOLS = [
   {
+    icon: "🌦️",
+    title: "আবহাওয়া বুদ্ধিমত্তা",
+    sub: "১৪ শ্রেণির ঝুঁকি, রোগ পূর্বাভাস, ফসল ক্যালেন্ডার ও AI সুপারিশ",
+    cat: "KWI ENGINE",
+    catColor: "#0369a1",
+    bg: "linear-gradient(135deg,#e0f2fe,#cffafe)",
+    to: "/weather-intelligence",
+    badge: "সক্রিয়",
+  },
+  {
     icon: "🌿",
     title: "উদ্ভিদ স্বাস্থ্য বিশেষজ্ঞ",
     sub: "CABI Plantwise পদ্ধতিতে পেশাদার রোগ নির্ণয়",

@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 
 const SIDEBAR_LINKS = [
   { href: "/", icon: "🏠", label: "হোম" },
+  { href: "/weather-intelligence", icon: "🌦️", label: "আবহাওয়া বুদ্ধিমত্তা" },
   { href: "/tools", icon: "🔧", label: "টুল" },
   { href: "/analyzer", icon: "📷", label: "এনালাইজার" },
   { href: "/learn", icon: "📚", label: "শিক্ষা" },
