@@ -22,6 +22,7 @@ import { CropCalendarView } from "@/components/kwi/crop-calendar";
 import { getCropConfig, getAllCropConfigs } from "@/lib/kwi/engines/crop-configs";
 import { getScoreLabel, toBnDigits } from "@/lib/kwi/formatters";
 import { ScoreGauge } from "@/components/kwi/score-gauge";
+import { KwiLiveStatus } from "@/components/kwi/live-status";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export function WeatherIntelligence() {
                 ? `${weather.location.name}${weather.location.district ? `, ${weather.location.district}` : ""}`
                 : lang === "bn" ? "লোকেশন লোড হচ্ছে…" : "Loading location…"}
             </p>
+            <KwiLiveStatus className="mt-1" />
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {farmSummary && (

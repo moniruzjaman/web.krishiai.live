@@ -113,6 +113,56 @@ export function toBnDigits(value: string | number): string {
   return String(value).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[+d]);
 }
 
+/**
+ * Live local datetime formatters — pinned to Asia/Dhaka so the advisory
+ * always matches the authentic user location & current time (Bangla first).
+ */
+const DHAKA_TZ = 'Asia/Dhaka';
+
+/** "সোমবার, ২ সেপ্টেম্বর" (bn) / "Monday, 2 September" (en) */
+export function formatBanglaDate(d: Date, lang: 'en' | 'bn' = 'bn'): string {
+  if (lang === 'bn') {
+    const weekdaysBn = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+    const monthsBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    // Extract Dhaka-local Y/M/D via Intl, then compose in Bangla
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: DHAKA_TZ, year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short',
+    }).formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+    const day = Number(get('day'));
+    const month = Number(get('month'));
+    const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const wd = weekdayMap[get('weekday')] ?? new Date(d).getDay();
+    return `${weekdaysBn[wd]}, ${toBnDigits(day)} ${monthsBn[month - 1]}`;
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: DHAKA_TZ, weekday: 'long', day: 'numeric', month: 'long',
+  }).format(d);
+}
+
+/** "সকাল ৯:২১" (bn) / "9:21 AM" (en) */
+export function formatBanglaTime(d: Date, lang: 'en' | 'bn' = 'bn'): string {
+  const time = new Intl.DateTimeFormat('en-US', {
+    timeZone: DHAKA_TZ, hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(d);
+  if (lang === 'bn') {
+    // Dhaka-local hour → Bangla day period (সকাল/দুপুর/বিকাল/সন্ধ্যা/রাত)
+    const hour = Number(new Intl.DateTimeFormat('en-US', {
+      timeZone: DHAKA_TZ, hour: 'numeric', hour12: false,
+    }).format(d)) % 24;
+    const period =
+      hour >= 4 && hour < 6 ? 'ভোর' :
+      hour >= 6 && hour < 12 ? 'সকাল' :
+      hour >= 12 && hour < 16 ? 'দুপুর' :
+      hour >= 16 && hour < 18 ? 'বিকাল' :
+      hour >= 18 && hour < 20 ? 'সন্ধ্যা' : 'রাত';
+    // Bangla day period replaces AM/PM
+    const digits = toBnDigits(time.replace(/\s?(AM|PM)$/i, ''));
+    return `${period} ${digits}`;
+  }
+  return time;
+}
+
 export function getTimeLabel(isoTime: string, lang: 'en' | 'bn' = 'en'): string {
   const d = new Date(isoTime);
   const label = d.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });

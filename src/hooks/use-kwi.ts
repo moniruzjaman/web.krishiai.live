@@ -72,6 +72,55 @@ export function useKwiGeoLocation(): GeoLocation {
   }, [location]);
 }
 
+// ── Live clock hook (ticks for realtime datetime display) ───────────────────
+/**
+ * Re-renders the caller every `intervalMs` so Bangla date/time stay live.
+ * Starts as `null` on the server/first render and fills in after mount —
+ * the standard hydration-safe live-clock pattern.
+ */
+export function useNow(intervalMs: number = 30_000): Date | null {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
+// ── Realtime location status (for "authentic location" UI feedback) ─────────
+export interface KwiLocationStatus {
+  /** True when real GPS fix (LocationContext) is in use; false = Dhaka fallback. */
+  isLive: boolean;
+  /** GPS horizontal accuracy in meters (0 when unknown/fallback). */
+  accuracy: number;
+  /** Whether a GPS watcher is currently active. */
+  watching: boolean;
+  /** Human-readable place name (Bangla). */
+  name: string;
+  district: string;
+  /** Coordinates currently driving the intelligence. */
+  lat: number;
+  lon: number;
+}
+
+export function useKwiLocationStatus(): KwiLocationStatus {
+  const { location, permission, loading } = useLocation();
+  const geo = useKwiGeoLocation();
+  return useMemo(
+    () => ({
+      isLive: !!location && permission === "granted",
+      accuracy: location?.accuracy ?? 0,
+      watching: permission === "granted" && !loading,
+      name: geo.name,
+      district: geo.district ?? "",
+      lat: geo.latitude,
+      lon: geo.longitude,
+    }),
+    [location, permission, loading, geo],
+  );
+}
+
 // ── Active crop hook (single crop selection, persisted) ─────────────────────
 export function useActiveCrop(): {
   crop: ActiveCrop;

@@ -20,6 +20,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useKwiIntelligence } from "@/hooks/use-kwi";
 import { getScoreLabel, toBnDigits } from "@/lib/kwi/formatters";
 import { ScoreGauge } from "@/components/kwi/score-gauge";
+import { KwiLiveStatus } from "@/components/kwi/live-status";
 import { cn } from "@/lib/utils";
 
 import { AlertTriangle, ChevronRight, CloudSun, Zap, Clock, Sparkles } from "lucide-react";
@@ -49,6 +50,7 @@ export default function KwiInsightsWidget() {
               ? "১৪ ঝুঁকি বিভাগ · রোগ পূর্বাভাস · AI সুপারিশ"
               : "14 risk categories · disease forecast · AI recommendations"}
           </div>
+          <KwiLiveStatus dark datetimeOnly className="mt-0.5" />
         </div>
         {score !== null && (
           <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2 py-1 shrink-0">
