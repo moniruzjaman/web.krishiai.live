@@ -17,6 +17,7 @@
 import { useMemo } from "react";
 import PhotoGallery from "@/components/PhotoGallery";
 import WeatherWidget from "@/components/WeatherWidget";
+import KwiInsightsWidget from "@/components/kwi/insights-widget";
 import MapWidget from "@/components/MapWidget";
 import MarketWidget from "@/components/MarketWidget";
 import NewsWidget from "@/components/NewsWidget";
@@ -45,6 +46,16 @@ interface Tool {
 
 // ── Tools data (enhanced with bilingual descriptions and features) ──────────
 const TOOLS: Tool[] = [
+  {
+    icon: "🌦️",
+    title: { bn: "আবহাওয়া বুদ্ধিমত্তা", en: "Weather Intelligence" },
+    cat: "KWI ENGINE",
+    catColor: "#0ea5e9",
+    bg: "#e0f2fe",
+    desc: { bn: "১৪ শ্রেণির ঝুঁকি বিশ্লেষণ, রোগের পূর্বাভাস, ফসল ক্যালেন্ডার, কৃষি সূচক ও অগ্রাধিকারভিত্তিক AI সুপারিশ", en: "14-category risk analysis, disease forecast, crop calendar, agri indices & priority-based AI advice" },
+    features: [{ bn: "১৪ ঝুঁকি বিভাগ", en: "14 Risk Categories" }, { bn: "রোগ পূর্বাভাস", en: "Disease Forecast" }, { bn: "ফসল ক্যালেন্ডার", en: "Crop Calendar" }],
+    url: "/weather-intelligence",
+  },
   {
     icon: "🔬",
     title: { bn: "ফসল রোগ নির্ণয়", en: "Crop Disease Diagnosis" },
@@ -340,6 +351,14 @@ export default function HomePage() {
           </div>
           <div className="mb-5">
             <WeatherWidget />
+          </div>
+
+          {/* 2.5 KWI — Weather Intelligence Key Insights */}
+          <div className="mb-3 text-[12px] font-semibold text-gray-600 dark:text-gray-400">
+            ✨ {t("আবহাওয়া বুদ্ধিমত্তা — মূল অন্তর্দৃষ্টি", "Weather Intelligence — Key Insights", lang)}
+          </div>
+          <div className="mb-5">
+            <KwiInsightsWidget />
           </div>
 
           {/* 3. Map Widget */}

@@ -4,7 +4,11 @@
  * Features:
  * - Current conditions with large temp display
  * - Weather alerts banner (heavy rain, heat, cold, flood risk)
- * - Agricultural advisory (crop-specific weather guidance)
+ * - Agricultural advisory — NOW POWERED BY KWI ENGINE (priority-ranked,
+ *   crop-specific recommendation with confidence; legacy advisory as fallback)
+ * - KWI Weather Intelligence score chip + top risk strip + CTA
+ * - **Realtime location & datetime**: live GPS accuracy badge + Asia/Dhaka
+ *   Bangla clock (KwiLiveStatus) so the advisory is always authentic
  * - Atmospheric data grid (UV, dew point, pressure, cloud)
  * - Agricultural indices (soil moisture, ET0, leaf wetness, GDD)
  * - Hourly forecast strip (next 24h with precip probability)
@@ -17,7 +21,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useLocation } from "@/context/LocationContext";
+import { useKwiIntelligence } from "@/hooks/use-kwi";
+import { KwiLiveStatus } from "@/components/kwi/live-status";
+import { ScoreGauge } from "@/components/kwi/score-gauge";
+import { getRiskColorHex } from "@/components/kwi/risk-colors";
+import { categoryBn } from "@/components/kwi/overview";
+import { toBnDigits } from "@/lib/kwi/formatters";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface HourlyForecast {
@@ -108,13 +119,7 @@ const WMO: Record<number, { bn: string; icon: string }> = {
 
 const wmo = (c: number) => WMO[c] ?? { bn: "অজানা", icon: "🌡️" };
 
-// Wind direction from degrees
-const windDir = (deg: number) => {
-  const dirs = ["উত্তর", "উত্তর-পূর্ব", "পূর্ব", "দক্ষিণ-পূর্ব", "দক্ষিণ", "দক্ষিণ-পশ্চিম", "পশ্চিম", "উত্তর-পশ্চিম"];
-  return dirs[Math.round(deg / 45) % 8];
-};
-
-// UV level description
+// ── UV level description
 const uvLevel = (uv: number) => {
   if (uv <= 2) return { label: "কম", color: "text-green-300" };
   if (uv <= 5) return { label: "মাঝারি", color: "text-yellow-300" };
@@ -128,7 +133,18 @@ const DHAKACoords = { lat: 23.8103, lon: 90.4125, city: "ঢাকা" };
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function WeatherWidget() {
-  const { location, loading: locLoading, permission, requestLocation } = useLocation();
+  const { location, loading: locLoading, permission } = useLocation();
+
+  // ── KWI intelligence overlay (score, engine advisory, risks, alerts) ───────
+  const kwi = useKwiIntelligence();
+  const kwiScore = kwi.farmSummary?.weatherIntelligenceScore ?? null;
+  const kwiTopAlert = kwi.risks?.alerts[0] ?? null;
+  const kwiTopRec = kwi.recommendations[0] ?? null;
+  const kwiTopRisks = (kwi.risks?.risks ?? [])
+    .filter((r) => r.score > 30)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
   const [w, setW] = useState<WeatherData | null>(null);
   const [err, setErr] = useState(false);
   const [showHourly, setShowHourly] = useState(false);
@@ -289,11 +305,18 @@ export default function WeatherWidget() {
   return (
     <div className="bg-gradient-to-br from-[#1b4332] to-[#2d6a4f] rounded-[14px] overflow-hidden card-shadow">
       {/* ── ALERTS BANNER ──────────────────────────────────────────────── */}
-      {w.alerts && w.alerts.length > 0 && (
+      {/* KWI engine alert first, legacy as backup */}
+      {(kwiTopAlert || (w.alerts && w.alerts.length > 0)) && (
         <div className="bg-red-900/60 px-4 py-2 flex items-center gap-2">
           <span className="animate-pulse-dot">🚨</span>
           <div className="flex-1 text-[11px] text-red-100 font-semibold">
-            {w.alerts.map((a, i) => (
+            {kwiTopAlert && (
+              <span>
+                {kwiTopAlert.titleBn}: {kwiTopAlert.messageBn}
+                {w.alerts && w.alerts.length > 0 ? " · " : ""}
+              </span>
+            )}
+            {w.alerts?.map((a, i) => (
               <span key={i}>{a.messageBn}{i < w.alerts.length - 1 ? " · " : ""}</span>
             ))}
           </div>
@@ -310,6 +333,7 @@ export default function WeatherWidget() {
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block" title="লাইভ লোকেশন" />
               )}
             </div>
+            <KwiLiveStatus dark className="mt-1 mb-1.5" />
             <div className="text-[42px] sm:text-[56px] font-bold leading-none mb-1">
               {bn(w.temp)}°C
             </div>
@@ -321,6 +345,19 @@ export default function WeatherWidget() {
             </div>
           </div>
           <div className="text-right">
+            {/* KWI Weather Intelligence score chip */}
+            {kwiScore !== null && (
+              <Link
+                href="/weather-intelligence"
+                className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full pl-1 pr-2 py-0.5 mb-2 transition-colors no-underline"
+                title="আবহাওয়া বুদ্ধিমত্তা স্কোর"
+              >
+                <ScoreGauge score={kwiScore} size={22} strokeWidth={3} />
+                <span className="text-[10px] font-bold text-white leading-tight text-left">
+                  KWI {toBnDigits(kwiScore)}<span className="text-white/50 font-normal">/১০০</span>
+                </span>
+              </Link>
+            )}
             <div className="text-[52px] leading-none">{icon}</div>
             <div className="text-[10px] text-white/50 mt-2">
               🌅 {w.sunrise} · 🌇 {w.sunset}
@@ -328,8 +365,43 @@ export default function WeatherWidget() {
           </div>
         </div>
 
-        {/* ── AGRICULTURAL ADVISORY ─────────────────────────────────────── */}
-        {w.advisory && (
+        {/* ── AGRICULTURAL ADVISORY — KWI engine first, legacy fallback ─── */}
+        {kwiTopRec ? (
+          <div
+            className={`rounded-xl p-3 mb-3 border ${
+              kwiTopRec.priority === "urgent"
+                ? "bg-red-800/20 border-red-500/30"
+                : kwiTopRec.priority === "high"
+                  ? "bg-amber-800/20 border-amber-500/30"
+                  : "bg-green-800/20 border-green-600/30"
+            }`}
+          >
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0">
+                {kwiTopRec.priority === "urgent" ? "🚨" : kwiTopRec.priority === "high" ? "⚠️" : "✅"}
+              </span>
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-white/80 mb-0.5 flex items-center gap-1.5 flex-wrap">
+                  কৃষি পরামর্শ — KWI ইঞ্জিন
+                  <span className="bg-white/10 rounded-full px-1.5 py-px text-[9px] font-semibold">
+                    আস্থা {toBnDigits(kwiTopRec.confidence)}%
+                  </span>
+                </div>
+                <div className="text-[12px] font-semibold text-white leading-snug">
+                  {kwiTopRec.titleBn}
+                </div>
+                <div className="text-[11px] text-white/80 leading-relaxed mt-0.5">
+                  {kwiTopRec.descriptionBn}
+                </div>
+                {kwiTopRec.costSavingEstimate > 0 && (
+                  <div className="text-[10px] text-green-300 mt-1">
+                    💰 সম্ভাব্য সাশ্রয় ≈ ৳{toBnDigits(kwiTopRec.costSavingEstimate)} · ফলন প্রভাব {kwiTopRec.expectedYieldImpact > 0 ? "+" : ""}{toBnDigits(kwiTopRec.expectedYieldImpact)}%
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : w.advisory ? (
           <div className={`rounded-xl p-3 mb-4 border ${advisoryColors[w.advisory.urgency]}`}>
             <div className="flex items-start gap-2">
               <span className="text-base flex-shrink-0">{advisoryIcons[w.advisory.urgency]}</span>
@@ -342,6 +414,32 @@ export default function WeatherWidget() {
                 </div>
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {/* ── KWI TOP RISKS STRIP + CTA ─────────────────────────────────── */}
+        {kwiTopRisks.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            <span className="text-[9px] text-white/50 font-semibold flex-shrink-0">KWI ঝুঁকি:</span>
+            {kwiTopRisks.map((r) => (
+              <span
+                key={r.category}
+                className="flex items-center gap-1 bg-white/10 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white/90"
+                title={r.explanationBn || r.explanation || ""}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: getRiskColorHex(r.level) }}
+                />
+                {categoryBn(r.category, "bn")} {toBnDigits(Math.round(r.score))}
+              </span>
+            ))}
+            <Link
+              href="/weather-intelligence"
+              className="ml-auto text-[10px] font-bold text-green-300 no-underline hover:text-green-200 transition-colors flex-shrink-0"
+            >
+              সম্পূর্ণ বিশ্লেষণ →
+            </Link>
           </div>
         )}
 
