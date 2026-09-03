@@ -13,7 +13,7 @@
  * If not configured, diagnosis history and feedback are not persisted.
  */
 
-import { createClient, type Client } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client/http';
 
 // ─── Singleton Turso client ────────────────────────────────────
 let _tursoClient: Client | null = null;

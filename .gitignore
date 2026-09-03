@@ -71,3 +71,5 @@ mini-services/
 local-*
 prompt
 test
+.env.local
+.env.vercel
