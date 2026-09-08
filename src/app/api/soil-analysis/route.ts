@@ -91,9 +91,39 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const systemPrompt = `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। তোমার পরামর্শ SRDI (মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট), BARC (বাংলাদেশ কৃষি গবেষণা পরিষদ), BRRI (বাংলাদেশ ধান গবেষণা ইনস্টিটিউট) এবং BARI (বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট)-এর গবেষণার উপর ভিত্তি করে হবে। বাংলায় উত্তর দাও।`;
+    // Pull the real structured SRDI data (soil type, texture, pH, 13-nutrient
+    // profile) so the AI narrative is grounded in official numbers instead of
+    // guessing — this is the durable data added from the AEZ dataset port.
+    let structured: Record<string, unknown> | null = null;
+    try {
+      const { createClient: createServiceClient } = await import("@supabase/supabase-js");
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseUrl && serviceKey) {
+        const supabase = createServiceClient(supabaseUrl, serviceKey);
+        const { data } = await supabase.from("aez_zones").select("*").eq("id", zone.id).maybeSingle();
+        structured = data ?? null;
+      }
+    } catch (e) {
+      console.warn("[soil-analysis:GET] structured AEZ lookup failed:", e instanceof Error ? e.message : String(e));
+    }
 
-    const userPrompt = `বাংলাদেশের AEZ (Agro-Ecological Zone) নম্বর ${zone.id} — "${zone.name}" (${zone.bn}) সম্পর্কে বিস্তারিত মৃত্তিকা বিশ্লেষণ দাও।
+    const { withStructuredOutputDiscipline } = await import("@/lib/ai-client");
+    const systemPrompt = withStructuredOutputDiscipline(
+      `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। তোমার পরামর্শ SRDI (মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট), BARC (বাংলাদেশ কৃষি গবেষণা পরিষদ), BRRI (বাংলাদেশ ধান গবেষণা ইনস্টিটিউট) এবং BARI (বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউট)-এর গবেষণার উপর ভিত্তি করে হবে।`,
+      { headers: ["মাটির বৈশিষ্ট্য", "উপযুক্ত ফসল", "সারের সুপারিশ", "জল ব্যবস্থাপনা", "বিশেষ সমস্যা"] }
+    );
+
+    const groundingBlock = structured
+      ? `\n\nনিশ্চিত অফিসিয়াল তথ্য (SRDI ডেটাবেস থেকে — এই তথ্যের সাথে সামঞ্জস্যপূর্ণ উত্তর দাও):
+- মাটির ধরন: ${structured.soil_type}
+- গঠন: ${structured.texture}
+- ভূমির ধরন: ${structured.topography}
+- pH পরিসীমা: ${structured.ph_range}
+- পুষ্টি উপাদানের অবস্থা: ${JSON.stringify(structured.nutrients)}`
+      : "";
+
+    const userPrompt = `বাংলাদেশের AEZ (Agro-Ecological Zone) নম্বর ${zone.id} — "${zone.name}" (${zone.bn}) সম্পর্কে বিস্তারিত মৃত্তিকা বিশ্লেষণ দাও।${groundingBlock}
 
 নিচের বিষয়গুলো অবশ্যই অন্তর্ভুক্ত করবে:
 
@@ -134,6 +164,7 @@ export async function GET(request: NextRequest) {
       {
         ok: true,
         zone,
+        structured,
         analysis,
         sources: [
           "SRDI — মৃত্তিকা সম্পদ উন্নয়ন ইনস্টিটিউট",
@@ -188,7 +219,11 @@ export async function POST(request: NextRequest) {
 
     const omContext = omNum != null ? `জৈব পদার্থ: ${omNum}%` : "জৈব পদার্থের তথ্য দেওয়া হয়নি।";
 
-    const systemPrompt = `তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। USDA মাটি শ্রেণিবিন্যাস পদ্ধতির উপর দক্ষ। তোমার পরামর্শ SRDI, BARC, BRRI, BARI-এর মান অনুযায়ী হবে। বাংলায় উত্তর দাও। সংক্ষিপ্ত কিন্তু তথ্যপূর্ণ উত্তর দাও।`;
+    const { withStructuredOutputDiscipline: withDiscipline } = await import("@/lib/ai-client");
+    const systemPrompt = withDiscipline(
+      "তুমি বাংলাদেশের মৃত্তিকা বিজ্ঞান বিশেষজ্ঞ। USDA মাটি শ্রেণিবিন্যাস পদ্ধতির উপর দক্ষ। তোমার পরামর্শ SRDI, BARC, BRRI, BARI-এর মান অনুযায়ী হবে। সংক্ষিপ্ত কিন্তু তথ্যপূর্ণ উত্তর দাও।",
+      { headers: ["মাটির শ্রেণি", "উপযুক্ত ফসল", "সারের সুপারিশ"] }
+    );
 
     const userPrompt = `মাটি নমুনা বিশ্লেষণ করো:
 - বালি (Sand): ${sandNum}%

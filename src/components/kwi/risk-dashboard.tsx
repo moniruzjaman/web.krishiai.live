@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import type { RiskDashboard, RiskAssessment, DiseaseForecast } from "@/lib/kwi/types";
+import type { RiskDashboard, RiskAssessment, DiseaseForecast, PestForecast } from "@/lib/kwi/types";
 import { cn } from "@/lib/utils";
 import { getRiskColor, getRiskBg, getRiskBorder, toBnDigits } from "@/lib/kwi/formatters";
 import { categoryBn, riskLevelBn } from "@/components/kwi/overview";
@@ -162,9 +162,10 @@ function RiskCard({
 }
 
 // --- Main Risk Dashboard Component ---
-export function RiskDashboardView({ risks, disease, lang }: {
+export function RiskDashboardView({ risks, disease, pest, lang }: {
   risks: RiskDashboard;
   disease: DiseaseForecast | null;
+  pest: PestForecast | null;
   lang: "en" | "bn";
 }) {
   const overallColor = getRiskColor(risks.overallRiskLevel);
@@ -293,6 +294,83 @@ export function RiskDashboardView({ risks, disease, lang }: {
                     {dr.preventiveActions.length > 0 && (
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
                         {dr.preventiveActions.slice(0, 3).map((a, i) => (
+                          <li key={i}>{a}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 4. Insect Pest Intelligence Section */}
+      {pest && pest.pests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bug className="h-5 w-5 text-orange-500" />
+              <CardTitle className="text-base">
+                {lang === "bn" ? "পোকা পূর্বাভাস" : "Pest Intelligence"}
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  {lang === "bn" ? "সামগ্রিক পোকা অনুকূলতা" : "Overall Pest Favorability"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {lang === "bn" ? "বিস্তার ঝুঁকি" : "Spread Risk"}: {riskLevelBn(pest.spreadRisk, lang)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn("text-2xl font-bold", {
+                  "text-emerald-600": pest.overallFavorability < 30,
+                  "text-amber-600": pest.overallFavorability < 60,
+                  "text-red-600": pest.overallFavorability >= 60,
+                })}>
+                  {bn(pest.overallFavorability)}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {lang === "bn" ? "আত্মবিশ্বাস" : "Confidence"}: {bn(pest.confidence)}%
+                </span>
+              </div>
+            </div>
+
+            <KProgress
+              value={pest.overallFavorability}
+              className="h-2"
+              barClassName={cn({
+                "bg-emerald-500": pest.overallFavorability < 30,
+                "bg-amber-500": pest.overallFavorability < 60,
+                "bg-red-500": pest.overallFavorability >= 60,
+              })}
+            />
+
+            <KSeparator />
+
+            <ScrollArea className="max-h-72">
+              <div className="space-y-3">
+                {pest.pests.map(pr => (
+                  <div key={pr.pest.id} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">
+                        {lang === "bn" ? pr.pest.nameBn : pr.pest.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={cn("text-xs", getRiskColor(pr.level))}>
+                          {bn(pr.risk)}%
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">{bn(pr.confidence)}%</span>
+                      </div>
+                    </div>
+                    {pr.preventiveActions.length > 0 && (
+                      <ul className="text-xs text-muted-foreground list-disc list-inside">
+                        {pr.preventiveActions.slice(0, 3).map((a, i) => (
                           <li key={i}>{a}</li>
                         ))}
                       </ul>

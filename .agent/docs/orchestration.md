@@ -1,132 +1,95 @@
-# Orchestration Hub — OpenProvider Visual Graph
+# Orchestration Hub — App AI Providers + Dev-Agent Meta Hub
 
-## Overview
+> Synced to `README.md` and root `agentic.json` (v3.2.0) — last synced 2026-08-29.
+> This file previously mixed the app's AI-provider waterfall with the dev-agent
+> meta hub and referenced stale models (`gemini-2.5-flash`,
+> `google/gemini-2.5-flash-preview-05-20`, `llama-3.1-8b-instant`) and a
+> non-existent `src/lib/openprovider.ts` module. It has been split into the
+> two real layers below, matching the actual code (`src/lib/openrouter.ts`).
 
-OpenProvider is the central orchestrator for KrishiAI, routing AI tasks dynamically across providers based on task type, provider health, and quota availability. This document provides the Graphify-style visualization of the orchestration architecture.
+## Layer 1 — App AI Provider Waterfall (farmer-facing)
 
-## Orchestration Graph
+Source of truth: root `agentic.json` · orchestrator module: `src/lib/openrouter.ts` (`orchestrate()`)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       OpenProvider (Central)                         │
-│              Routes tasks dynamically by classification              │
-│                     src/lib/openprovider.ts                          │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                     │
-    ┌─────┴─────┐       ┌─────┴─────┐        ┌─────┴──────┐
-    │  Cline    │       │   Kilo    │        │  Opencode  │
-    │  Schema   │       │  Infra    │        │  Refactor  │
-    │Migration  │       │  CI/CD    │        │  Env Vars  │
-    └─────┬─────┘       └─────┬─────┘        └─────┬──────┘
-          │                    │                     │
-          ▼                    ▼                     ▼
-    DB Schema Gen        Deploy Checks         Config Updates
-          │                    │                     │
-          └────────────────────┼─────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                     │
-    ┌─────┴──────┐      ┌─────┴──────┐       ┌─────┴──────┐
-    │  Claude    │      │   Kimi     │       │   Z.ai     │
-    │Validation  │      │   Polish   │       │Automation  │
-    │Compliance  │      │  Bilingual │       │ Structured │
-    └─────┬──────┘      └─────┬──────┘       └─────┬──────┘
-          │                    │                     │
-          ▼                    ▼                     ▼
-    Reasoning QA       Bengali Formatting     Content Generation
-          │                    │                     │
-          └────────────────────┼─────────────────────┘
-                               │
-                        ┌──────▼──────┐
-                        │   Vercel    │
-                        │  Deploy     │
-                        │  (hkg1)     │
-                        └─────────────┘
-```
+Three free-tier AI providers in a quota-aware waterfall. Order is chosen so the
+strongest model is tried first; each fallback only fires on quota/error, so
+normal traffic never loses quality:
 
-## Agent Role Definitions
+| Priority | Provider | Model | Role |
+|---|---|---|---|
+| 1 (primary) | **Gemini** | `gemini-3.5-flash` | reasoning, multimodal (image/PDF/doc), vision |
+| 2 (fallback) | **OpenRouter** | `qwen/qwen2.5-vl-72b-instruct:free` | vision, wide model access, consensus partner |
+| 3 (fallback) | **Groq** | `llama-3.2-11b-vision-preview` | fast text, low latency, tiebreaker |
 
-| Agent | Role | Task Types | Preferred Provider | Module |
-|-------|------|-----------|-------------------|--------|
-| **Cline** | Schema & Migration | `schema` | Gemini | `src/lib/supabase/schema.sql` |
-| **Kilo** | Infrastructure & CI/CD | `infra` | Groq | `.github/workflows/validate.yml` |
-| **Opencode** | Refactor & Environment | `refactor` | Gemini | `next.config.ts` |
-| **Claude** | Validation & Compliance | `validation` | Gemini | `src/lib/ai-client.ts` |
-| **Kimi** | Polish & Bilingual | `polish` | Groq | `src/lib/cabi/bengaliKeywords.ts` |
-| **Z.ai** | Automation & Structured Content | `automation` | Gemini | `src/lib/openprovider.ts` |
-
-## Task Routing Map
-
-Each task category has a preferred provider chain. The orchestrator tries providers in order, skipping "down" providers:
+### Task routing (from `agentic.json.taskRoutes`)
 
 ```
-┌─────────────────┬─────────────────────────────────────────┐
-│ Task            │ Provider Priority Chain                  │
-├─────────────────┼─────────────────────────────────────────┤
-│ chat            │ Gemini → OpenRouter → Groq               │
-│ diagnose        │ Gemini → OpenRouter → Groq               │
-│ soil_analysis   │ Gemini → Groq                            │
-│ crop_database   │ Gemini → OpenRouter                      │
-│ news_bulletin   │ Groq → Gemini                            │
-│ schema          │ Gemini                                   │
-│ infra           │ Groq → Gemini                            │
-│ refactor        │ Gemini → Groq                            │
-│ validation      │ Gemini → OpenRouter                      │
-│ polish          │ Groq → Gemini                            │
-│ automation      │ Gemini → Groq                            │
-└─────────────────┴─────────────────────────────────────────┘
+chat            → gemini → openrouter → groq
+diagnose        → gemini → openrouter → groq
+soil_analysis   → gemini → openrouter
+crop_database   → gemini → openrouter
+news_bulletin   → groq   → gemini
 ```
 
-## Provider Strengths
-
-| Provider | Model | Strengths | Free Tier |
-|----------|-------|-----------|-----------|
-| **Gemini** | `gemini-2.5-flash` | Reasoning, multimodal, rich content | Yes |
-| **OpenRouter** | `google/gemini-2.5-flash-preview-05-20` | Vision, Gemini proxy, wide model access | Yes |
-| **Groq** | `llama-3.1-8b-instant` | Fast text, structured output, low latency | Yes |
-
-## Flow: How Orchestration Enhances the System
-
-1. **Visual Routing** → You see which agent handles which step
-2. **Dependency Mapping** → Graphify shows Schema → CI/CD → Refactor → Reasoning → Deploy
-3. **Dynamic Orchestration** → OpenProvider routes to free providers automatically
-4. **Single Command** → `agentic.json` defines the entire graph for agent consumption
-
-## Fallback Strategy
+### Fallback strategy
 
 ```
-Provider call ──→ Success? ──→ Return result + log usage
+Provider call ──→ Success? ──→ Return result + log usage to Supabase
        │
-       └──→ Failure? ──→ Record failure + try next provider
-                              │
-                              └──→ All failed? ──→ Offline Bengali fallback
+       └──→ Quota/error? ──→ Record failure + try next provider in chain
+                                   │
+                                   └──→ All failed? ──→ Offline Bengali graceful degradation
+                                                          ("quotaExceeded": daily limit message)
 ```
 
-## Monitoring Dashboard
+### Hybrid-analysis consensus (diagnosis only)
 
-The orchestration hub includes a real-time monitoring dashboard at `/dashboard`:
+`src/lib/hybrid-analysis.ts` — used for `diagnose`, `soil_analysis`, `crop_database`:
 
-- **Token Usage**: Per-provider token consumption with visual bar charts
-- **DB Sync Status**: Supabase connection health and latency
-- **Deployment Logs**: Recent Vercel deployments with commit history
-- **Provider Health**: Live status of Gemini, OpenRouter, and Groq
+1. Parallel vision inference: Gemini 3.5 Flash + OpenRouter Qwen2.5-VL-72B
+2. Cross-validate disease classification, confidence, treatment overlap
+3. Agreement ≥ 80% → merge into unified diagnosis
+4. Agreement < 80% → Groq Llama-3.2-11B-Vision tiebreaker vote
+5. Final synthesis: weighted confidence score + Bangla/English dual output
+   (confidence threshold `0.8`, timeout `15s`)
 
-API Endpoints:
-- `/api/dashboard/status` — System status + provider health
-- `/api/dashboard/usage` — Token usage + quota reference
-- `/api/dashboard/deployments` — Deployment history
+### Monitoring
 
-## Configuration
+- Dashboard: `/dashboard`
+- `/api/dashboard/status` — provider health
+- `/api/dashboard/usage` — token/quota usage
+- `/api/dashboard/deployments` — deploy history
+- Refresh interval: 30s
 
-The orchestration graph is defined in `agentic.json` at the project root. This file:
-- Maps agents to task types and preferred providers
-- Defines the provider waterfall chains
-- Specifies monitoring endpoints
-- Links Graphify visualization files
+## Layer 2 — Dev-Agent Meta Hub (codebase automation, not farmer-facing)
 
+Source of truth: `.agent/orchestration/agentic.json` ("meta-mcp-hub") · entrypoint: `agents/openprovider.js`
+
+This is a **separate** system used to automate work on the KrishiAI codebase
+itself (schema sync, CI/CD, refactors, doc polish) — it never touches the
+live farmer-facing chat/diagnosis flow above. It also uses free-tier routing:
+
+| Agent | Role | Routes to | Best assigned task |
+|---|---|---|---|
+| `openprovider` | Orchestrator | — | routes intents to agents, fans out multi-agent tasks |
+| `cline` | File-editor | local | DB schema generation + sync under `src/`, `public/`, `.agent/` |
+| `kilo` | Infra | local | CI/CD workflow generation (`.github/workflows/`) |
+| `opencode` | Refactor | local | dry-run refactors, env-var injection |
+| `graphify` | Visualization | local | builds/exports the `.agent/docs` knowledge graph |
+| `claude` (external) | Reasoning | Anthropic, free tier | compliance-sensitive validation |
+| `kimi` (external) | Presentation | Moonshot, free tier | bilingual polish, report formatting |
+| `z-ai` (external) | Automation | Z.ai, free tier | structured content, workflow cloning |
+
+Run it with:
 ```bash
-# View the orchestration config
-cat agentic.json | jq .taskRoutes
+copilot-mcp login openprovider
+copilot-mcp run .agent/orchestration/agentic.json
 ```
+
+## Keeping this file in sync
+
+Whenever `README.md`'s "AI প্রদানকারী আর্কিটেকচার" table changes model names or
+provider order, update **root `agentic.json`** first (it is the machine-readable
+source of truth for Layer 1), then update this file to match. Layer 2
+(`​.agent/orchestration/agentic.json`) changes independently and only needs to
+stay consistent with itself and `.agent/orchestration/README.md`.

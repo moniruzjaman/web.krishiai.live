@@ -72,7 +72,7 @@ src/
 ├── lib/
 │   ├── utils.ts                # cn() utility
 │   ├── ai-client.ts            # Quota-aware AI client (Gemini → OpenRouter → Groq → offline)
-│   ├── openprovider.ts         # OpenProvider orchestrator (task routing, health tracking, telemetry)
+│   ├── openrouter.ts           # App orchestrator (task routing, quota-aware waterfall, telemetry)
 │   ├── cropCalendar.ts         # 10 crops, 6 seasons, risk alerts, Bengali months
 │   ├── cropDiseases.ts         # Disease database
 │   ├── cropPriceService.ts     # 14 crops, baseline prices, seasonal simulation, profitability
@@ -208,57 +208,55 @@ Config files:
 | `GROQ_API_KEY` | Text-only AI fallback | Recommended |
 | `OPENROUTER_API_KEY` | Vision-capable AI fallback | Recommended |
 
-## OpenProvider Orchestration Hub
+## Orchestration Hub
+
+Two distinct layers — see `.agent/docs/orchestration.md` for the full breakdown
+(app AI-provider waterfall vs. dev-agent meta hub). Summary:
 
 ```
 ┌───────────────┐
-│ OpenProvider   │  ← central orchestrator (src/lib/openprovider.ts)
+│  App Waterfall │  ← src/lib/openrouter.ts, orchestrate()
 └───────┬───────┘
         │
-   ┌────┼──────────┐
-   │    │           │
+   Gemini 3.5 Flash → OpenRouter Qwen2.5-VL-72B → Groq Llama-3.2-11B-Vision
+        │
+       ┌▼──────────────┐
+       │ offline degrade│  ← Bengali graceful fallback, all providers exhausted
+       └────────────────┘
+
+┌──────────────────────────┐
+│ Dev-Agent Meta Hub        │  ← .agent/orchestration/agents/openprovider.js
+│ (codebase automation only)│
+└────────────┬──────────────┘
+   ┌──────────┼───────────┐
 ┌───────┐┌────────┐┌───────────┐
-│ Cline ││ Kilo   ││ Opencode  │  ← Agent roles (task classification)
+│ Cline ││ Kilo   ││ Opencode  │
 │Schema ││ Infra  ││ Refactor  │
-└───┬───┘└───┬────┘└─────┬─────┘
-    │        │           │
-    └────────┼───────────┘
-             │
-    ┌────────┴────────┐
-    │ Claude/Kimi/Z   │  ← Provider routing (Gemini→OpenRouter→Groq)
-    └────────┬────────┘
-             │
-       ┌─────▼─────┐
-       │  Vercel   │  ← Deployment target (hkg1)
-       └───────────┘
+└───────┘└────────┘└───────────┘
+        + Claude/Kimi/Z.ai (free-tier external models, via openprovider.js)
 ```
 
-### Task Routing Map
+### App task routing (root `agentic.json`)
 
 | Task | Provider Priority Chain |
 |------|------------------------|
 | `chat` | Gemini → OpenRouter → Groq |
 | `diagnose` | Gemini → OpenRouter → Groq |
-| `soil_analysis` | Gemini → Groq |
+| `soil_analysis` | Gemini → OpenRouter |
 | `crop_database` | Gemini → OpenRouter |
 | `news_bulletin` | Groq → Gemini |
-| `schema` | Gemini |
-| `infra` | Groq → Gemini |
-| `refactor` | Gemini → Groq |
-| `validation` | Gemini → OpenRouter |
-| `polish` | Groq → Gemini |
-| `automation` | Gemini → Groq |
 
-### Agent Roles
+### Dev-agent roles (`.agent/orchestration/agentic.json`)
 
-| Agent | Role | Task Types | Module |
+| Agent | Role | Best assigned task | Module |
 |-------|------|-----------|--------|
-| Cline | Schema & Migration | `schema` | `src/lib/supabase/schema.sql` |
-| Kilo | Infrastructure & CI/CD | `infra` | `.github/workflows/validate.yml` |
-| Opencode | Refactor & Environment | `refactor` | `next.config.ts` |
-| Claude | Validation & Compliance | `validation` | `src/lib/ai-client.ts` |
-| Kimi | Polish & Bilingual | `polish` | `src/lib/cabi/bengaliKeywords.ts` |
-| Z.ai | Automation & Structured Content | `automation` | `src/lib/openprovider.ts` |
+| Cline | File-editor | DB schema generation + sync | `agents/cline.js` |
+| Kilo | Infra | CI/CD workflow generation | `agents/kilo.js` |
+| Opencode | Refactor | Dry-run refactors, env injection | `agents/opencode.js` |
+| Graphify | Visualization | `.agent/docs` knowledge graph | `agents/graphify.js` |
+| Claude (external) | Reasoning | Compliance-sensitive validation | `agents/external.js` |
+| Kimi (external) | Presentation | Bilingual polish, report formatting | `agents/external.js` |
+| Z.ai (external) | Automation | Structured content, workflow cloning | `agents/external.js` |
 
 ### Monitoring Dashboard
 

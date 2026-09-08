@@ -5,9 +5,9 @@
  * Version: 4.0.1
  */
 
-const CACHE_NAME = 'krishi-v4.0.1';
-const STATIC_CACHE = 'krishi-static-v4.0.1';
-const DYNAMIC_CACHE = 'krishi-dynamic-v4.0.1';
+const CACHE_NAME = 'krishi-v4.1.0';
+const STATIC_CACHE = 'krishi-static-v4.1.0';
+const DYNAMIC_CACHE = 'krishi-dynamic-v4.1.0';
 
 // Static assets to pre-cache on install
 const PRE_CACHE_URLS = [
@@ -92,6 +92,48 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else — Network-first with cache fallback
   event.respondWith(networkFirst(request, DYNAMIC_CACHE, 3600));
+});
+
+// ── Push Notifications ──────────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'কৃষি AI', body: 'নতুন আপডেট আছে', url: '/' };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    if (event.data) data.body = event.data.text();
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: data.url || '/' },
+    vibrate: [100, 50, 100],
+    tag: data.tag || 'krishi-alert',
+    renotify: true,
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.pathname === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
 
 // ── Cache Strategies ────────────────────────────────────────────────────────

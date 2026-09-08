@@ -20,6 +20,7 @@ import {
   useSyncExternalStore,
   useMemo,
 } from "react";
+import { subscribeToPush } from "@/lib/pushClient";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface ActivityEvent {
@@ -815,15 +816,20 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={async () => {
-                    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-                      const result = await Notification.requestPermission();
-                      if (result === "granted") {
+                    if (typeof Notification === "undefined") return;
+                    const currentPermission: NotificationPermission = Notification.permission;
+                    if (currentPermission === "default") {
+                      const subscribed = await subscribeToPush();
+                      const permissionNow: NotificationPermission = Notification.permission;
+                      if (subscribed) {
                         new Notification("কৃষি AI 🌾", {
                           body: "বিজ্ঞপ্তি সক্রিয় হয়েছে! আপনি আবহাওয়া সতর্কতা ও কৃষি পরামর্শ পাবেন।",
                           icon: "/icons/icon-192.png",
                         });
+                      } else if (permissionNow === "denied") {
+                        alert("ব্রাউজার সেটিংস থেকে বিজ্ঞপ্তি অনুমতি দিন।");
                       }
-                    } else if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+                    } else if (currentPermission === "denied") {
                       alert("ব্রাউজার সেটিংস থেকে বিজ্ঞপ্তি অনুমতি দিন।");
                     }
                   }}

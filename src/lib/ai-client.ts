@@ -18,6 +18,34 @@ export interface AICallOptions {
   userId?: string
 }
 
+/**
+ * Wraps a Bengali system prompt with a structured-output discipline: bracketed
+ * section headers, no greetings/filler, and an explicit standards citation.
+ * Ported from an earlier prototype's prompt pattern — produces more
+ * consistent, official-sounding output than free-form prompting, which
+ * matters when farmers are treating the answer as authoritative guidance.
+ *
+ * Opt-in per route (not applied globally) — routes with an already-tuned
+ * prompt (e.g. the CABI-based diagnose prompt) should keep their own format
+ * rather than being forced into this generic template.
+ */
+export function withStructuredOutputDiscipline(
+  basePrompt: string,
+  options: { standard?: string; headers?: string[] } = {}
+): string {
+  const standard = options.standard ?? 'BARI/BRRI/BARC/SRDI/DAE সর্বশেষ গাইডলাইন';
+  const headers = options.headers ?? ['শনাক্তকরণ', 'প্রতিকার', 'পরামর্শ'];
+  const headerList = headers.map((h) => `[${h}]`).join(', ');
+
+  return `${basePrompt}
+
+আউটপুট নিয়ম (কঠোরভাবে মেনে চলবে):
+- কোনো ভূমিকা বা শুভেচ্ছাবাক্য দিয়ে শুরু করবে না (NO GREETINGS)
+- নিচের বর্গবন্ধনী শিরোনামগুলো ব্যবহার করে উত্তর গঠন করবে: ${headerList}
+- মান হিসেবে উল্লেখ করবে: ${standard}
+- ভাষা: শুধুমাত্র বাংলা`;
+}
+
 export interface AIResponse {
   text: string
   provider: string

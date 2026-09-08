@@ -14,6 +14,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";
+import { shareNative, getWhatsAppUrl, isNativeShareSupported } from "@/lib/share";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface GateResult {
@@ -1304,6 +1305,28 @@ export default function CABIDiagnosisPage() {
                 </>
               )}
             </div>
+
+            {/* ── Share result ─────────────────────────────────────────── */}
+            {diagnosisJson && (
+              <button
+                onClick={async () => {
+                  const shareText = `কৃষি AI নির্ণয়: ${diagnosisJson.disease_name_bn} (আত্মবিশ্বাস: ${bn(
+                    diagnosisJson.confidence_pct
+                  )}%) — web.krishiai.live দিয়ে পরীক্ষা করুন।`;
+                  const shared = await shareNative({
+                    title: "কৃষি AI নির্ণয়",
+                    text: shareText,
+                    url: "https://web.krishiai.live",
+                  });
+                  if (!shared && !isNativeShareSupported()) {
+                    window.open(getWhatsAppUrl(shareText), "_blank");
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-2.5 text-[12px] font-bold text-gray-700 dark:text-gray-300 active:scale-[0.98] transition-transform"
+              >
+                📤 ফলাফল শেয়ার করুন
+              </button>
+            )}
 
             {/* ── 1. Exclusion Gates ──────────────────────────────────── */}
             {diagnosisJson?.gate_results && (

@@ -23,6 +23,7 @@ import type {
   Recommendation,
   WeeklyPlan,
   DiseaseForecast,
+  PestForecast,
   FarmSummary,
   CropCalendarEntry,
   GrowthStageId,
@@ -34,6 +35,7 @@ import {
   generateWeeklyPlan,
 } from "@/lib/kwi/engines/recommendation-engine";
 import { generateDiseaseForecast } from "@/lib/kwi/engines/disease-engine";
+import { generatePestForecast } from "@/lib/kwi/engines/pest-engine";
 import { generateCropCalendar } from "@/lib/kwi/engines/calendar-engine";
 import { getCropConfig } from "@/lib/kwi/engines/crop-configs";
 
@@ -260,6 +262,7 @@ export interface KwiIntelligence {
   weeklyPlan: WeeklyPlan | null;
   calendar: CropCalendarEntry[];
   disease: DiseaseForecast | null;
+  pest: PestForecast | null;
   farmSummary: FarmSummary | null;
   crop: ActiveCrop;
 }
@@ -315,6 +318,16 @@ export function useKwiIntelligence(cropOverride?: ActiveCrop): KwiIntelligence {
     }
   }, [weather, activeCrops]);
 
+  // Insect pest forecast (separate scoring model from disease — see pest-engine.ts)
+  const pest = useMemo<PestForecast | null>(() => {
+    if (!weather) return null;
+    try {
+      return generatePestForecast(weather, activeCrops);
+    } catch {
+      return null;
+    }
+  }, [weather, activeCrops]);
+
   // Farm summary (score gauge + alerts + priorities)
   const farmSummary = useMemo<FarmSummary | null>(() => {
     if (!weather || !risks) return null;
@@ -352,6 +365,7 @@ export function useKwiIntelligence(cropOverride?: ActiveCrop): KwiIntelligence {
     weeklyPlan,
     calendar,
     disease,
+    pest,
     farmSummary,
     crop,
   };

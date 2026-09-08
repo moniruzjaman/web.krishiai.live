@@ -1,3 +1,96 @@
 {
-  "skills": []
+  "$schema": "https://graphify.dev/schemas/skills/v1",
+  "description": "Task-automation skill registry for KrishiAI. Each skill maps a trigger to either an app-layer AI task route (agentic.json.taskRoutes) or a dev-agent (agentic.json.agents / .agent/orchestration/agentic.json.agents), so task automation always resolves through the quota-aware free-model waterfall — never a hardcoded single provider.",
+  "skills": [
+    {
+      "id": "diagnose-crop-disease",
+      "description": "CABI Plantwise-style crop disease diagnosis from photo/text using multi-provider vision consensus",
+      "triggers": ["disease", "রোগ", "diagnose", "leaf spot", "pest damage"],
+      "layer": "app",
+      "taskType": "diagnose",
+      "module": "src/app/api/diagnose/route.ts",
+      "providerChain": ["gemini", "openrouter", "groq"]
+    },
+    {
+      "id": "multimodal-chat",
+      "description": "Multimodal AI chat (image/PDF/doc upload) with provider badge and quota-aware fallback",
+      "triggers": ["chat", "প্রশ্ন", "ask", "upload photo"],
+      "layer": "app",
+      "taskType": "chat",
+      "module": "src/app/api/chat/route.ts",
+      "providerChain": ["gemini", "openrouter", "groq"]
+    },
+    {
+      "id": "soil-analysis",
+      "description": "AEZ-zone soil analysis with USDA texture classification",
+      "triggers": ["soil", "মাটি", "AEZ", "texture"],
+      "layer": "app",
+      "taskType": "soil_analysis",
+      "module": "src/app/api/soil-analysis/route.ts",
+      "providerChain": ["gemini", "openrouter"]
+    },
+    {
+      "id": "crop-database-lookup",
+      "description": "AI-enriched lookup across the 200+ crop database (7 categories)",
+      "triggers": ["crop info", "ফসল তথ্য", "crop database"],
+      "layer": "app",
+      "taskType": "crop_database",
+      "module": "src/app/api/crop-database/route.ts",
+      "providerChain": ["gemini", "openrouter"]
+    },
+    {
+      "id": "news-bulletin",
+      "description": "Live agri-news ticker summarization/bulletin generation",
+      "triggers": ["news", "সংবাদ", "bulletin"],
+      "layer": "app",
+      "taskType": "news_bulletin",
+      "module": "src/app/api/news/route.ts",
+      "providerChain": ["groq", "gemini"]
+    },
+    {
+      "id": "sync-db-schema",
+      "description": "Generate/sync Supabase schema and migrations from source-of-truth models",
+      "triggers": ["schema", "migration", "supabase table"],
+      "layer": "dev",
+      "agent": "cline",
+      "module": "src/lib/supabase/schema.sql"
+    },
+    {
+      "id": "ci-cd-setup",
+      "description": "Emit/update GitHub Actions CI and Vercel deploy workflows",
+      "triggers": ["ci", "cd", "github actions", "deploy pipeline"],
+      "layer": "dev",
+      "agent": "kilo",
+      "module": ".github/workflows/validate.yml"
+    },
+    {
+      "id": "refactor-and-env",
+      "description": "Dry-run refactors and environment-variable injection with secret scrubbing",
+      "triggers": ["refactor", "env vars", "clean up code"],
+      "layer": "dev",
+      "agent": "opencode",
+      "module": "next.config.ts"
+    },
+    {
+      "id": "graph-docs",
+      "description": "Build/query/export the .agent/docs knowledge graph and orchestration dashboard",
+      "triggers": ["docs graph", "visualize architecture", "graphify"],
+      "layer": "dev",
+      "agent": "graphify",
+      "module": ".agent/docs/INDEX.md"
+    },
+    {
+      "id": "bilingual-polish",
+      "description": "Bengali-English bilingual formatting pass for presentation-ready outputs",
+      "triggers": ["polish", "বাংলা", "bilingual format"],
+      "layer": "dev",
+      "agent": "kimi",
+      "module": "src/lib/cabi/bengaliKeywords.ts"
+    }
+  ],
+  "fallbackPolicy": {
+    "note": "All 'app' layer skills resolve through agentic.json.taskRoutes and never call a provider directly — this keeps quota exhaustion transparent (waterfall to next free provider, then Bengali offline degradation) and avoids silently downgrading response quality.",
+    "offline": "Bengali graceful degradation message",
+    "quotaExceeded": "Daily limit reached, try tomorrow"
+  }
 }
