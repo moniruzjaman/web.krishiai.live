@@ -332,6 +332,45 @@ export interface DiseaseRiskAssessment {
   curativeActions: string[];
 }
 
+// --- Insect Pest Types ---
+// Separate from DiseaseInfo/DiseaseForecast: insect pest ecology is
+// dry/warm-favoring (opposite of the fungal/bacterial disease model above,
+// which scores UP with humidity/leaf-wetness/precipitation), so it needs its
+// own scoring model rather than being forced through generateDiseaseForecast.
+export interface PestInfo {
+  id: string;
+  name: string;
+  nameBn: string;
+  cropIds: string[];
+  affectedStages: GrowthStageId[];
+  minNightTempC: number; // pest activity favored above this min (night) temperature
+  maxFavorableRainMm: number; // pest favored when rainfall stays below this (dry spell)
+  symptoms: string[];
+  symptomsBn: string[];
+  preventiveActions: string[];
+  preventiveActionsBn: string[];
+  curativeActions: string[];
+  curativeActionsBn: string[];
+  economicThreshold: string;
+}
+
+export interface PestRiskAssessment {
+  pest: PestInfo;
+  risk: number; // 0-100
+  level: RiskLevel;
+  confidence: number;
+  contributingFactors: string[];
+  preventiveActions: string[];
+  curativeActions: string[];
+}
+
+export interface PestForecast {
+  pests: PestRiskAssessment[];
+  overallFavorability: number; // 0-100
+  spreadRisk: RiskLevel;
+  confidence: number;
+}
+
 // --- Market Types ---
 export type MarketAction = 'harvest_now' | 'store' | 'wait' | 'sell';
 

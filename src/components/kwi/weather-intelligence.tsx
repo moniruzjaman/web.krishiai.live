@@ -49,7 +49,7 @@ export function WeatherIntelligence() {
 
   const {
     weather, isLoading, error, refetch,
-    risks, recommendations, calendar, disease, farmSummary, crop,
+    risks, recommendations, calendar, disease, pest, farmSummary, crop,
   } = intel;
 
   const alertCount = risks?.alerts.length ?? 0;
@@ -212,7 +212,7 @@ export function WeatherIntelligence() {
             )}
             {activeTab === "weather" && <WeatherDetails weather={weather} lang={lang} />}
             {activeTab === "risks" && risks && (
-              <RiskDashboardView risks={risks} disease={disease} lang={lang} />
+              <RiskDashboardView risks={risks} disease={disease} pest={pest} lang={lang} />
             )}
             {activeTab === "calendar" && (
               <CropCalendarView calendar={calendar} weather={weather} lang={lang} crop={crop} />
