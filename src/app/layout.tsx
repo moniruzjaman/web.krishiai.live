@@ -30,10 +30,13 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "64x64" },
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icons/icon-192.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,
@@ -49,7 +52,7 @@ export const metadata: Metadata = {
     siteName: "KrishiAI",
     images: [
       {
-        url: "/logo.jpeg",
+        url: "/og-image.jpeg",
         width: 1200,
         height: 630,
         alt: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
@@ -60,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
     description: "চাষাবাদের জন্য স্মার্ট ও নির্ভরযোগ্য",
-    images: ["/logo.jpeg"],
+    images: ["/og-image.jpeg"],
   },
 };
 
@@ -79,7 +82,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap"
         />
         <meta name="theme-color" content="#0b6623" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192" />
+        <link rel="icon" type="image/png" href="/icons/icon-512.png" sizes="512x512" />
       </head>
       <body
         className="antialiased bg-background text-foreground"
