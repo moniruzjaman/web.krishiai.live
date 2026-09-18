@@ -52,9 +52,9 @@ export const metadata: Metadata = {
     siteName: "KrishiAI",
     images: [
       {
-        url: "/logo.jpeg",
-        width: 1024,
-        height: 1024,
+        url: "/og-image.jpeg",
+        width: 1200,
+        height: 630,
         alt: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
       },
     ],
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "KrishiAI – কৃষি AI প্ল্যাটফর্ম",
     description: "চাষাবাদের জন্য স্মার্ট ও নির্ভরযোগ্য",
-    images: ["/logo.jpeg"],
+    images: ["/og-image.jpeg"],
   },
 };
 
