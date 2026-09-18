@@ -11,10 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
       - name: Verify branding files exist
         run: |
           for file in public/favicon.ico public/manifest.json public/robots.txt; do
@@ -52,4 +53,4 @@ jobs:
           fi
           echo "✅ manifest.json theme colors verified"
       - name: Verify Next.js build with branding assets
-        run: bun run build
+        run: npm run build

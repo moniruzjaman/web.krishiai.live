@@ -1,9 +1,13 @@
 /**
  * Quota-Aware AI Client — Vercel + Supabase Architecture
  *
- * Provider waterfall: Gemini → OpenRouter → Groq → Offline fallback
+ * Provider waterfall: Gemini → OpenRouter → Groq → KrishiGateway (chat only) → Offline fallback
  * Each call checks Supabase quota before proceeding.
  * Free platform — no user charges, just soft limits.
+ *
+ * KrishiGateway is the shared api.krishiai.live Cloudflare Worker (see the
+ * krishi-ai-gateway repo) — its own free-model chain, kept as a last resort
+ * before offline text, scoped to 'chat' only (see callKrishiGateway below).
  */
 
 export interface AIMessage {
@@ -194,6 +198,60 @@ async function callGroq(messages: AIMessage[], options: AICallOptions): Promise<
   }
 }
 
+/**
+ * Bonus free-tier fallback via the shared KrishiAI Cloudflare gateway
+ * (api.krishiai.live). Only wired in for the generic 'chat' feature —
+ * the gateway has its own fixed system prompt, so it can't reproduce
+ * this app's per-feature structured-output discipline (diagnose,
+ * soil_analysis, etc.), and using it there would silently degrade
+ * output format. For plain chat it's a reasonable last resort before
+ * falling all the way to canned offline text.
+ */
+async function callKrishiGateway(messages: AIMessage[], options: AICallOptions): Promise<AIResponse | null> {
+  if (options.feature !== 'chat') return null
+
+  const token = process.env.KRISHI_GATEWAY_TOKEN
+  if (!token) return null
+
+  const userMessage = [...messages].reverse().find(m => m.role === 'user')?.content
+  if (!userMessage) return null
+
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+    const res = await fetch('https://api.krishiai.live/v1/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Krishi-Token': token
+      },
+      body: JSON.stringify({ message: userMessage, language: 'bn' }),
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId))
+
+    if (!res.ok) {
+      console.warn('[ai] KrishiGateway failed:', res.status)
+      return null
+    }
+
+    const data = await res.json()
+    const text = data?.reply || ''
+    if (!text) return null
+
+    return {
+      text,
+      provider: 'KrishiGateway',
+      model: `gateway:${data?.model ?? 'unknown'}`,
+      tokensUsed: 0,
+      quotaRemaining: 0
+    }
+  } catch (e) {
+    console.warn('[ai] KrishiGateway error:', e)
+    return null
+  }
+}
+
 // ── Main AI Call with Quota + Fallback ───────────────────────────────────────
 
 export async function callAI(
@@ -219,8 +277,10 @@ export async function callAI(
     console.warn('[ai] Quota check failed, allowing request:', e)
   }
 
-  // Provider waterfall: Gemini → OpenRouter → Groq → Offline
-  const providers = [callGemini, callOpenRouter, callGroq]
+  // Provider waterfall: Gemini → OpenRouter → Groq → KrishiGateway (chat only) → Offline
+  const providers = options.feature === 'chat'
+    ? [callGemini, callOpenRouter, callGroq, callKrishiGateway]
+    : [callGemini, callOpenRouter, callGroq]
 
   for (const provider of providers) {
     const result = await provider(messages, options)
