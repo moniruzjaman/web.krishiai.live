@@ -36,11 +36,16 @@ interface Message {
   attachment?: Attachment;
 }
 
-const SUGGESTIONS = [
-  "ধানের ব্লাস্ট রোগ কী?",
-  "সঠিক সারের মাত্রা কত?",
-  "শীতকালীন সবজি চাষ",
-  "আবহাওয়া পূর্বাভাস",
+// ── 8 category quick-chips (ported from krishi-ai reference) ────────────────
+const QUICK_CATEGORIES = [
+  { label: "ধান চাষ", icon: "🌾", query: "ধান চাষের পদ্ধতি ও যত্ন সম্পর্কে বিস্তারিত জানুন" },
+  { label: "রোগ নির্ণয়", icon: "🔬", query: "ফসলের রোগ চিহ্নিত করতে সহায়তা করুন" },
+  { label: "সার পরামর্শ", icon: "🧪", query: "ফসলের জন্য উপযুক্ত সারের ধরণ ও মাত্রা সম্পর্কে জানুন" },
+  { label: "কীটনাশক", icon: "🛡️", query: "কীটনাশক নির্বাচন ও নিরাপদ ব্যবহারের নিয়ম" },
+  { label: "মাটি বিশ্লেষণ", icon: "🏺", query: "মাটির pH ও পুষ্টি মান সম্পর্কে তথ্য" },
+  { label: "বাজার মূল্য", icon: "💰", query: "বর্তমান বাজার মূল্য সম্পর্কে জানুন" },
+  { label: "আবহাওয়া", icon: "🌤️", query: "আবহাওয়ার পূর্বাভাস ও কৃষি পরামর্শ" },
+  { label: "ফসল তথ্য", icon: "📚", query: "বিভিন্ন ফসলের চাষ পদ্ধতি ও মৌসুম সম্পর্কে জানুন" },
 ];
 
 const STORAGE_KEY = "krishi_chat_messages";
@@ -301,11 +306,11 @@ export default function ChatPage() {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+              className={
                 msg.role === "user"
-                  ? "bg-[#1b8a3e] text-white rounded-br-md"
-                  : "bg-white text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-md card-shadow"
-              }`}
+                  ? "chat-bubble-user"
+                  : "chat-bubble-assistant"
+              }
             >
               {/* Attachment preview for user messages */}
               {msg.attachment && msg.role === "user" && (
@@ -382,17 +387,18 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Suggestions */}
+      {/* 8 category quick-chips (ported from krishi-ai reference) */}
       {messages.length <= 1 && (
         <div className="px-4 pb-2">
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-            {SUGGESTIONS.map((s, i) => (
+            {QUICK_CATEGORIES.map((cat, i) => (
               <button
                 key={i}
-                onClick={() => sendMessage(s)}
-                className="whitespace-nowrap text-[11px] font-medium bg-white border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full hover:bg-green-50 hover:border-green-300 transition-colors"
+                onClick={() => sendMessage(cat.query)}
+                className="whitespace-nowrap text-[11px] font-medium bg-white border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full hover:bg-green-50 hover:border-green-300 transition-colors inline-flex items-center gap-1"
               >
-                {s}
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
               </button>
             ))}
           </div>
@@ -495,6 +501,32 @@ export default function ChatPage() {
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
+          </button>
+          {/* Voice input button (coming soon) — ported from krishi-ai reference */}
+          <button
+            type="button"
+            disabled
+            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed shrink-0 relative"
+            title="কন্ঠ ইনপুট (শীঘ্রই আসছে)"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+            <span className="absolute -top-1 -right-1 text-[6px] font-bold bg-amber-500 text-white px-1 py-0.5 rounded-full">
+              Soon
+            </span>
           </button>
         </form>
       </div>

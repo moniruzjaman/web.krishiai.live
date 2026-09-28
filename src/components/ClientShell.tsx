@@ -8,21 +8,39 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import SplashScreen, {
+  shouldShowSplash,
+  markSplashShown,
+} from "./SplashScreen";
 
 const InstallPrompt = dynamic(() => import("./InstallPrompt"), {
   ssr: false,
 });
 
 export default function ClientShell() {
+  const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    // Show splash on first load of this session only.
+    if (shouldShowSplash()) {
+      setShowSplash(true);
+    }
+  }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    markSplashShown();
+  };
+
   useEffect(() => {
     // Register service worker for PWA offline support
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {
-          console.log("[SW] Registered:", reg.scope);
+          console.warn("[SW] Registered:", reg.scope);
         })
         .catch((err) => {
           console.warn("[SW] Registration failed:", err);
@@ -30,5 +48,10 @@ export default function ClientShell() {
     }
   }, []);
 
-  return <InstallPrompt />;
+  return (
+    <>
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+      <InstallPrompt />
+    </>
+  );
 }

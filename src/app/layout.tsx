@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import TopNavbar from "@/components/TopNavbar";
 import BottomNav from "@/components/BottomNav";
+import AndroidStatusBarLoader from "@/components/AndroidStatusBarLoader";
+import PullToRefreshProvider from "@/components/PullToRefreshProvider";
 import { LocationProvider } from "@/context/LocationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ClientShell from "@/components/ClientShell";
@@ -94,11 +96,14 @@ export default function RootLayout({
           <LanguageProvider>
           <LocationProvider>
             {/* Mobile shell — max-width centered, sticky nav */}
-            <div className="flex flex-col min-h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative">
+            <div className="flex flex-col h-dvh mx-auto w-full max-w-[768px] md:max-w-[768px] lg:max-w-[900px] xl:max-w-[1024px] bg-white dark:bg-gray-900 relative overflow-hidden">
+              <AndroidStatusBarLoader />
               <TopNavbar />
-              <main className="flex-1 pb-16">
-                {children}
-              </main>
+              <PullToRefreshProvider>
+                <main className="flex-1 pb-16">
+                  {children}
+                </main>
+              </PullToRefreshProvider>
               <BottomNav />
             </div>
           </LocationProvider>
