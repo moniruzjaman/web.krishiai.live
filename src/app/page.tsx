@@ -237,16 +237,16 @@ export default function HomePage() {
 
           {/* Title */}
           <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
-            {t("চাষিদের জন্য", "For Farmers", lang)}
+            {t("কৃষিতে ভবিষ্যৎ?", "A Future in Agriculture?", lang)}
             <br />
-            <span className="text-green-300">{t("স্মার্ট ও নির্ভরযোগ্য", "Smart & Reliable", lang)}</span>
+            <span className="text-green-300">{t("এখান থেকেই শুরু", "Starts Right Here", lang)}</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-white/75 text-sm sm:text-base leading-relaxed mb-6 max-w-xl">
             {t(
-              "বাংলাদেশের কৃষকদের জন্য তথ্য-প্রযুক্তি নির্ভর কৃষি সেবা — ফসলের রোগ চিহ্নিত করুন, আবহাওয়া ও বাজার মূল্য দেখুন, সার ও বীজের পরামর্শ নিন।",
-              "IT-driven agriculture service for Bangladesh farmers — identify crop diseases, check weather & market prices, get fertilizer & seed advice.",
+              "রোগ নির্ণয় থেকে ঋণ-ভর্তুকি ও শেখার কোর্স — কৃষির প্রতিটি সিদ্ধান্তে ১৩+ কৃষি টুল, সম্পূর্ণ বিনামূল্যে।",
+              "From disease diagnosis to loans, subsidies and learning courses — 13+ agri tools for every farming decision, completely free.",
               lang
             )}
           </p>
@@ -265,11 +265,11 @@ export default function HomePage() {
           <div className="flex gap-4 text-[10px] text-white/50">
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-              {t("কৃষি মন্ত্রণালয় অনুমোদিত", "Ministry of Agri Approved", lang)}
+              {t("৬৪ জেলা কভারেজ", "64 District Coverage", lang)}
             </span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-              {t("DAE সহযোগিতা", "DAE Partnership", lang)}
+              {t("২০০+ ফসলের তথ্য", "200+ Crops Covered", lang)}
             </span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
