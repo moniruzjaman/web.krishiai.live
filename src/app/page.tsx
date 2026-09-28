@@ -1,5 +1,6 @@
 /**
  * KrishiAI — Bangladesh Agriculture AI Platform
+ * Ecosystem apps: soil-media-portal, plantation, agrichem-guide, producer-register, gap-brinjal, pesticideact2018
  *
  * Complete home page with enhanced sections:
  * - Hero with live pulse indicator, animated badge, trust signals
@@ -175,6 +176,74 @@ const TOOLS: Tool[] = [
     desc: { bn: "ফসল বীমা, কৃষি ঋণ, সরকারি প্রণোদনা ও আর্থিক সুরক্ষা সংক্রান্ত নির্দেশিকা", en: "Crop insurance, agri loans, govt incentives & financial protection guidelines" },
     features: [{ bn: "ফসল বীমা", en: "Crop Insurance" }, { bn: "কৃষি ঋণ", en: "Agri Loans" }, { bn: "আর্থিক সুরক্ষা", en: "Financial Protection" }],
     url: "https://moa.gov.bd",
+  },
+];
+
+// ── Ecosystem apps (external KrishiAI products) ─────────────────────────────
+interface EcosystemApp {
+  icon: string;
+  title: { bn: string; en: string };
+  cat: string;
+  catColor: string;
+  bg: string;
+  desc: { bn: string; en: string };
+  url: string;
+}
+
+const ECOSYSTEM_APPS: EcosystemApp[] = [
+  {
+    icon: "🌱",
+    title: { bn: "সযত্নে মাটি পোর্টাল", en: "Soil Media Portal" },
+    cat: "SOIL SCIENCE",
+    catColor: "#9d174d",
+    bg: "#fce7f3",
+    desc: { bn: "মাটির মিডিয়া বিশ্লেষণ ও সযত্নে তৈরি মাটির প্রকল্প সংক্রান্ত তথ্যপোর্টাল", en: "Soil media analysis and curated soil project information portal" },
+    url: "https://soil-media-portal.mithun-hstu.workers.dev/",
+  },
+  {
+    icon: "🌳",
+    title: { bn: "প্লানটেশন", en: "Plantation" },
+    cat: "PLANTATION",
+    catColor: "#166534",
+    bg: "#dcfce7",
+    desc: { bn: "বৃক্ষরোপণ, বনায়ন ও ফসলের চারিত্রিক বিকাশ সংক্রান্ত প্ল্যাটফর্ম", en: "Afforestation, green cover & crop character development platform" },
+    url: "https://plantation.krishiai.live/",
+  },
+  {
+    icon: "🧪",
+    title: { bn: "কৃষি রাসায়নিক গাইড", en: "AgriChem Guide" },
+    cat: "CHEMISTRY",
+    catColor: "#b45309",
+    bg: "#fef3c7",
+    desc: { bn: "কীটনাশক, সার ও অন্যান্য কৃষি রাসায়নিকের নিরাপদ ব্যবহারের গাইড", en: "Safe usage guide for pesticides, fertilizers & other agri-chemicals" },
+    url: "https://agrichem-guide.vercel.app",
+  },
+  {
+    icon: "📝",
+    title: { bn: "উৎপাদক নিবন্ধন", en: "Producer Register" },
+    cat: "REGISTRY",
+    catColor: "#065f46",
+    bg: "#ecfdf5",
+    desc: { bn: "কৃষক/উৎপাদকদের নিবন্ধন ও তথ্য ব্যবস্থাপনার পোর্টাল", en: "Farmer/producer registration & profile management portal" },
+    url: "https://producer-register.vercel.app/",
+  },
+  {
+    icon: "🫒",
+    title: { bn: "জাপান ব্রিনজাল কৃষি AI", en: "GAP Brinjal Krishi AI" },
+    cat: "GAP CERTIFICATION",
+    catColor: "#6d28d9",
+    bg: "#f5f3ff",
+    desc: { bn: "GAP (Good Agricultural Practices) সার্টিফিকেশন সহ বেগুনের জন্য AI সহায়ক", en: "GAP-certified brinjal cultivation AI assistant" },
+    url: "https://gap-brinjal-krishi-ai-team.vercel.app/",
+  },
+  {
+    icon: "🔬",
+    title: { bn: "কীটনাশক আইন ২০১৮", en: "Pesticide Act 2018" },
+    cat: "LEGAL",
+    catColor: "#3730a3",
+    bg: "#e0e7ff",
+    desc: { bn: "বাংলাদেশ কীটনাশক আইন ২০১৮ সংক্রান্ত তথ্য ও আইনি নির্দেশিকা", en: "Bangladesh Pesticide Act 2018 information & legal guidance" },
+    url: "https://pesticideact2018.vercel.app/",
   },
 ];
 
@@ -536,6 +605,63 @@ export default function HomePage() {
                 </div>
               </a>
             ))}
+          </div>
+
+          {/* ═══ ECOSYSTEM APPS (external KrishiAI products) ═══════════════════ */}
+          <div className="mt-8">
+            <div className="inline-flex items-center gap-2 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-full px-3 py-1 mb-4">
+              <span className="w-2 h-2 bg-purple-500 rounded-full" />
+              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">
+                {t("কৃষি ইকোসিস্টেম অ্যাপস", "KRISHI ECOSYSTEM APPS", lang)}
+              </span>
+            </div>
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md">
+              {t(
+                "কৃষি AI-র সাথে সংযুক্ত অন্যান্য প্রযুক্তি প্ল্যাটফর্ম — মাটি, প্লানটেশন, রাসায়নিক ও আইনি সেবা।",
+                "Connected technology platforms — soil, plantation, chemicals & legal services.",
+                lang
+              )}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {ECOSYSTEM_APPS.map((app, i) => (
+                <a
+                  key={i}
+                  href={app.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3.5 hover:border-purple-300 dark:hover:border-purple-600 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 card-shadow group no-underline"
+                >
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200"
+                    style={{ background: app.bg }}
+                  >
+                    {app.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span
+                        className="text-[10px] font-bold tracking-wide"
+                        style={{ color: app.catColor }}
+                      >
+                        {app.cat}
+                      </span>
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                    </div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-0.5">
+                      {app.title[lang]}
+                    </div>
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-1.5">
+                      {app.desc[lang]}
+                    </div>
+                    <div className="text-[9px] font-semibold text-purple-600 dark:text-purple-400 group-hover:underline">
+                      {app.url.replace(/^https?:\/\//, "")} →
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
