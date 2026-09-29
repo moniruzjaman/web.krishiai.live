@@ -70,7 +70,7 @@ let cachedDate = "";
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 // ── Date freshness filter ────────────────────────────────────────────────────
-const MAX_NEWS_AGE_DAYS = 3;
+const MAX_NEWS_AGE_DAYS = 7;
 
 function isRecent(pubDate: string): boolean {
   try {
@@ -179,13 +179,12 @@ const AGRI_KW_BN = [
 
 const AGRI_KW_EN = [
   "agri", "crop", "rice", "wheat", "farmer", "harvest", "fertilizer", "seed",
-  "food", "grain", "agriculture", "paddy", "irrigation", "pest", "drought",
-  "flood", "cultivation", "livestock", "fisheries", "crop-yield", "Bangladesh",
-  "monsoon", "boro", "aman", "aus", "jute", "potato", "onion", "vegetable",
-  "subsidy", "extension", "seedling", "transplant", "pesticide", "blight",
-  "fao", "food and agriculture", "ifpri", "world bank", "climate", "dairy",
-  "poultry", "aquaculture", "nutrition", "food security", "organic",
-  "sustainable", "biodiversity", "soil", "water", "market price",
+  "grain", "agriculture", "paddy", "irrigation", "pest", "drought",
+  "flood", "cultivation", "livestock", "fisheries", "crop-yield",
+  "monsoon", "boro rice", "aman paddy", "jute", "potato", "onion", "vegetable",
+  "seedling", "transplant", "pesticide", "blight",
+  "fao", "food and agriculture", "ifpri", "world bank", "dairy",
+  "poultry", "aquaculture", "food security",
 ];
 
 const isAgri = (t: string): boolean => {
@@ -1040,33 +1039,24 @@ export async function GET(request: NextRequest) {
         ? englishHeadlines.slice(0, 20)
         : buildSeasonalFallback(ctx);
 
-  // ── Deduplicate intl RSS with english headlines ───────────────────────
-  const seenIntlTitles = new Set<string>();
-  for (const item of intlRSS) {
-    const key = item.title.slice(0, 40).toLowerCase();
-    if (!seenIntlTitles.has(key)) {
-      seenIntlTitles.add(key);
-      if (isRecent(item.pubDate)) {
-        // Add intl news to english headlines if not already present
-        const exists = englishHeadlines.some((h) => h.title.slice(0, 40).toLowerCase() === key);
-        if (!exists) {
-          englishHeadlines.push(item);
-        }
-      }
-    }
-  }
   englishHeadlines.sort(
     (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
 
-  // ── AI Daily Bulletin ─────────────────────────────────────────────────
+  const intlSeen = new Set<string>();
+  const intlHeadlines: NewsItem[] = [];
+  for (const item of intlRSS) {
+    const key = item.title.slice(0, 40).toLowerCase();
+    if (intlSeen.has(key) || !isRecent(item.pubDate)) continue;
+    intlSeen.add(key);
+    intlHeadlines.push(item);
+  }
+  intlHeadlines.sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
+
   const allHeadlines = [...finalHeadlines, ...englishHeadlines.slice(0, 5), ...govHeadlines.slice(0, 3)];
   const bulletin = await generateDailyBulletin(ctx, allHeadlines);
-
-  // Separate intl from english for dedicated display
-  const intlHeadlines = englishHeadlines.filter((h) =>
-    ["FAO", "IFPRI", "IRRI", "World Bank", "CGIAR", "IPS", "SciDev.Net"].includes(h.source)
-  );
   const intlSource: "rss-live" | "unavailable" = intlRSS.length > 0 ? "rss-live" : "unavailable";
 
   const response: NewsResponse = {

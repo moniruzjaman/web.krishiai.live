@@ -204,7 +204,8 @@ const AGRI_BN = [
 ];
 
 const AGRI_EN = [
-  "agricultur",
+  "agriculture",
+  "agricultural",
   "farmer",
   "farmers",
   "farming",
@@ -224,19 +225,23 @@ const AGRI_EN = [
   "seedling",
   "pesticide",
   "livestock",
-  "fisher",
+  "fisheries",
+  "fishery",
+  "fishermen",
   "aquaculture",
   "dairy",
   "poultry",
   "food security",
   "foodgrain",
   "food grain",
-  "boro",
-  "aman",
-  "aus ",
+  "boro rice",
+  "boro paddy",
+  "aman rice",
+  "aman paddy",
   "monsoon",
   "subsidy",
-  "cultivat",
+  "cultivation",
+  "cultivate",
   "plantation",
   "tea garden",
   "sugarcane",
@@ -244,9 +249,6 @@ const AGRI_EN = [
   "soybean",
   "chilli",
   "chili",
-  "bazaar",
-  "commodity",
-  "commodities",
 ];
 
 const USER_AGENT =
@@ -281,7 +283,14 @@ export function stripTags(html: string): string {
 export function isAgriHeadline(title: string): boolean {
   if (!title) return false;
   const lower = title.toLowerCase();
-  if (AGRI_EN.some((k) => lower.includes(k))) return true;
+  if (
+    AGRI_EN.some((k) => {
+      const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`, "i").test(lower);
+    })
+  ) {
+    return true;
+  }
   const sanitized = title
     .replace(/প্রধানমন্ত্রী/g, " ")
     .replace(/প্রধান উপদেষ্টা/g, " ")

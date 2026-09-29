@@ -442,6 +442,11 @@ export default function NewsWidget() {
                       >
                         {it.icon || "🏛️"} {it.source}
                       </span>
+                      {it.credibility && (
+                        <span className="text-[9px] text-gray-500 font-medium">
+                          {it.credibility}
+                        </span>
+                      )}
                       <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                         <span className="text-[10px] text-emerald-600 font-semibold whitespace-nowrap">
                           {timeAgo(it.pubDate)}
@@ -497,6 +502,11 @@ export default function NewsWidget() {
                   >
                     {it.icon} {it.source}
                   </span>
+                  {it.credibility && (
+                    <span className="text-[9px] text-gray-500 font-medium">
+                      {it.credibility}
+                    </span>
+                  )}
                   <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                     <span className="text-[10px] text-green-600 font-semibold whitespace-nowrap">
                       {timeAgo(it.pubDate)}

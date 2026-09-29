@@ -10,7 +10,6 @@ import json
 import re
 import ssl
 import sys
-import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -160,14 +159,8 @@ AGRI_BN = [
     "সরিষা",
     "আখ",
     "পাটের",
-    "ইরি",
-    "বিআরআরআই",
-    "বারি",
-    "বাডক",
     "প্রাণিসম্পদ",
     "হাওর",
-    "বন্যায় ফসল",
-    "সেচ প্রকল্প",
     "কৃষিপণ্য",
     "কৃষিজ",
     "উৎপাদন খরচ",
@@ -175,7 +168,8 @@ AGRI_BN = [
 ]
 
 AGRI_EN = [
-    "agricultur",
+    "agriculture",
+    "agricultural",
     "farmer",
     "farmers",
     "farming",
@@ -195,19 +189,23 @@ AGRI_EN = [
     "seedling",
     "pesticide",
     "livestock",
-    "fisher",
+    "fisheries",
+    "fishery",
+    "fishermen",
     "aquaculture",
     "dairy",
     "poultry",
     "food security",
     "foodgrain",
     "food grain",
-    "boro",
-    "aman",
-    "aus ",
+    "boro rice",
+    "boro paddy",
+    "aman rice",
+    "aman paddy",
     "monsoon",
     "subsidy",
-    "cultivat",
+    "cultivation",
+    "cultivate",
     "plantation",
     "tea garden",
     "sugarcane",
@@ -215,9 +213,6 @@ AGRI_EN = [
     "soybean",
     "chilli",
     "chili",
-    "bazaar",
-    "commodity",
-    "commodities",
 ]
 
 
@@ -256,7 +251,7 @@ def is_agri(title: str) -> bool:
         .replace("সংসার", " ")
         .replace("আসবাব", " ")
     )
-    if any(k.lower() in lowered_raw for k in AGRI_EN):
+    if any(re.search(r"(?:^|[^a-z])" + re.escape(k.lower()) + r"(?:$|[^a-z])", lowered_raw) for k in AGRI_EN):
         return True
     return any(k in sanitized for k in AGRI_BN)
 

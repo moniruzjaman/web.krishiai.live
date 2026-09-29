@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import unittest
 from datetime import datetime, timezone
@@ -12,6 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bd_agri_news_extractor import (  # noqa: E402
+    AGRI_BN,
+    AGRI_EN,
     collect_newspaper_news,
     extract_anchors,
     extract_quintype_stories,
@@ -89,10 +92,14 @@ class ExtractorTests(unittest.TestCase):
     def test_is_agri_filters_non_farm_stories(self) -> None:
         self.assertTrue(is_agri("কৃষকদের সার ও বীজ সহায়তা বাড়াল কৃষি মন্ত্রণালয়"))
         self.assertTrue(is_agri("State minister promises easy-term loans for farmers"))
+        self.assertTrue(is_agri("New agricultural subsidy for cultivation of paddy"))
         self.assertFalse(is_agri("দুর্গাপূজায় ছুটি এক দিন বাড়ল"))
         self.assertFalse(is_agri("Tigers win warm-up cricket match"))
         self.assertFalse(is_agri("প্রধানমন্ত্রী তারেক রহমানের সঙ্গে সাক্ষাৎ"))
         self.assertFalse(is_agri("ফ্রিজ, আসবাবপত্র কিনে সংসার গুছিয়ে নেওয়ার প্রস্তুতি"))
+        self.assertFalse(is_agri("Kingfisher beer sales rise in Dhaka"))
+        self.assertFalse(is_agri("Aman Rahman meets the borough council"))
+        self.assertFalse(is_agri("Commodities continue to be dearer"))
 
     def test_parse_pub_date_millis_and_rfc822(self) -> None:
         iso = parse_pub_date(1727610000000)
@@ -217,6 +224,16 @@ class ExtractorTests(unittest.TestCase):
         payload = json.dumps(result, ensure_ascii=False)
         self.assertNotIn("news.google.com", payload)
         self.assertNotIn("googleapis.com", payload)
+
+    def test_python_and_typescript_keyword_lists_match(self) -> None:
+        ts = Path(__file__).resolve().parents[1].joinpath("src/lib/bdNewspaperNews.ts").read_text()
+
+        def grab(name: str) -> list[str]:
+            block = ts.split(f"const {name} = [", 1)[1].split("];", 1)[0]
+            return re.findall(r'"([^"]+)"', block)
+
+        self.assertEqual(AGRI_BN, grab("AGRI_BN"))
+        self.assertEqual(AGRI_EN, grab("AGRI_EN"))
 
 
 if __name__ == "__main__":

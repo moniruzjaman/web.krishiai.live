@@ -13,6 +13,7 @@ interface NewsItem {
   source?: string;
   date?: string;
   extractionTime?: string;
+  credibility?: string;
 }
 
 export default function NewsTicker() {
@@ -25,21 +26,24 @@ export default function NewsTicker() {
       if (!res.ok) return;
       const data = await res.json();
 
-      // Extract headlines from any available tab
       const headlines: NewsItem[] = [];
-      const sources = ["headlines", "bulletin", "english", "gov", "intl"];
-      for (const src of sources) {
-        const items = data?.[src] || [];
-        if (Array.isArray(items)) {
-          for (const item of items.slice(0, 5)) {
-            if (item?.title) {
-              headlines.push({
-                title: item.title,
-                source: item.source || src,
-                date: item.date || item.pubDate || item.publishedAt,
-                extractionTime: item.extractionTime,
-              });
-            }
+      const buckets = [
+        data?.headlines,
+        data?.englishHeadlines,
+        data?.govHeadlines,
+        data?.intlHeadlines,
+      ];
+      for (const items of buckets) {
+        if (!Array.isArray(items)) continue;
+        for (const item of items.slice(0, 5)) {
+          if (item?.title) {
+            headlines.push({
+              title: item.title,
+              source: item.source,
+              date: item.pubDate || item.date || item.publishedAt,
+              extractionTime: item.extractionTime,
+              credibility: item.credibility,
+            });
           }
         }
       }
@@ -109,6 +113,11 @@ export default function NewsTicker() {
               {item.source && (
                 <span className="text-[8px] bg-white/15 text-white/70 px-1.5 py-0.5 rounded-full">
                   {item.source}
+                </span>
+              )}
+              {item.credibility && (
+                <span className="text-[8px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded-full">
+                  {item.credibility}
                 </span>
               )}
               {item.extractionTime && (
