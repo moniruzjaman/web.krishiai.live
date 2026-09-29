@@ -3,9 +3,9 @@
  *
  * 4 tabs:
  * - 📋 দৈনিক বুলেটিন — AI-generated daily agriculture bulletin
- * - 🌱 কৃষি সংবাদ — Bengali agriculture headlines from Google News
- * - 📰 ইংরেজি সংবাদ — English agriculture headlines from Google News
- * - 🏛️ সরকারি প্রতিবেদন — .gov.bd portal news (CORS proxy + Google site:gov.bd + curated)
+ * - 🌱 কৃষি সংবাদ — Bengali agriculture headlines from BD newspapers (HTML)
+ * - 📰 ইংরেজি সংবাদ — English agriculture headlines from BD newspapers (HTML)
+ * - 🏛️ সরকারি প্রতিবেদন — .gov.bd portal news (publisher feeds + curated)
  *
  * Source badges with colored styling, relative time display,
  * hover effects, freshness indicators, and auto-refresh.
@@ -29,6 +29,11 @@ interface NewsItem {
   color: string;
   icon?: string;
   isGov?: boolean;
+  extractionTime?: string;
+  extractionMethod?: string;
+  sourceUrl?: string;
+  sourceEn?: string;
+  credibility?: string;
 }
 
 interface DailyBulletin {
@@ -50,11 +55,19 @@ interface NewsResponse {
   govHeadlines: NewsItem[];
   intlHeadlines: NewsItem[];
   sources: {
-    headlines: "google-news-rss" | "fallback";
+    headlines: "newspaper-html" | "fallback";
     bulletin: "ai-generated" | "unavailable";
-    gov: "cors-proxy" | "google-site-gov" | "curated" | "unavailable";
+    gov: "cors-proxy" | "curated" | "unavailable";
     intl: "rss-live" | "unavailable";
   };
+  extractedAt?: string;
+  newspapers?: Array<{
+    id: string;
+    name: string;
+    home: string;
+    extracted: number;
+    ok: boolean;
+  }>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -207,8 +220,6 @@ function govSourceLabel(gov: string): { text: string; color: string } {
   switch (gov) {
     case "cors-proxy":
       return { text: "সরাসরি .gov.bd পোর্টাল", color: "bg-green-100 text-green-700" };
-    case "google-site-gov":
-      return { text: "Google News → .gov.bd", color: "bg-blue-100 text-blue-700" };
     case "curated":
       return { text: "মৌসুমি সরকারি পরামর্শ", color: "bg-amber-100 text-amber-700" };
     default:
@@ -431,7 +442,6 @@ export default function NewsWidget() {
                       >
                         {it.icon || "🏛️"} {it.source}
                       </span>
-                      {/* Time info */}
                       <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                         <span className="text-[10px] text-emerald-600 font-semibold whitespace-nowrap">
                           {timeAgo(it.pubDate)}
@@ -439,6 +449,11 @@ export default function NewsWidget() {
                         <span className="text-[9px] text-gray-400 whitespace-nowrap">
                           {formatBnDate(it.pubDate)}
                         </span>
+                        {it.extractionTime && (
+                          <span className="text-[8px] text-gray-400 whitespace-nowrap">
+                            সংগ্রহ: {timeAgo(it.extractionTime)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {/* Title */}
@@ -482,7 +497,6 @@ export default function NewsWidget() {
                   >
                     {it.icon} {it.source}
                   </span>
-                  {/* Time info */}
                   <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                     <span className="text-[10px] text-green-600 font-semibold whitespace-nowrap">
                       {timeAgo(it.pubDate)}
@@ -490,6 +504,11 @@ export default function NewsWidget() {
                     <span className="text-[9px] text-gray-400 whitespace-nowrap">
                       {formatBnDate(it.pubDate)}
                     </span>
+                    {it.extractionTime && (
+                      <span className="text-[8px] text-gray-400 whitespace-nowrap">
+                        সংগ্রহ: {timeAgo(it.extractionTime)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {/* Title */}
@@ -511,28 +530,22 @@ export default function NewsWidget() {
           <span className="flex items-center gap-1">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                data.sources.headlines === "google-news-rss"
+                data.sources.headlines === "newspaper-html"
                   ? "bg-green-500"
                   : "bg-yellow-500"
               }`}
             />
-            {data.sources.headlines === "google-news-rss" ? "Google News RSS" : "মৌসুমি তথ্য"}
+            {data.sources.headlines === "newspaper-html" ? "BD পত্রিকা HTML" : "মৌসুমি তথ্য"}
           </span>
           <span className="flex items-center gap-1">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 data.sources.gov === "cors-proxy"
                   ? "bg-green-500"
-                  : data.sources.gov === "google-site-gov"
-                  ? "bg-blue-500"
                   : "bg-amber-500"
               }`}
             />
-            {data.sources.gov === "cors-proxy"
-              ? ".gov.bd লাইভ"
-              : data.sources.gov === "google-site-gov"
-              ? ".gov.bd (Google)"
-              : "সরকারি পরামর্শ"}
+            {data.sources.gov === "cors-proxy" ? ".gov.bd লাইভ" : "সরকারি পরামর্শ"}
           </span>
           <span className="flex items-center gap-1">
             <span

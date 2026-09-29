@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "news.google.com",
+        hostname: "www.prothomalo.com",
       },
     ],
     unoptimized: true,

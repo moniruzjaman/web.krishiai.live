@@ -12,6 +12,7 @@ interface NewsItem {
   title: string;
   source?: string;
   date?: string;
+  extractionTime?: string;
 }
 
 export default function NewsTicker() {
@@ -36,6 +37,7 @@ export default function NewsTicker() {
                 title: item.title,
                 source: item.source || src,
                 date: item.date || item.pubDate || item.publishedAt,
+                extractionTime: item.extractionTime,
               });
             }
           }
@@ -107,6 +109,11 @@ export default function NewsTicker() {
               {item.source && (
                 <span className="text-[8px] bg-white/15 text-white/70 px-1.5 py-0.5 rounded-full">
                   {item.source}
+                </span>
+              )}
+              {item.extractionTime && (
+                <span className="text-[8px] text-white/50">
+                  সংগ্রহ {formatDate(item.extractionTime)}
                 </span>
               )}
               <span className="text-white/30 mx-1">•</span>

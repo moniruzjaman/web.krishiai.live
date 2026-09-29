@@ -16,6 +16,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Newspaper HTML extractor tests
+        run: python3 scripts/test_bd_agri_news_extractor.py
       - run: npm run lint
         continue-on-error: true
       - run: npm run build

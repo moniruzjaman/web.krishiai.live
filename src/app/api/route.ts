@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
      endpoints: {
        "/api/weather": "আবহাওয়া তথ্য — Open-Meteo (hourly, daily, agri indices, alerts)",
        "/api/market": "বাজার মূল্য — DAM live + seasonal (25+ commodities, categories)",
-       "/api/news": "কৃষি সংবাদ — Google News RSS + .gov.bd CORS proxy + AI bulletin",
+       "/api/news": "কৃষি সংবাদ — BD newspaper HTML extractor + .gov.bd feeds + AI bulletin",
        "/api/chat": "AI চ্যাট — কৃষি পরামর্শদাতা (POST, messages required)",
      },
     features: {
@@ -57,11 +57,12 @@ export async function GET(request: NextRequest) {
         twentyFivePlusCommodities: true,
       },
       news: {
-        googleNewsRSS: true,
-        govBdCORSProxy: true,
+        newspaperHtmlExtractor: true,
+        govBdPublisherFeeds: true,
         govBdCuratedAdvisories: true,
         aiDailyBulletin: true,
         dateFreshnessFilter: true,
+        sourceAttribution: true,
         fourTabs: true,
       },
       chat: {

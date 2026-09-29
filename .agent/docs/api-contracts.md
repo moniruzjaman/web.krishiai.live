@@ -87,7 +87,7 @@ Response: 24+ commodities across 5 categories (শস্য, সবজি, ম�
 ## GET /api/news
 **Params**: none
 
-Response: `{ ok, date, season, bulletin, headlines[], englishHeadlines[], govHeadlines[], intlHeadlines[], sources }`. 30-min cache. AI-generated daily bulletin + .gov.bd RSS + Google News + FAO/IRRI/IFPRI.
+Response: `{ ok, date, season, bulletin, headlines[], englishHeadlines[], govHeadlines[], intlHeadlines[], sources, extractedAt, newspapers[] }`. 30-min cache. Bangladesh newspaper HTML extractor + .gov.bd publisher feeds + FAO/IRRI/IFPRI. Each headline includes `source`, `extractionTime`, and `credibility`.
 
 ---
 

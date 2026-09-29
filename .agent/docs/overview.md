@@ -27,7 +27,7 @@ User → Vercel (web.krishiai.live)
               ├── /api/diagnose   → CF AI + Gemini + OpenRouter + Groq + Offline CABI
               ├── /api/weather    → Open-Meteo (free, no key)
               ├── /api/market     → DAM live + seasonal fallback
-              ├── /api/news       → Google News + .gov.bd RSS + FAO/IRRI
+               ├── /api/news       → BD newspaper HTML + .gov.bd feeds + FAO/IRRI
               ├── /api/crop-database → CF Workers AI + static fallback
               ├── /api/crop-prices   → cropPriceService simulation
               ├── /api/smart-decision → weather + crop calendar + prices

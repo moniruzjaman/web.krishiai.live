@@ -41,7 +41,7 @@ src/
 │       ├── diagnose/route.ts   # CABI diagnosis (AI client + offline CABI engine + emergency regex)
 │       ├── weather/route.ts    # Open-Meteo proxy with agri indices
 │       ├── market/route.ts     # DAM live + seasonal fallback prices
-│       ├── news/route.ts       # .gov.bd RSS + Google News + AI bulletin
+│       ├── news/route.ts       # BD newspaper HTML + .gov.bd feeds + AI bulletin
 │       ├── alerts/route.ts     # Crop alerts from Supabase
 │       ├── crop-database/route.ts # AI-generated crop info (AI client + static fallback)
 │       ├── crop-prices/route.ts   # Simulated crop prices (DAM/DAE reference)
@@ -187,7 +187,7 @@ Config files:
 | `/api/diagnose` | API | POST | no-store | AI client + CABI offline + emergency regex |
 | `/api/weather` | API | GET | 600s | Open-Meteo + seasonal fallback |
 | `/api/market` | API | GET | 3600s | DAM live + seasonal fallback |
-| `/api/news` | API | GET | 1800s | .gov.bd RSS + Google News + AI bulletin |
+| `/api/news` | API | GET | 1800s | BD newspaper HTML + .gov.bd feeds + AI bulletin |
 | `/api/alerts` | API | GET | 300s | Supabase crop_alerts |
 | `/api/crop-database` | API | GET | 600s | AI client + static fallback |
 | `/api/crop-prices` | API | GET | 300s | Simulated from DAM/DAE baselines |

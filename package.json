@@ -6,7 +6,8 @@
     "dev": "next dev --webpack -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:news": "python3 scripts/test_bd_agri_news_extractor.py"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
