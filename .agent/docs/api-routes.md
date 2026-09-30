@@ -10,7 +10,7 @@ All routes are under `src/app/api/` and use Next.js App Router.
 | `/api/diagnose` | POST | CABI Plantwise crop diagnosis | CF Workers AI → Gemini → OpenRouter → Groq | Offline CABI Engine |
 | `/api/weather` | GET | Weather + agri indices | Open-Meteo (no key) | Seasonal mock data |
 | `/api/market` | GET | Crop market prices | DAM live API | Seasonal prices + daily jitter |
-| `/api/news` | GET | Agricultural news | Google News + .gov.bd RSS | Curated seasonal |
+| `/api/news` | GET | Agricultural news | BD newspaper HTML + .gov.bd feeds | Curated seasonal |
 | `/api/crop-database` | GET | Crop info by category | CF Workers AI | Static crop database |
 | `/api/crop-prices` | GET | Price simulation | cropPriceService | N/A |
 | `/api/smart-decision` | GET | Crop decision support | Weather + calendar + prices | N/A |

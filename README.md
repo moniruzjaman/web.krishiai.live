@@ -67,7 +67,7 @@ src/
 │   │   ├── copilot/          # AI কোপাইলট API
 │   │   ├── weather/          # Open-Meteo আবহাওয়া API
 │   │   ├── market/           # বাজার মূল্য API
-│   │   ├── news/             # কৃষি সংবাদ API (হেডলাইন, বুলেটিন, gov, intl)
+│   │   ├── news/             # কৃষি সংবাদ API (BD পত্রিকা HTML, বুলেটিন, gov, intl)
 │   │   ├── soil-analysis/    # AEZ মাটি বিশ্লেষণ API
 │   │   ├── crop-database/    # ফসল তথ্য API
 │   │   ├── crop-prices/      # ফসল মূল্য API

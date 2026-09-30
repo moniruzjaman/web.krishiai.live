@@ -1,17 +1,17 @@
 /**
- * /api/news — KrishiAI News API (Enhanced with .gov.bd support)
+ * /api/news — KrishiAI News API
  *
- * Multi-source strategy for .gov.bd news:
- * 1. CORS proxy (allorigins.win, corsproxy.io) → direct access to .gov.bd RSS feeds
- * 2. Google News RSS with `site:gov.bd` queries → government-sourced articles
- * 3. Curated seasonal advisories from DAE/BRRI/BARI/BADC as fallback
- *
- * Also generates AI daily bulletin using Supabase + AI Provider Fallback.
- * Falls back to seasonal calendar entries if all sources fail.
+ * Daily agriculture headlines are extracted from renowned Bangladesh
+ * newspaper HTML/XML pages (no third-party news APIs). Government
+ * .gov.bd publisher feeds and seasonal advisories remain as extra tabs.
  */
 
 import { NextRequest } from "next/server";
 import { corsHeaders, corsNextResponse } from "@/lib/cors";
+import {
+  collectNewspaperNews,
+  type NewspaperNewsItem,
+} from "@/lib/bdNewspaperNews";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface NewsItem {
@@ -22,6 +22,11 @@ interface NewsItem {
   color: string;
   icon?: string;
   isGov?: boolean;
+  extractionTime?: string;
+  extractionMethod?: string;
+  sourceUrl?: string;
+  sourceEn?: string;
+  credibility?: string;
 }
 
 interface DailyBulletin {
@@ -43,11 +48,19 @@ interface NewsResponse {
   govHeadlines: NewsItem[];
   intlHeadlines: NewsItem[];
   sources: {
-    headlines: "google-news-rss" | "fallback";
+    headlines: "newspaper-html" | "fallback";
     bulletin: "ai-generated" | "unavailable";
-    gov: "cors-proxy" | "google-site-gov" | "curated" | "unavailable";
+    gov: "cors-proxy" | "curated" | "unavailable";
     intl: "rss-live" | "unavailable";
   };
+  extractedAt?: string;
+  newspapers?: Array<{
+    id: string;
+    name: string;
+    home: string;
+    extracted: number;
+    ok: boolean;
+  }>;
 }
 
 // ── In-memory cache (30 min, auto-invalidates on day change) ──────────────────
@@ -57,7 +70,7 @@ let cachedDate = "";
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 // ── Date freshness filter ────────────────────────────────────────────────────
-const MAX_NEWS_AGE_DAYS = 3;
+const MAX_NEWS_AGE_DAYS = 7;
 
 function isRecent(pubDate: string): boolean {
   try {
@@ -166,13 +179,12 @@ const AGRI_KW_BN = [
 
 const AGRI_KW_EN = [
   "agri", "crop", "rice", "wheat", "farmer", "harvest", "fertilizer", "seed",
-  "food", "grain", "agriculture", "paddy", "irrigation", "pest", "drought",
-  "flood", "cultivation", "livestock", "fisheries", "crop-yield", "Bangladesh",
-  "monsoon", "boro", "aman", "aus", "jute", "potato", "onion", "vegetable",
-  "subsidy", "extension", "seedling", "transplant", "pesticide", "blight",
-  "fao", "food and agriculture", "ifpri", "world bank", "climate", "dairy",
-  "poultry", "aquaculture", "nutrition", "food security", "organic",
-  "sustainable", "biodiversity", "soil", "water", "market price",
+  "grain", "agriculture", "paddy", "irrigation", "pest", "drought",
+  "flood", "cultivation", "livestock", "fisheries", "crop-yield",
+  "monsoon", "boro rice", "aman paddy", "jute", "potato", "onion", "vegetable",
+  "seedling", "transplant", "pesticide", "blight",
+  "fao", "food and agriculture", "ifpri", "world bank", "dairy",
+  "poultry", "aquaculture", "food security",
 ];
 
 const isAgri = (t: string): boolean => {
@@ -321,6 +333,7 @@ async function fetchGovRSSFeeds(): Promise<NewsItem[]> {
         if (!xml) return [];
 
         const parsed = parseRSS(xml);
+        const extracted = new Date().toISOString();
         return parsed
           .filter((it) => isAgri(it.title) && isRecent(it.pubDate))
           .map((it) => ({
@@ -331,6 +344,10 @@ async function fetchGovRSSFeeds(): Promise<NewsItem[]> {
             color: feed.color,
             icon: feed.icon,
             isGov: true,
+            extractionTime: extracted,
+            extractionMethod: "xml-feed",
+            sourceUrl: feed.url,
+            credibility: "high",
           }));
       } catch {
         return [];
@@ -401,6 +418,7 @@ async function fetchIntlRSSFeeds(): Promise<NewsItem[]> {
         const xml = await fetchViaCORSProxy(feed.url, 10000);
         if (!xml) return [];
         const parsed = parseRSS(xml);
+        const extracted = new Date().toISOString();
         return parsed
           .filter((it) => isAgri(it.title) && isRecent(it.pubDate))
           .slice(0, 5)
@@ -412,6 +430,10 @@ async function fetchIntlRSSFeeds(): Promise<NewsItem[]> {
             color: feed.color,
             icon: feed.icon,
             isGov: false,
+            extractionTime: extracted,
+            extractionMethod: "xml-feed",
+            sourceUrl: feed.url,
+            credibility: "high",
           }));
       } catch {
         return [];
@@ -426,61 +448,18 @@ async function fetchIntlRSSFeeds(): Promise<NewsItem[]> {
   return allItems;
 }
 
-// ── Fetch Google News RSS with site:gov.bd queries ───────────────────────────
-async function fetchGoogleGovNews(): Promise<NewsItem[]> {
-  // Multiple queries to maximize coverage of .gov.bd content
-  const queries = [
-    "site:gov.bd কৃষি",
-    "site:gov.bd ধান ফসল কৃষক",
-    "site:gov.bd agriculture crop",
-    "site:gov.bd কৃষি সম্প্রসারণ",
-    "site:gov.bd সার বীজ সেচ",
-  ];
-
-  const allItems: NewsItem[] = [];
-  const seenTitles = new Set<string>();
-
-  const results = await Promise.allSettled(
-    queries.map(async (q) => {
-      try {
-        return await fetchGoogleNewsRSS(q, q.includes("agriculture") ? "en" : "bn");
-      } catch {
-        return [];
-      }
-    })
-  );
-
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      for (const item of result.value) {
-        const key = item.title.slice(0, 40).toLowerCase();
-        if (!seenTitles.has(key)) {
-          seenTitles.add(key);
-          // Mark as gov source if link contains .gov.bd
-          const isGovLink = item.link.includes(".gov.bd") ||
-            item.source.toLowerCase().includes("gov") ||
-            item.source.includes("DAE") ||
-            item.source.includes("BRRI") ||
-            item.source.includes("BARI") ||
-            item.source.includes("BADC") ||
-            item.source.includes("BSS");
-
-          if (isGovLink || item.source.includes("BSS")) {
-            allItems.push({
-              ...item,
-              isGov: true,
-              icon: "🏛️",
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return allItems;
+// ── Curated .gov.bd seasonal advisories (always available) ───────────────────
+function stampFallback(item: NewsItem): NewsItem {
+  const extracted = new Date().toISOString();
+  return {
+    ...item,
+    extractionTime: extracted,
+    extractionMethod: "curated",
+    credibility: "seasonal-advisory",
+    sourceUrl: item.link,
+  };
 }
 
-// ── Curated .gov.bd seasonal advisories (always available) ───────────────────
 function buildGovCurated(ctx: ReturnType<typeof bdAgriContext>): NewsItem[] {
   const { season, activeCrops, urgentTasks, riskAlerts, m } = ctx;
   const today = new Date().toISOString().slice(0, 10);
@@ -687,189 +666,9 @@ function buildGovCurated(ctx: ReturnType<typeof bdAgriContext>): NewsItem[] {
     ],
   };
 
-  return [...items, ...(monthlyGov[m] || [])];
+  return [...items, ...(monthlyGov[m] || [])].map(stampFallback);
 }
 
-// ── Fetch Google News RSS ────────────────────────────────────────────────────
-async function fetchGoogleNewsRSS(
-  query: string,
-  lang: "bn" | "en"
-): Promise<NewsItem[]> {
-  const gl = "BD";
-  const ceid = lang === "bn" ? "BD:bn" : "BD:en";
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${lang}&gl=${gl}&ceid=${ceid}`;
-
-  try {
-    const r = await fetchWithTimeout(url, 12000);
-    if (!r.ok) return [];
-    const xml = await r.text();
-    const parsed = parseRSS(xml);
-
-    // Google News titles: "Source: Title" format — split on last " - "
-    return parsed
-      .filter((it) => isAgri(it.title))
-      .slice(0, 15)
-      .map((it) => {
-        // Try to extract source from " - " separator (Google News format)
-        const lastDash = it.title.lastIndexOf(" - ");
-        let title = it.title;
-        let source = it.source || (lang === "bn" ? "Google News" : "Google News");
-
-        if (lastDash > 0) {
-          const possibleSource = it.title.substring(lastDash + 3).trim();
-          const possibleTitle = it.title.substring(0, lastDash).trim();
-          // Only split if it looks like a source name (short, no long sentences)
-          if (possibleSource.length < 50 && possibleTitle.length > 10) {
-            title = possibleTitle;
-            source = possibleSource;
-          }
-        }
-
-        // Normalize source names — map domain names to proper publication names
-        const sourceNameMap: Record<string, string> = {
-          "bangla.daily-sun.com": "Daily Sun",
-          "daily-sun.com": "Daily Sun",
-          "Daily Sun": "Daily Sun",
-          "prothomalo.com": "প্রথম আলো",
-          "প্রথম আলো": "প্রথম আলো",
-          "Prothom Alo": "প্রথম আলো",
-          "thedailystar.net": "The Daily Star",
-          "The Daily Star": "The Daily Star",
-          "Daily Star": "The Daily Star",
-          "bdnews24.com": "bdnews24",
-          "kalerkantho.com": "Kaler Kantho",
-          "Kaler Kantho": "Kaler Kantho",
-          "ittefaq.com.bd": "The Ittefaq",
-          "Ittefaq": "The Ittefaq",
-          "samakal.com": "সমকাল",
-          "SAMAKAL": "সমকাল",
-          "সমকাল": "সমকাল",
-          "Samakal": "সমকাল",
-          "jugantor.com": "যুগান্তর",
-          "Jugantor": "যুগান্তর",
-          "bangladesh-pratidin.com": "বাংলাদেশ প্রতিদিন",
-          "Bangladesh Pratidin": "বাংলাদেশ প্রতিদিন",
-          "tbsnews.net": "The Business Standard",
-          "The Business Standard": "The Business Standard",
-          "dhakatribune.com": "Dhaka Tribune",
-          "Dhaka Tribune": "Dhaka Tribune",
-          "newagebd.net": "New Age",
-          "New Age": "New Age",
-          "Jagonews24.com": "Jagoranews24",
-          "banglatribune.com": "Bangla Tribune",
-          "Bangla Tribune": "Bangla Tribune",
-          "bonikbarta.net": "বণিক বার্তা",
-          "Daily Bonik Barta": "বণিক বার্তা",
-          "Amar Desh": "আমার দেশ",
-          "Amar Sangbad": "আমার সংবাদ",
-          "Daily Naya Diganta": "নয়া দিগন্ত",
-          "Shomoyer Alo": "সময়ের আলো",
-          "সময় নিউজ": "সময় নিউজ",
-          "BBC": "BBC বাংলা",
-          "Bangladesh Sangbad Sangstha (BSS)": "BSS",
-          "BSS": "BSS",
-          "International Rice Research Institute (IRRI)": "IRRI",
-          "International Labour Organization": "ILO",
-          "Pulitzer Center": "Pulitzer Center",
-          "Nature": "Nature",
-          "CGIAR": "CGIAR",
-          "Mongabay": "Mongabay",
-          "The World Economic Forum": "WEF",
-          "DAE": "DAE",
-          "BRRI": "BRRI",
-          "BARI": "BARI",
-          "BADC": "BADC",
-          "FAO": "FAO",
-          "Food and Agriculture Organization": "FAO",
-          "IFPRI": "IFPRI",
-          "IRRI": "IRRI",
-          "World Bank": "World Bank",
-          "World Bank Group": "World Bank",
-          "Inter Press Service": "IPS",
-          "Reuters": "Reuters",
-          "Associated Press": "AP",
-          "Bloomberg": "Bloomberg",
-          "The Guardian": "The Guardian",
-          "SciDev.Net": "SciDev.Net",
-          "financialexpress.com.bd": "Financial Express",
-          "The Financial Express": "Financial Express",
-          "dailymessenger.net": "Daily Messenger",
-          "Daily Observer": "Daily Observer",
-          "observerbd.com": "Daily Observer",
-          "theindependentbd.com": "The Independent",
-          "en.prothomalo.com": "প্রথম আলো (EN)",
-          "en.samakal.com": "সমকাল (EN)",
-        };
-
-        const normalizedSource = sourceNameMap[source] || source;
-
-        const sourceColors: Record<string, string> = {
-          "Daily Sun": "#b45309",
-          "প্রথম আলো": "#1b8a3e",
-          "The Daily Star": "#1d4ed8",
-          "bdnews24": "#dc2626",
-          "Kaler Kantho": "#b45309",
-          "The Ittefaq": "#6d28d9",
-          "সমকাল": "#0284c7",
-          "যুগান্তর": "#065f46",
-          "বাংলাদেশ প্রতিদিন": "#9d174d",
-          "The Business Standard": "#1d4ed8",
-          "Dhaka Tribune": "#6d28d9",
-          "New Age": "#dc2626",
-          "BBC বাংলা": "#7c3aed",
-          "BSS": "#065f46",
-          "আমার দেশ": "#b45309",
-          "বণিক বার্তা": "#0284c7",
-          "Jagoranews24": "#dc2626",
-          "Bangla Tribune": "#6d28d9",
-          "IRRI": "#1b8a3e",
-          "Nature": "#1d4ed8",
-          "CGIAR": "#1b8a3e",
-          "DAE": "#065f46",
-          "BRRI": "#1d4ed8",
-          "BARI": "#b45309",
-          "BADC": "#0284c7",
-          "FAO": "#1e40af",
-          "IFPRI": "#6d28d9",
-          "World Bank": "#0e7490",
-          "Reuters": "#dc2626",
-          "AP": "#1d4ed8",
-          "Bloomberg": "#6d28d9",
-          "The Guardian": "#7c3aed",
-          "SciDev.Net": "#15803d",
-          "Financial Express": "#b45309",
-          "Daily Messenger": "#0284c7",
-          "Daily Observer": "#9d174d",
-          "The Independent": "#6d28d9",
-          "প্রথম আলো (EN)": "#1b8a3e",
-          "সমকাল (EN)": "#0284c7",
-          "IPS": "#1d4ed8",
-        };
-
-        const color = sourceColors[normalizedSource] || (lang === "bn" ? "#1b8a3e" : "#1d4ed8");
-
-        // Check if this is a .gov.bd sourced article
-        const isGov = it.link.includes(".gov.bd") ||
-          normalizedSource === "DAE" ||
-          normalizedSource === "BRRI" ||
-          normalizedSource === "BARI" ||
-          normalizedSource === "BADC" ||
-          normalizedSource === "BSS";
-
-        return {
-          title,
-          link: it.link,
-          pubDate: it.pubDate,
-          source: normalizedSource,
-          color,
-          icon: isGov ? "🏛️" : "📰",
-          isGov,
-        };
-      });
-  } catch {
-    return [];
-  }
-}
 
 // ── Seasonal Fallback ────────────────────────────────────────────────────────
 function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[] {
@@ -1026,7 +825,7 @@ function buildSeasonalFallback(ctx: ReturnType<typeof bdAgriContext>): NewsItem[
     ],
   };
 
-  return [...base, ...(monthlyExtras[m] || [])];
+  return [...base, ...(monthlyExtras[m] || [])].map(stampFallback);
 }
 
 // ── AI Daily Bulletin using Quota-Aware AI Client ──────────────
@@ -1170,58 +969,37 @@ export async function GET(request: NextRequest) {
 
   const ctx = bdAgriContext();
 
-  // ── Fetch ALL sources in parallel ─────────────────────────────────────
-  const [bnAgri, bnFertilizer, bnRice, bnWeather, bnAll, enAgri, enClimate, govRSS, govGoogle, intlRSS] = await Promise.all([
-    fetchGoogleNewsRSS("কৃষি ফসল ধান বাংলাদেশ", "bn"),
-    fetchGoogleNewsRSS("কৃষি সার বীজ সেচ", "bn"),
-    fetchGoogleNewsRSS("বোরো আমন আউশ ধান", "bn"),
-    fetchGoogleNewsRSS("আবহাওয়া কৃষি বাংলাদেশ", "bn"),
-    fetchGoogleNewsRSS("বাংলাদেশ কৃষি সংবাদ সম্প্রসারণ", "bn"),
-    fetchGoogleNewsRSS("agriculture Bangladesh crop rice", "en"),
-    fetchGoogleNewsRSS("agriculture climate food security farming", "en"),
-    fetchGovRSSFeeds(),          // CORS proxy → .gov.bd RSS
-    fetchGoogleGovNews(),        // Google News site:gov.bd queries
-    fetchIntlRSSFeeds(),         // International orgs (FAO, IFPRI, IRRI, etc.)
+  const toNewsItem = (item: NewspaperNewsItem): NewsItem => ({
+    title: item.title,
+    link: item.link,
+    pubDate: item.pubDate,
+    source: item.source,
+    color: item.color,
+    icon: item.icon,
+    isGov: item.isGov,
+    extractionTime: item.extractionTime,
+    extractionMethod: item.extractionMethod,
+    sourceUrl: item.sourceUrl,
+    sourceEn: item.sourceEn,
+    credibility: item.credibility,
+  });
+
+  const [newspaperBundle, govRSS, intlRSS] = await Promise.all([
+    collectNewspaperNews(),
+    fetchGovRSSFeeds(),
+    fetchIntlRSSFeeds(),
   ]);
 
-  // ── Combine and deduplicate Bengali headlines ─────────────────────────
-  const seenTitles = new Set<string>();
-  const bengaliHeadlines: NewsItem[] = [];
-  for (const item of [...bnAgri, ...bnFertilizer, ...bnRice, ...bnWeather, ...bnAll]) {
-    const key = item.title.slice(0, 40).toLowerCase();
-    if (!seenTitles.has(key)) {
-      seenTitles.add(key);
-      // Filter for recency
-      if (isRecent(item.pubDate)) {
-        bengaliHeadlines.push(item);
-      }
-    }
-  }
-  bengaliHeadlines.sort(
-    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
-  );
+  const bengaliHeadlines: NewsItem[] = newspaperBundle.bengali
+    .filter((item) => isRecent(item.pubDate))
+    .map(toNewsItem);
+  const englishHeadlines: NewsItem[] = newspaperBundle.english
+    .filter((item) => isRecent(item.pubDate))
+    .map(toNewsItem);
 
-  // ── English headlines (deduplicated) ──────────────────────────────────
-  const seenEnTitles = new Set<string>();
-  const englishHeadlines: NewsItem[] = [];
-  for (const item of [...enAgri, ...enClimate]) {
-    const key = item.title.slice(0, 40).toLowerCase();
-    if (!seenEnTitles.has(key)) {
-      seenEnTitles.add(key);
-      if (isRecent(item.pubDate)) {
-        englishHeadlines.push(item);
-      }
-    }
-  }
-  englishHeadlines.sort(
-    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
-  );
-
-  // ── Government headlines (merge from CORS proxy + Google site:gov.bd + curated) ──
   const govSeenTitles = new Set<string>();
   const govHeadlines: NewsItem[] = [];
 
-  // 1. Live .gov.bd RSS via CORS proxy (highest priority — real data from portals)
   for (const item of govRSS) {
     const key = item.title.slice(0, 40).toLowerCase();
     if (!govSeenTitles.has(key)) {
@@ -1232,18 +1010,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 2. Google News site:gov.bd results
-  for (const item of govGoogle) {
-    const key = item.title.slice(0, 40).toLowerCase();
-    if (!govSeenTitles.has(key)) {
-      govSeenTitles.add(key);
-      if (isRecent(item.pubDate)) {
-        govHeadlines.push(item);
-      }
-    }
-  }
-
-  // 3. Curated seasonal advisories (always present as fallback, ensures .gov.bd visible)
   const curatedGov = buildGovCurated(ctx);
   for (const item of curatedGov) {
     const key = item.title.slice(0, 40).toLowerCase();
@@ -1253,57 +1019,44 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Sort: real/live items first (by date), then curated
   govHeadlines.sort((a, b) => {
-    const aDate = new Date(a.pubDate).getTime();
-    const bDate = new Date(b.pubDate).getTime();
-    // If both are real or both are curated, sort by date
-    return bDate - aDate;
+    return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
   });
 
-  // Determine government source status
-  const govSource: "cors-proxy" | "google-site-gov" | "curated" | "unavailable" =
+  const govSource: "cors-proxy" | "curated" | "unavailable" =
     govRSS.length > 0 ? "cors-proxy" :
-    govGoogle.length > 0 ? "google-site-gov" :
     curatedGov.length > 0 ? "curated" : "unavailable";
 
-  // Determine source status for regular headlines
-  const headlinesSource: "google-news-rss" | "fallback" =
-    bengaliHeadlines.length > 0 ? "google-news-rss" : "fallback";
+  const headlinesSource: "newspaper-html" | "fallback" =
+    bengaliHeadlines.length > 0 || englishHeadlines.length > 0
+      ? "newspaper-html"
+      : "fallback";
 
-  // Fallback if no Bengali headlines
   const finalHeadlines =
     bengaliHeadlines.length > 0
       ? bengaliHeadlines.slice(0, 20)
-      : buildSeasonalFallback(ctx);
+      : englishHeadlines.length > 0
+        ? englishHeadlines.slice(0, 20)
+        : buildSeasonalFallback(ctx);
 
-  // ── Deduplicate intl RSS with english headlines ───────────────────────
-  const seenIntlTitles = new Set<string>();
-  for (const item of intlRSS) {
-    const key = item.title.slice(0, 40).toLowerCase();
-    if (!seenIntlTitles.has(key)) {
-      seenIntlTitles.add(key);
-      if (isRecent(item.pubDate)) {
-        // Add intl news to english headlines if not already present
-        const exists = englishHeadlines.some((h) => h.title.slice(0, 40).toLowerCase() === key);
-        if (!exists) {
-          englishHeadlines.push(item);
-        }
-      }
-    }
-  }
   englishHeadlines.sort(
     (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
 
-  // ── AI Daily Bulletin ─────────────────────────────────────────────────
+  const intlSeen = new Set<string>();
+  const intlHeadlines: NewsItem[] = [];
+  for (const item of intlRSS) {
+    const key = item.title.slice(0, 40).toLowerCase();
+    if (intlSeen.has(key) || !isRecent(item.pubDate)) continue;
+    intlSeen.add(key);
+    intlHeadlines.push(item);
+  }
+  intlHeadlines.sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
+
   const allHeadlines = [...finalHeadlines, ...englishHeadlines.slice(0, 5), ...govHeadlines.slice(0, 3)];
   const bulletin = await generateDailyBulletin(ctx, allHeadlines);
-
-  // Separate intl from english for dedicated display
-  const intlHeadlines = englishHeadlines.filter((h) =>
-    ["FAO", "IFPRI", "IRRI", "World Bank", "CGIAR", "IPS", "SciDev.Net"].includes(h.source)
-  );
   const intlSource: "rss-live" | "unavailable" = intlRSS.length > 0 ? "rss-live" : "unavailable";
 
   const response: NewsResponse = {
@@ -1321,6 +1074,14 @@ export async function GET(request: NextRequest) {
       gov: govSource,
       intl: intlSource,
     },
+    extractedAt: newspaperBundle.extractedAt,
+    newspapers: newspaperBundle.sources.map((s) => ({
+      id: s.id,
+      name: s.name,
+      home: s.home,
+      extracted: s.extracted,
+      ok: s.ok,
+    })),
   };
 
   // Cache the response

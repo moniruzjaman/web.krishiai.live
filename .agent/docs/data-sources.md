@@ -8,9 +8,9 @@
 | Nominatim | `nominatim.openstreetmap.org/reverse` | LocationContext | Dhaka (23.685, 90.356) |
 | OpenStreetMap | `tile.openstreetmap.org` | MapWidget, InteractiveMap | None (CDN) |
 | Esri Satellite | `server.arcgisonline.com/ArcGIS/rest/services` | InteractiveMap satellite layer | OSM street layer |
-| Google News RSS | `news.google.com/rss/search` | `/api/news` | Curated seasonal advisories |
+| BD newspapers (HTML/XML) | Prothom Alo, Daily Star, TBS, FE, bdnews24 | `/api/news` | Seasonal advisories |
 | DAM Live | `market.dam.gov.bd/api/commodity-price` | `/api/market` | DAM reference + seasonal simulation |
-| .gov.bd RSS | DAE/BRRI/BARI/BADC/MoA/BMD feeds | `/api/news` | Google News site:gov.bd, then curated |
+| .gov.bd RSS | DAE/BRRI/BARI/BADC/MoA/BMD feeds | `/api/news` | Curated seasonal advisories |
 | FAO/IRRI/IFPRI RSS | Various international feeds | `/api/news` intlHeadlines | Curated seasonal |
 | CORS Proxies | allorigins.win, corsproxy.io | `/api/news`, `/api/market` | Direct fetch |
 

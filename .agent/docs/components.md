@@ -31,7 +31,7 @@
 
 ### NewsWidget.tsx
 - 4 tabs: Headlines, English, Gov, International
-- Sources: Google News RSS, .gov.bd RSS, FAO/IRRI
+- Sources: BD newspaper HTML (Prothom Alo, Daily Star, TBS, FE, bdnews24), .gov.bd feeds, FAO/IRRI
 
 ### AIChatWidget.tsx
 - Inline chat widget on home page
