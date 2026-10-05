@@ -1,20 +1,14 @@
-import type { CropCalendarEntry, ActiveCrop, WeatherData } from '@/lib/kwi/types';
+import type { CropCalendarEntry, ActiveCrop, WeatherData, GrowthStageId } from '@/lib/kwi/types';
 import { getCropConfig } from './crop-configs';
 import { computeRiskDashboard } from './risk-engine';
 
-/**
- * Calendar Engine
- * Generates a dynamic crop calendar that updates daily based on
- * crop configuration, sowing date, and weather conditions.
- */
-
-function daysBetween(start: string, end: string): number {
+export function daysBetween(start: string, end: string): number {
   const s = new Date(start);
   const e = new Date(end);
   return Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getGrowthStage(cropId: string, dayOverall: number): { stageId: string; dayInStage: number } {
+export function getGrowthStage(cropId: string, dayOverall: number): { stageId: GrowthStageId; dayInStage: number } {
   const config = getCropConfig(cropId);
   let accumulated = 0;
   for (const stage of config.growthStages) {

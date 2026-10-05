@@ -1,10 +1,10 @@
 /**
  * /api/diagnose — CABI Plantwise Diagnosis API (v2 — Offline-First)
  *
- * Architecture: OFFLINE-FIRST + AI FALLBACK
+ * Architecture: OFFLINE-FIRST + HYBRID AI FALLBACK
  *   Step 1: Run offline CABI diagnostic engine (instant, no network)
  *   Step 2: If confidence >= 70% → return offline result immediately
- *   Step 3: If confidence < 70% → try ONE AI provider with 8s timeout
+ *   Step 3: If confidence < 70% → hybrid consensus (Gemini + OpenRouter, Groq tiebreak)
  *   Step 4: Return combined result with confidence level
  *
  * Total time: 0-8 seconds (well within Vercel's 10s hobby limit)
@@ -18,11 +18,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { diagnoseOffline } from "@/lib/cabi/diagnosticEngine";
-import { saveDiagnosis, saveDiagnosisFeedback, hasTurso } from "@/lib/turso";
+import { saveDiagnosis, hasTurso } from "@/lib/turso";
 import {
-  FRAC_GROUPS, IRAC_GROUPS, PLANTWISE_RED_LIST,
-  getFRACOptionsForDisease, getIRACOptionsForPest, isRedListed
+  FRAC_GROUPS,
+  getFRACOptionsForDisease, getIRACOptionsForPest
 } from "@/lib/cabi/resistanceDB";
+import { runHybridAnalysis } from "@/lib/hybrid-analysis";
 
 // ─── Vercel Function Config ──────────────────────────────────────────────────
 export const maxDuration = 10; // 10 seconds (hobby plan limit)
@@ -98,16 +99,6 @@ function stripStructuredJson(text: string) {
   const e = text.indexOf(endMarker);
   if (s === -1 || e === -1) return text;
   return text.slice(0, s).trim() + text.slice(e + endMarker.length).trim();
-}
-
-function extractSections(text: string) {
-  let bangla = "", english = "";
-  const bs = text.indexOf("---BANGLA_SECTION---"), be = text.indexOf("---END_BANGLA---");
-  const es = text.indexOf("---ENGLISH_SECTION---"), ee = text.indexOf("---END_ENGLISH---");
-  if (bs !== -1 && be !== -1) bangla = text.slice(bs + "---BANGLA_SECTION---".length, be).trim();
-  if (es !== -1 && ee !== -1) english = text.slice(es + "---ENGLISH_SECTION---".length, ee).trim();
-  if (!bangla && !english) bangla = text;
-  return { bangla, english };
 }
 
 function compressImage(dataUrl: string, maxChars: number = MAX_IMAGE_CHARS): string {
@@ -333,82 +324,6 @@ function offlineToStructured(offline: any, crop: string, symptoms: string[], inf
   };
 }
 
-// ─── AI Provider: Gemini 2.5 Flash ──────────────────────────────────────────
-async function tryGemini(messages: any[], withVision: boolean): Promise<{ text: string; provider: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-
-  const src = withVision ? messages : messages.map(m => ({
-    ...m,
-    content: Array.isArray(m.content) ? m.content.filter((b: any) => b.type !== "image") : m.content,
-  }));
-
-  const lastMsg = src[src.length - 1];
-  const content = Array.isArray(lastMsg.content) ? lastMsg.content : [{ type: "text", text: lastMsg.content || "" }];
-
-  const parts: any[] = [];
-  for (const block of content) {
-    if (block.type === "image" && block.source?.type === "base64" && withVision) {
-      parts.push({ inlineData: { mimeType: block.source.media_type || "image/jpeg", data: block.source.data } });
-    } else if (block.type === "text") {
-      parts.push({ text: block.text });
-    }
-  }
-
-  const body = {
-    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{ role: "user", parts }],
-    generationConfig: { maxOutputTokens: 2500, temperature: 0.3 },
-  };
-
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent", {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `Gemini HTTP ${res.status}`);
-  const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("\n") || "No response.";
-  return { text, provider: withVision ? "Gemini 2.5 Flash 👁️" : "Gemini 2.5 Flash (text)" };
-}
-
-// ─── AI Provider: OpenRouter ────────────────────────────────────────────────
-async function tryOpenRouter(messages: any[], modelId: string): Promise<{ text: string; provider: string }> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
-
-  const openAIMsgs = messages.map(m => {
-    if (typeof m.content === "string") return { role: m.role, content: m.content };
-    if (Array.isArray(m.content)) {
-      return {
-        role: m.role,
-        content: m.content.map((b: any) => {
-          if (b.type === "text") return { type: "text", text: b.text };
-          if (b.type === "image" && b.source?.type === "base64") {
-            return { type: "image_url", image_url: { url: `data:${b.source.media_type || "image/jpeg"};base64,${b.source.data}` } };
-          }
-          return null;
-        }).filter(Boolean),
-      };
-    }
-    return m;
-  });
-
-  const body = { model: modelId, max_tokens: 2500, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...openAIMsgs] };
-
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "HTTP-Referer": "https://krishiai.live", "X-Title": "KrishiAI CABI Diagnosis" },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data?.error?.message || `OpenRouter HTTP ${res.status}`);
-  const resolved = (data?.model || modelId).split("/").pop()?.replace(":free", "") || modelId;
-  return { text: data?.choices?.[0]?.message?.content || "No response.", provider: `OpenRouter / ${resolved}` };
-}
-
 // ─── Normalize request format ───────────────────────────────────────────────
 function normalizeToMessages(body: any): {
   messages: any[]; crop: string; district: string; infectedPart: string;
@@ -550,40 +465,31 @@ export async function POST(req: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 3: Low confidence — try ONE AI provider (6s timeout)
+    // STEP 3: Low confidence — hybrid consensus (Gemini + OpenRouter, Groq tiebreak)
     // ═══════════════════════════════════════════════════════════════════════
-    let aiResult: { text: string; provider: string } | null = null;
+    let aiResult: { text: string; provider: string; structured?: Record<string, unknown> | null } | null = null;
     let aiProvider = "";
     let aiError = "";
 
-    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
-      Promise.race([promise, new Promise<never>((_, rej) => setTimeout(() => rej(new Error('AI timeout')), ms))]);
-
-    // Try Gemini first (best for vision + reasoning)
-    if (process.env.GEMINI_API_KEY) {
+    if (process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY) {
       try {
-        aiResult = await withTimeout(tryGemini(messages, imageAttached), AI_TIMEOUT_MS);
-        aiProvider = aiResult.provider;
+        const hybrid = await runHybridAnalysis({
+          messages,
+          imageAttached,
+          systemPrompt: SYSTEM_PROMPT,
+          timeoutMs: AI_TIMEOUT_MS,
+        });
+        if (hybrid) {
+          aiResult = { text: hybrid.text, provider: hybrid.provider, structured: hybrid.structured };
+          aiProvider = hybrid.provider;
+        } else {
+          aiError = "Hybrid analysis returned no provider result";
+        }
       } catch (e: any) {
-        aiError = `Gemini: ${e?.message || 'failed'}`;
+        aiError = `Hybrid: ${e?.message || "failed"}`;
       }
     } else {
-      aiError = 'GEMINI_API_KEY not set';
-    }
-
-    // If Gemini failed, try OpenRouter
-    if (!aiResult && process.env.OPENROUTER_API_KEY) {
-      try {
-        const modelId = imageAttached ? "qwen/qwen2.5-vl-72b-instruct:free" : "qwen/qwen2.5-72b-instruct:free";
-        aiResult = await withTimeout(tryOpenRouter(messages, modelId), AI_TIMEOUT_MS);
-        aiProvider = aiResult.provider;
-      } catch (e: any) {
-        aiError += ` | OpenRouter: ${e?.message || 'failed'}`;
-      }
-    }
-
-    if (!aiResult && !process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
-      aiError = 'No AI API keys configured';
+      aiError = "No AI API keys configured";
     }
 
     const elapsed = Date.now() - startTime;
@@ -592,7 +498,7 @@ export async function POST(req: NextRequest) {
     // STEP 4: Merge AI result with offline result
     // ═══════════════════════════════════════════════════════════════════════
     if (aiResult) {
-      const aiStructured = extractStructuredJson(aiResult.text);
+      const aiStructured = aiResult.structured || extractStructuredJson(aiResult.text);
       // AI result takes priority for structured data, but we add MoA numbers if missing
       const finalStructured = aiStructured || structured;
 

@@ -291,9 +291,9 @@ export function RiskDashboardView({ risks, disease, pest, lang }: {
                         <span className="text-[10px] text-muted-foreground">{bn(dr.confidence)}%</span>
                       </div>
                     </div>
-                    {dr.preventiveActions.length > 0 && (
+                    {((lang === "bn" ? dr.disease.preventiveActionsBn : dr.preventiveActions) || []).length > 0 && (
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
-                        {dr.preventiveActions.slice(0, 3).map((a, i) => (
+                        {(lang === "bn" ? dr.disease.preventiveActionsBn : dr.preventiveActions).slice(0, 3).map((a, i) => (
                           <li key={i}>{a}</li>
                         ))}
                       </ul>
@@ -368,9 +368,9 @@ export function RiskDashboardView({ risks, disease, pest, lang }: {
                         <span className="text-[10px] text-muted-foreground">{bn(pr.confidence)}%</span>
                       </div>
                     </div>
-                    {pr.preventiveActions.length > 0 && (
+                    {((lang === "bn" ? pr.pest.preventiveActionsBn : pr.preventiveActions) || []).length > 0 && (
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
-                        {pr.preventiveActions.slice(0, 3).map((a, i) => (
+                        {(lang === "bn" ? pr.pest.preventiveActionsBn : pr.preventiveActions).slice(0, 3).map((a, i) => (
                           <li key={i}>{a}</li>
                         ))}
                       </ul>
