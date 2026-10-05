@@ -16,6 +16,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { useSpeechInput } from "@/hooks/use-speech-input";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Attachment {
@@ -109,6 +110,9 @@ export default function ChatPage() {
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { supported: voiceSupported, listening, toggle: toggleVoice } = useSpeechInput((text) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+  });
 
   // Load persisted messages on mount
   useEffect(() => {
@@ -502,12 +506,16 @@ export default function ChatPage() {
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </button>
-          {/* Voice input button (coming soon) — ported from krishi-ai reference */}
           <button
             type="button"
-            disabled
-            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed shrink-0 relative"
-            title="কন্ঠ ইনপুট (শীঘ্রই আসছে)"
+            onClick={toggleVoice}
+            disabled={!voiceSupported || isTyping}
+            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 relative transition-colors ${
+              listening
+                ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-green-50 hover:text-green-700"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+            title={voiceSupported ? (listening ? "শোনা বন্ধ করুন" : "কন্ঠ ইনপুট") : "এই ব্রাউজারে কন্ঠ ইনপুট নেই"}
           >
             <svg
               width="18"
@@ -524,9 +532,6 @@ export default function ChatPage() {
               <line x1="12" y1="19" x2="12" y2="23" />
               <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
-            <span className="absolute -top-1 -right-1 text-[6px] font-bold bg-amber-500 text-white px-1 py-0.5 rounded-full">
-              Soon
-            </span>
           </button>
         </form>
       </div>

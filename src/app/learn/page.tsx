@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LEARN_CATEGORIES, LEARN_MODULES, type LearnCategory } from "@/lib/cabiLearnData";
 
 // ── Quiz Questions ────────────────────────────────────────────────────────────
 const QUIZ_QUESTIONS = [
@@ -228,6 +229,11 @@ export default function LearnPage() {
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState<Record<number, boolean>>({});
   const [currentMonth] = useState(() => new Date().getMonth() + 1);
+  const [learnCategory, setLearnCategory] = useState<LearnCategory | "all">("all");
+  const [openModuleId, setOpenModuleId] = useState<string | null>(null);
+  const visibleModules = learnCategory === "all"
+    ? LEARN_MODULES
+    : LEARN_MODULES.filter((m) => m.category === learnCategory);
 
   // Seasonal tips for current month
   const currentTips = SEASONAL_TIPS[currentMonth] || SEASONAL_TIPS[1];
@@ -268,25 +274,83 @@ export default function LearnPage() {
       </div>
 
       <div className="px-4 pt-5 pb-24">
-        {/* ═══ VIDEO COMING SOON ═════════════════════════════════════════════════ */}
-        <div className="rounded-2xl overflow-hidden mb-5 border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 card-shadow">
-          <div className="p-5 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center mx-auto mb-3">
-              <span className="text-3xl">📹</span>
+        {/* ═══ CABI LEARN MODULES ════════════════════════════════════════════════ */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 rounded-full bg-green-600" />
+            <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              CABI শিক্ষা মডিউল
             </div>
-            <div className="text-[10px] font-bold text-green-600 dark:text-green-400 tracking-wider mb-2">
-              COMING SOON
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
-              ভিডিও শীঘ্রই আসছে
-            </h3>
-            <p className="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed mb-4 max-w-xs mx-auto">
-              AgriWisdom চ্যানেলের কৃষি শিক্ষামূলক ভিডিও টিউটোরিয়াল শীঘ্রই এখানে যুক্ত হবে। ফসল চাষ, রোগ নির্ণয়, মাটি বিজ্ঞান ও আরও অনেক বিষয়ে বিশেষজ্ঞদের ভিডিও।
-            </p>
-            <div className="flex items-center justify-center gap-2 text-[11px] text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-800/40 rounded-full px-4 py-2 mx-auto w-fit">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              AgriWisdom চ্যানেল থেকে ভিডিও আসছে
-            </div>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 ml-3">
+            বর্জন প্রোটোকল, IPM ও ফসলভিত্তিক ব্যবস্থাপনা — মাঠে ব্যবহারযোগ্য সংক্ষিপ্ত পাঠ।
+          </p>
+          <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setLearnCategory("all")}
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold border ${
+                learnCategory === "all"
+                  ? "bg-green-700 text-white border-green-700"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+              }`}
+            >
+              সব
+            </button>
+            {LEARN_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setLearnCategory(cat.id)}
+                className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold border ${
+                  learnCategory === cat.id
+                    ? "bg-green-700 text-white border-green-700"
+                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+                }`}
+              >
+                {cat.labelBn}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {visibleModules.map((mod) => {
+              const open = openModuleId === mod.id;
+              return (
+                <div
+                  key={mod.id}
+                  className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenModuleId(open ? null : mod.id)}
+                    className="w-full text-left px-4 py-3 flex items-start gap-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">
+                        {mod.titleBn}
+                      </div>
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        {mod.summaryBn}
+                      </div>
+                      <div className="text-[10px] text-green-700 dark:text-green-400 mt-1">
+                        {mod.durationMin} মিনিট · {mod.source}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-gray-400 mt-1">{open ? "▲" : "▼"}</span>
+                  </button>
+                  {open && (
+                    <ul className="px-4 pb-4 space-y-1.5">
+                      {mod.bodyBn.map((line, i) => (
+                        <li key={i} className="text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed flex gap-2">
+                          <span className="text-green-600 font-bold shrink-0">{i + 1}.</span>
+                          <span>{line}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 

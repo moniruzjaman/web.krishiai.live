@@ -13,6 +13,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
+import { useSpeechInput } from "@/hooks/use-speech-input";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -76,6 +77,9 @@ export default function AIChatWidget() {
   const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { supported: voiceSupported, listening, toggle: toggleVoice } = useSpeechInput((text) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+  });
 
   // Load persisted messages on mount
   useEffect(() => {
@@ -290,12 +294,16 @@ export default function AIChatWidget() {
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
             </button>
-            {/* Voice input button (coming soon) — ported from krishi-ai reference */}
             <button
               type="button"
-              disabled
-              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed shrink-0 relative"
-              title="কন্ঠ ইনপুট (শীঘ্রই আসছে)"
+              onClick={toggleVoice}
+              disabled={!voiceSupported || isTyping}
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 relative transition-colors ${
+                listening
+                  ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
+              title={voiceSupported ? (listening ? "শোনা বন্ধ করুন" : "কন্ঠ ইনপুট") : "এই ব্রাউজারে কন্ঠ ইনপুট নেই"}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" />
@@ -303,9 +311,6 @@ export default function AIChatWidget() {
                 <line x1="12" y1="19" x2="12" y2="23" />
                 <line x1="8" y1="23" x2="16" y2="23" />
               </svg>
-              <span className="absolute -top-1 -right-1 text-[6px] font-bold bg-amber-500 text-white px-1 py-0.5 rounded-full">
-                Soon
-              </span>
             </button>
             <a
               href="/chat"

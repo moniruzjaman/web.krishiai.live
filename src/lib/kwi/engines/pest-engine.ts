@@ -1,17 +1,3 @@
-// ============================================================
-// KWI - Krishi Weather Intelligence
-// Pest Engine — forecasts INSECT pest risk (as opposed to fungal/
-// bacterial disease risk, which disease-engine.ts already covers).
-//
-// Kept deliberately separate from disease-engine.ts: that engine's scoring
-// model (temperature optimal-range + humidity + leaf wetness + precipitation,
-// all scoring UP with moisture) is built for fungal/bacterial pathogens.
-// Insect pests like brown planthopper favor the OPPOSITE conditions — warm
-// nights during dry spells — so forcing them through the same formula would
-// produce backwards risk scores. This mirrors the same weighted-assessment
-// pattern (id/name/preventive/curative/economicThreshold) for UI consistency.
-// ============================================================
-
 import type {
   PestForecast,
   PestRiskAssessment,
@@ -19,11 +5,8 @@ import type {
   WeatherData,
   ActiveCrop,
   RiskLevel,
+  GrowthStageId,
 } from '@/lib/kwi/types';
-
-// ────────────────────────────────────────────────────────────
-// Bangladesh Insect Pest Database
-// ────────────────────────────────────────────────────────────
 
 const PESTS: PestInfo[] = [
   {
@@ -70,11 +53,279 @@ const PESTS: PestInfo[] = [
     ],
     economicThreshold: '1-2 hoppers per hill at tillering, or 5-10 per hill at booting/heading',
   },
+  {
+    id: 'yellow_stemborer',
+    name: 'Yellow Stem Borer',
+    nameBn: 'ধানের হলুদ গাছপোকা',
+    cropIds: ['rice'],
+    affectedStages: ['tillering', 'stem_elongation', 'booting', 'heading'],
+    minNightTempC: 22,
+    maxFavorableRainMm: 20,
+    symptoms: [
+      'Dead hearts at tillering (central shoot dries)',
+      'White heads at heading (empty panicles)',
+      'Larval exit holes at stem base',
+      'Tillers pull out easily with a rotten smell',
+    ],
+    symptomsBn: [
+      'কুশি পর্যায়ে মাঝের কান্ড শুকিয়ে যাওয়া (ডেড হার্ট)',
+      'শীষ বের হওয়ার সময় সাদা শীষ (চিটা)',
+      'কাণ্ডের গোড়ায় পোকার ছিদ্র',
+      'কুশি সহজে উঠে আসে ও পচা গন্ধ হয়',
+    ],
+    preventiveActions: [
+      'Clip seedling tips before transplanting to remove eggs',
+      'Use pheromone traps (5-8/ha) from tillering',
+      'Avoid staggered planting in the same area',
+      'Conserve egg parasitoids (Trichogramma japonicum)',
+    ],
+    preventiveActionsBn: [
+      'রোপণের আগে চারার অগ্রভাগ কেটে ডিম সরিয়ে ফেলুন',
+      'কুশি পর্যায় থেকে ফেরোমন ফাঁদ (৫-৮/হেক্টর) ব্যবহার করুন',
+      'একই এলাকায় ধাপে ধাপে রোপণ এড়িয়ে চলুন',
+      'ডিম পরজীবী (ট্রাইকোগ্রামা) সংরক্ষণ করুন',
+    ],
+    curativeActions: [
+      'Apply Chlorantraniliprole (IRAC 28) at dead-heart appearance',
+      'Follow with Cartap or Fipronil if ETL persists — rotate MoA',
+      'Rogue white heads and destroy infested tillers',
+    ],
+    curativeActionsBn: [
+      'ডেড হার্ট দেখা দিলে ক্লোরানট্রানিলিপ্রোল (IRAC ২৮) প্রয়োগ করুন',
+      'ETL থাকলে কারটাপ বা ফিপ্রোনিল দিন — MoA পরিবর্তন করুন',
+      'সাদা শীষ ও আক্রান্ত কুশি তুলে ধ্বংস করুন',
+    ],
+    economicThreshold: '10% dead hearts at tillering or 5% white heads at heading',
+  },
+  {
+    id: 'rice_leaf_folder',
+    name: 'Rice Leaf Folder',
+    nameBn: 'ধানের পাতা মোড়ানো পোকা',
+    cropIds: ['rice'],
+    affectedStages: ['tillering', 'stem_elongation', 'booting'],
+    minNightTempC: 23,
+    maxFavorableRainMm: 12,
+    symptoms: [
+      'Leaves folded lengthwise and stitched with silk',
+      'Transparent feeding scars inside folded leaves',
+      'Reduced photosynthetic area and delayed heading',
+    ],
+    symptomsBn: [
+      'পাতা লম্বালম্বি মোড়ানো ও রেশম দিয়ে সেলাই করা',
+      'মোড়ানো পাতার ভিতরে স্বচ্ছ খাদ্য ক্ষত',
+      'সালোকসংশ্লেষণ কমে শীষ বের হতে দেরি',
+    ],
+    preventiveActions: [
+      'Avoid excess nitrogen which produces succulent leaves',
+      'Release Trichogramma chilonis at 50,000/ha weekly',
+      'Keep field bunds weed-free — alternate hosts',
+    ],
+    preventiveActionsBn: [
+      'অতিরিক্ত নাইট্রোজেন এড়িয়ে চলুন — নরম পাতা পোকার পছন্দ',
+      'সাপ্তাহিক ৫০,০০০/হেক্টর ট্রাইকোগ্রামা ছেড়ে দিন',
+      'আইল আগাছামুক্ত রাখুন — বিকল্প পোষক কমান',
+    ],
+    curativeActions: [
+      'Spray Chlorantraniliprole or Spinosad at early instar',
+      'Hand-crush folded leaves in small plots',
+    ],
+    curativeActionsBn: [
+      'ছোট পোকা অবস্থায় ক্লোরানট্রানিলিপ্রোল বা স্পিনোসাড স্প্রে করুন',
+      'ছোট জমিতে মোড়ানো পাতা হাতে চেপে মারুন',
+    ],
+    economicThreshold: '1-2 freshly folded leaves per hill',
+  },
+  {
+    id: 'rice_hispa',
+    name: 'Rice Hispa',
+    nameBn: 'ধানের হিসপা',
+    cropIds: ['rice'],
+    affectedStages: ['seedling', 'vegetative', 'tillering'],
+    minNightTempC: 24,
+    maxFavorableRainMm: 15,
+    symptoms: [
+      'White scraping streaks on leaf surface',
+      'Grubs mine inside leaves causing blotches',
+      'Leaves turn white and dry in severe attack',
+    ],
+    symptomsBn: [
+      'পাতায় সাদা আঁচড়ের দাগ',
+      'শুককীট পাতার ভিতরে সুড়ঙ্গ করে দাগ তৈরি করে',
+      'তীব্র আক্রমণে পাতা সাদা হয়ে শুকিয়ে যায়',
+    ],
+    preventiveActions: [
+      'Clip and destroy leaf tips of heavily infested seedlings',
+      'Avoid close planting in shady, humid pockets',
+      'Keep nursery well drained',
+    ],
+    preventiveActionsBn: [
+      'আক্রান্ত চারার পাতার ডগা কেটে ধ্বংস করুন',
+      'ছায়াযুক্ত আর্দ্র স্থানে ঘন রোপণ এড়িয়ে চলুন',
+      'বীজতলা ভালোভাবে নিকাশ রাখুন',
+    ],
+    curativeActions: [
+      'Apply Lambda-cyhalothrin or Chlorpyrifos if >2 adults/hill',
+      'Rotate to IRAC 4A (Imidacloprid) next spray',
+    ],
+    curativeActionsBn: [
+      'প্রতি গোছায় ২টির বেশি পোকা থাকলে ল্যাম্বডা-সাইহ্যালোথ্রিন বা ক্লোরপাইরিফস দিন',
+      'পরবর্তী স্প্রেতে IRAC ৪A (ইমিডাক্লোপ্রিড) এ পরিবর্তন করুন',
+    ],
+    economicThreshold: '2 adults per hill or 25% damaged leaves',
+  },
+  {
+    id: 'green_leafhopper',
+    name: 'Green Leafhopper',
+    nameBn: 'সবুজ পাতাফড়িং',
+    cropIds: ['rice'],
+    affectedStages: ['seedling', 'vegetative', 'tillering', 'stem_elongation'],
+    minNightTempC: 25,
+    maxFavorableRainMm: 8,
+    symptoms: [
+      'Yellowing of leaf tips and hopper burn patches',
+      'Tungro virus transmission (stunting, orange leaves)',
+      'Honeydew and sooty mold on lower canopy',
+    ],
+    symptomsBn: [
+      'পাতার ডগা হলুদ ও হপার বার্ন দাগ',
+      'টুংরো ভাইরাস ছড়ানো (বামন গাছ, কমলা পাতা)',
+      'নিচের পাতায় মধু নিঃসরণ ও কালো ছত্রাক',
+    ],
+    preventiveActions: [
+      'Plant tungro-resistant varieties (BR11, BR10)',
+      'Remove ratoon and volunteer rice around field',
+      'Use yellow sticky traps at field borders',
+    ],
+    preventiveActionsBn: [
+      'টুংরো-প্রতিরোধী জাত লাগান (বিআর-১১, বিআর-১০)',
+      'জমির আশেপাশের র্যাটুন ও স্বেচ্ছাসেবী ধান সরান',
+      'জমির কিনারায় হলুদ আঠালো ফাঁদ ব্যবহার করুন',
+    ],
+    curativeActions: [
+      'Apply Pymetrozine (IRAC 9B) or Imidacloprid if vector pressure is high',
+      'Rogue tungro-infected hills immediately',
+    ],
+    curativeActionsBn: [
+      'বাহক চাপ বেশি হলে পাইমেট্রোজিন (IRAC ৯B) বা ইমিডাক্লোপ্রিড দিন',
+      'টুংরো আক্রান্ত গোছা তৎক্ষণাৎ তুলে ফেলুন',
+    ],
+    economicThreshold: '5-10 hoppers per hill at vegetative stage',
+  },
+  {
+    id: 'wheat_aphid',
+    name: 'Wheat Aphid',
+    nameBn: 'গমের জাব পোকা',
+    cropIds: ['wheat'],
+    affectedStages: ['vegetative', 'stem_elongation', 'heading', 'flowering', 'grain_filling'],
+    minNightTempC: 16,
+    maxFavorableRainMm: 4,
+    symptoms: [
+      'Colonies on ear heads and flag leaf',
+      'Sticky honeydew and sooty mold',
+      'Shriveled grains and reduced tillering',
+    ],
+    symptomsBn: [
+      'শীষ ও পতাকা পাতায় উপনিবেশ',
+      'আঠালো মধু নিঃসরণ ও কালো ছত্রাক',
+      'চিটা দানা ও কুশি কমে যাওয়া',
+    ],
+    preventiveActions: [
+      'Avoid late sowing which extends the vulnerable window',
+      'Conserve ladybirds and syrphid flies — delay first spray',
+      'Balanced nitrogen; excess N increases aphid numbers',
+    ],
+    preventiveActionsBn: [
+      'দেরিতে বপন এড়িয়ে চলুন — সংবেদনশীল সময় বাড়ে',
+      'লেডিবার্ড ও সিরফিড মাছি সংরক্ষণ করুন — প্রথম স্প্রে দেরি করুন',
+      'সুষম নাইট্রোজেন দিন; অতিরিক্ত এন-এ জাব বাড়ে',
+    ],
+    curativeActions: [
+      'Spray Imidacloprid 17.8 SL @ 0.3 ml/L if >10 aphids/tiller',
+      'Alternate with Thiamethoxam — do not repeat 4A consecutively',
+    ],
+    curativeActionsBn: [
+      'প্রতি কালিতে ১০টির বেশি জাব থাকলে ইমিডাক্লোপ্রিড ০.৩ মিলি/লি স্প্রে করুন',
+      'থায়ামেথোক্সাম দিয়ে পরিবর্তন করুন — ৪A পরপর ব্যবহার করবেন না',
+    ],
+    economicThreshold: '10 aphids per tiller at heading / grain filling',
+  },
+  {
+    id: 'jute_semilooper',
+    name: 'Jute Semilooper',
+    nameBn: 'পাটের সেমিলুপার',
+    cropIds: ['jute'],
+    affectedStages: ['vegetative', 'stem_elongation'],
+    minNightTempC: 24,
+    maxFavorableRainMm: 18,
+    symptoms: [
+      'Leaves skeletonized from the margin',
+      'Larvae loop while walking on the stem',
+      'Severe defoliation reduces fiber yield',
+    ],
+    symptomsBn: [
+      'পাতার কিনারা থেকে কঙ্কালসার হয়ে যাওয়া',
+      'শুককীট কাণ্ডে হাঁটার সময় লুপ করে',
+      'তীব্র পাতা খেয়ে তন্তু ফলন কমে',
+    ],
+    preventiveActions: [
+      'Light traps at dusk to catch moths',
+      'Hand-pick larvae in small plots at first flush',
+      'Avoid continuous jute on the same land',
+    ],
+    preventiveActionsBn: [
+      'সন্ধ্যায় আলোর ফাঁদ দিয়ে মথ ধরুন',
+      'প্রথম ঢেউয়ে ছোট জমিতে শুককীট হাতে তুলুন',
+      'একই জমিতে টানা পাট চাষ এড়িয়ে চলুন',
+    ],
+    curativeActions: [
+      'Apply Spinosad (IRAC 5) or Chlorantraniliprole at early instar',
+      'Rotate to a pyrethroid (IRAC 3) only if ETL persists',
+    ],
+    curativeActionsBn: [
+      'ছোট পোকা অবস্থায় স্পিনোসাড (IRAC ৫) বা ক্লোরানট্রানিলিপ্রোল দিন',
+      'ETL থাকলেই কেবল পাইরেথ্রয়েড (IRAC ৩) এ পরিবর্তন করুন',
+    ],
+    economicThreshold: '1 larva per plant at vegetative stage',
+  },
+  {
+    id: 'jute_stem_weevil',
+    name: 'Jute Stem Weevil',
+    nameBn: 'পাটের কাণ্ড উইভিল',
+    cropIds: ['jute'],
+    affectedStages: ['seedling', 'vegetative', 'stem_elongation'],
+    minNightTempC: 26,
+    maxFavorableRainMm: 10,
+    symptoms: [
+      'Wilting of apical shoot ("dead top")',
+      'Gall-like swelling on stem with larval tunnel',
+      'Fiber breakage at infested nodes',
+    ],
+    symptomsBn: [
+      'অগ্রভাগ শুকিয়ে যাওয়া ("ডেড টপ")',
+      'কাণ্ডে গল ও শুককীটের সুড়ঙ্গ',
+      'আক্রান্ত গ্রন্থিতে তন্তু ভেঙে যাওয়া',
+    ],
+    preventiveActions: [
+      'Early sowing to escape peak weevil period',
+      'Remove and burn infested tops weekly',
+      'Keep field free of wild Corchorus hosts',
+    ],
+    preventiveActionsBn: [
+      'উইভিলের চূড়া এড়াতে তাড়াতাড়ি বপন করুন',
+      'সাপ্তাহিক আক্রান্ত ডগা কেটে পোড়ান',
+      'বন্য পাটজাতীয় পোষক আগাছা পরিষ্কার রাখুন',
+    ],
+    curativeActions: [
+      'Spot-apply Imidacloprid drench at seedling if >5% dead tops',
+      'Foliar Cypermethrin at vegetative if damage continues',
+    ],
+    curativeActionsBn: [
+      '৫% এর বেশি ডেড টপ হলে চারায় ইমিডাক্লোপ্রিড ড্রেঞ্চ দিন',
+      'ক্ষতি চললে অবচয়ী পর্যায়ে সাইপারমেথ্রিন স্প্রে করুন',
+    ],
+    economicThreshold: '5% plants with dead tops at seedling / early vegetative',
+  },
 ];
-
-// ────────────────────────────────────────────────────────────
-// Scoring
-// ────────────────────────────────────────────────────────────
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -87,32 +338,26 @@ function getRiskLevel(score: number): RiskLevel {
   return 'low';
 }
 
-/** Score 0-50: how far above the pest's minimum night-temperature threshold. */
 function scoreNightTemp(tempMin: number, pest: PestInfo): number {
   if (tempMin < pest.minNightTempC) return 0;
   const excess = tempMin - pest.minNightTempC;
   return Math.round(clamp(30 + excess * 4, 30, 50));
 }
 
-/** Score 0-40: how dry conditions are relative to the pest's favorable ceiling. */
 function scoreDrySpell(rainMm: number, pest: PestInfo): number {
+  if (pest.maxFavorableRainMm <= 0) return 0;
   if (rainMm > pest.maxFavorableRainMm) return 0;
   const dryness = 1 - rainMm / pest.maxFavorableRainMm;
   return Math.round(clamp(40 * dryness, 0, 40));
 }
 
-/** Score 0-10: crop stage susceptibility (later vegetative/reproductive stages more exposed). */
-function scoreCropStage(currentStage: string, pest: PestInfo): number {
-  if (!pest.affectedStages.includes(currentStage as PestInfo['affectedStages'][number])) return 0;
-  const stageOrder = ['tillering', 'stem_elongation', 'booting', 'heading', 'flowering'];
+function scoreCropStage(currentStage: GrowthStageId, pest: PestInfo): number {
+  if (!pest.affectedStages.includes(currentStage)) return 0;
+  const stageOrder: GrowthStageId[] = ['tillering', 'stem_elongation', 'booting', 'heading', 'flowering'];
   const idx = stageOrder.indexOf(currentStage);
-  if (idx < 0) return 2;
+  if (idx < 0) return 4;
   return Math.round(clamp(4 + idx * 1.5, 0, 10));
 }
-
-// ────────────────────────────────────────────────────────────
-// Main Forecast Function
-// ────────────────────────────────────────────────────────────
 
 export function generatePestForecast(
   weather: WeatherData,
@@ -138,6 +383,7 @@ export function generatePestForecast(
 
       if (risk > maxRisk) {
         maxRisk = risk;
+        contributing.length = 0;
         if (tempScore > 20) contributing.push(`Warm night temp (${todayMin}°C) favors ${pest.name}`);
         if (drySpellScore > 15) contributing.push(`Dry conditions (${todayRain}mm rain) favor outbreak`);
         if (stageScore > 5) contributing.push(`Current crop stage (${crop.currentStage}) is vulnerable`);
@@ -148,7 +394,7 @@ export function generatePestForecast(
       pest,
       risk: maxRisk,
       level: getRiskLevel(maxRisk),
-      confidence: 70,
+      confidence: 72,
       contributingFactors: contributing,
       preventiveActions: pest.preventiveActions,
       curativeActions: pest.curativeActions,
@@ -166,6 +412,6 @@ export function generatePestForecast(
     pests: assessments,
     overallFavorability,
     spreadRisk: getRiskLevel(overallFavorability),
-    confidence: 70,
+    confidence: 72,
   };
 }

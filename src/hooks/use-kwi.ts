@@ -36,7 +36,7 @@ import {
 } from "@/lib/kwi/engines/recommendation-engine";
 import { generateDiseaseForecast } from "@/lib/kwi/engines/disease-engine";
 import { generatePestForecast } from "@/lib/kwi/engines/pest-engine";
-import { generateCropCalendar } from "@/lib/kwi/engines/calendar-engine";
+import { generateCropCalendar, getGrowthStage, getExpectedHarvestDate, daysBetween } from "@/lib/kwi/engines/calendar-engine";
 import { getCropConfig } from "@/lib/kwi/engines/crop-configs";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -169,16 +169,23 @@ export function useActiveCrop(): {
 
   const crop = useMemo<ActiveCrop>(() => {
     const config = getCropConfig(cropId);
-    return {
+    const today = new Date().toISOString().split("T")[0];
+    const dayOverall = Math.max(0, daysBetween(sowingDate, today));
+    const { stageId } = getGrowthStage(config.id, dayOverall);
+    const stub: ActiveCrop = {
       cropId: config.id,
       config,
       sowingDate,
       expectedHarvestDate: "",
-      currentStage: "vegetative" as GrowthStageId,
-      stageStartDate: "",
+      currentStage: stageId,
+      stageStartDate: sowingDate,
       area: 1,
       fieldId: "field-1",
       fieldName: config.nameBn,
+    };
+    return {
+      ...stub,
+      expectedHarvestDate: getExpectedHarvestDate(stub),
     };
   }, [cropId, sowingDate]);
 
