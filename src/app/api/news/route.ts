@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { corsHeaders, corsNextResponse } from "@/lib/cors";
 import {
   collectNewspaperNews,
+  isAgriHeadline,
   type NewspaperNewsItem,
 } from "@/lib/bdNewspaperNews";
 
@@ -162,35 +163,7 @@ function parseRSS(xml: string): { title: string; link: string; pubDate: string; 
   return items;
 }
 
-// ── Agriculture keyword filter ───────────────────────────────────────────────
-const AGRI_KW_BN = [
-  "কৃষি", "ফসল", "ধান", "গম", "পাট", "সার", "বীজ", "সেচ", "কৃষক", "চাষ",
-  "আলু", "সবজি", "বোরো", "আমন", "আউশ", "মৌসুম", "ফলন", "রোগ", "পোকা",
-  "বালাই", "সংগ্রহ", "উৎপাদন", "ভূমি", "জমি", "কৃষি সংবাদ", "ফসলের",
-  "বীজতলা", "সার ব্যবস্থাপনা", "কীটনাশক", "সেচ ব্যবস্থা", "বন্যা",
-  "খরা", "ঝড়", "প্রাকৃতিক", "দুর্যোগ", "কৃষি মন্ত্রণালয়", "বাধা",
-  "পানি", "মাটি", "মৃত্তিকা", "মৎস্য", "পশুপালন", "দুগ্ধ",
-  "কৃষি সম্প্রসারণ", "বীজ বিতরণ", "সার ভর্তুকি", "ফসল ক্ষতিপূরণ",
-  "কৃষি ঋণ", "পানি সেচ", "খাদ্য নিরাপত্তা", "ভাসমান কৃষি",
-  "জলবায়ু", "প্রাণিসম্পদ", "হাঁস-মুরগি", "গবাদি", "মাছ চাষ", "ঘাস",
-  "তেল ফসল", "ডাল", "মসলা", "ফল", "পেঁয়াজ", "রসুন", "মরিচ",
-  "সরিষা", "চিনি", "আখ", "চা", "তামাক", "কফি", "FAO",
-];
-
-const AGRI_KW_EN = [
-  "agri", "crop", "rice", "wheat", "farmer", "harvest", "fertilizer", "seed",
-  "grain", "agriculture", "paddy", "irrigation", "pest", "drought",
-  "flood", "cultivation", "livestock", "fisheries", "crop-yield",
-  "monsoon", "boro rice", "aman paddy", "jute", "potato", "onion", "vegetable",
-  "seedling", "transplant", "pesticide", "blight",
-  "fao", "food and agriculture", "ifpri", "world bank", "dairy",
-  "poultry", "aquaculture", "food security",
-];
-
-const isAgri = (t: string): boolean => {
-  const lower = t.toLowerCase();
-  return [...AGRI_KW_BN, ...AGRI_KW_EN].some((k) => lower.includes(k.toLowerCase()));
-};
+const isAgri = (t: string): boolean => isAgriHeadline(t);
 
 // ── Fetch with timeout ───────────────────────────────────────────────────────
 async function fetchWithTimeout(url: string, ms = 10000): Promise<Response> {
@@ -991,10 +964,10 @@ export async function GET(request: NextRequest) {
   ]);
 
   const bengaliHeadlines: NewsItem[] = newspaperBundle.bengali
-    .filter((item) => isRecent(item.pubDate))
+    .filter((item) => isAgriHeadline(item.title) && isRecent(item.pubDate))
     .map(toNewsItem);
   const englishHeadlines: NewsItem[] = newspaperBundle.english
-    .filter((item) => isRecent(item.pubDate))
+    .filter((item) => isAgriHeadline(item.title) && isRecent(item.pubDate))
     .map(toNewsItem);
 
   const govSeenTitles = new Set<string>();

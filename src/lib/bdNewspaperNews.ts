@@ -65,7 +65,10 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     name: "প্রথম আলো",
     nameEn: "Prothom Alo",
     home: "https://www.prothomalo.com/",
-    pages: ["https://www.prothomalo.com/", "https://www.prothomalo.com/business"],
+    pages: [
+      "https://www.prothomalo.com/business",
+      "https://www.prothomalo.com/bangladesh",
+    ],
     feeds: ["https://www.prothomalo.com/feed"],
     lang: "bn",
     color: "#1b8a3e",
@@ -77,7 +80,7 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     name: "Prothom Alo (EN)",
     nameEn: "Prothom Alo English",
     home: "https://en.prothomalo.com/",
-    pages: ["https://en.prothomalo.com/", "https://en.prothomalo.com/business"],
+    pages: ["https://en.prothomalo.com/business"],
     feeds: [],
     lang: "en",
     color: "#1b8a3e",
@@ -89,10 +92,7 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     name: "The Daily Star",
     nameEn: "The Daily Star",
     home: "https://www.thedailystar.net/",
-    pages: [
-      "https://www.thedailystar.net/business/agriculture",
-      "https://www.thedailystar.net/business",
-    ],
+    pages: ["https://www.thedailystar.net/business/agriculture"],
     feeds: ["https://www.thedailystar.net/business/rss.xml"],
     lang: "en",
     color: "#1d4ed8",
@@ -105,7 +105,7 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     nameEn: "The Business Standard",
     home: "https://www.tbsnews.net/",
     pages: ["https://www.tbsnews.net/economy/agriculture"],
-    feeds: ["https://www.tbsnews.net/rss.xml"],
+    feeds: [],
     lang: "en",
     color: "#1d4ed8",
     parser: "anchors",
@@ -116,7 +116,10 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     name: "Financial Express",
     nameEn: "The Financial Express",
     home: "https://today.thefinancialexpress.com.bd/",
-    pages: ["https://today.thefinancialexpress.com.bd/"],
+    pages: [
+      "https://today.thefinancialexpress.com.bd/trade-commodities",
+      "https://today.thefinancialexpress.com.bd/country",
+    ],
     feeds: [],
     lang: "en",
     color: "#b45309",
@@ -129,7 +132,6 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     nameEn: "bdnews24 Bangla",
     home: "https://bangla.bdnews24.com/",
     pages: [
-      "https://bangla.bdnews24.com/",
       "https://bangla.bdnews24.com/business",
       "https://bangla.bdnews24.com/economy",
     ],
@@ -144,7 +146,7 @@ export const BD_NEWSPAPERS: NewspaperConfig[] = [
     name: "bdnews24",
     nameEn: "bdnews24 English",
     home: "https://bdnews24.com/",
-    pages: ["https://bdnews24.com/", "https://bdnews24.com/economy"],
+    pages: ["https://bdnews24.com/economy"],
     feeds: [],
     lang: "en",
     color: "#dc2626",
@@ -162,15 +164,10 @@ const AGRI_BN = [
   "আউশ",
   "সেচ",
   "বীজতলা",
-  "বীজ",
   "সারের",
   "সার ",
   "পাট",
-  "আলু",
   "গমের",
-  "সবজি",
-  "পেঁয়াজ",
-  "পেয়াজ",
   "মৎস্য",
   "পশুপালন",
   "দুগ্ধ",
@@ -190,17 +187,28 @@ const AGRI_BN = [
   "ফসলহানি",
   "কীটনাশক",
   "বালাইনাশক",
-  "মরিচ",
-  "রসুন",
   "সরিষা",
   "আখ",
   "পাটের",
   "প্রাণিসম্পদ",
-  "হাওর",
   "কৃষিপণ্য",
   "কৃষিজ",
   "উৎপাদন খরচ",
   "সার-বীজ",
+  "চাষি",
+  "কৃষিকাজ",
+  "ধান চাষি",
+  "ফসল উৎপাদন",
+  "কৃষি উপকরণ",
+  "কৃষি বাজার",
+  "কৃষিপণ্যের",
+  "খামারি",
+  "পোলট্রি",
+  "মুরগি খামার",
+  "মাছের ঘের",
+  "ইরি ধান",
+  "রোপা আমন",
+  "রোপা আউশ",
 ];
 
 const AGRI_EN = [
@@ -209,15 +217,7 @@ const AGRI_EN = [
   "farmer",
   "farmers",
   "farming",
-  "crop",
   "paddy",
-  "rice",
-  "wheat",
-  "jute",
-  "potato",
-  "onion",
-  "garlic",
-  "vegetable",
   "fertiliser",
   "fertilizer",
   "irrigation",
@@ -229,7 +229,6 @@ const AGRI_EN = [
   "fishery",
   "fishermen",
   "aquaculture",
-  "dairy",
   "poultry",
   "food security",
   "foodgrain",
@@ -238,17 +237,164 @@ const AGRI_EN = [
   "boro paddy",
   "aman rice",
   "aman paddy",
-  "monsoon",
-  "subsidy",
   "cultivation",
   "cultivate",
-  "plantation",
   "tea garden",
   "sugarcane",
-  "edible oil",
+  "crop yield",
+  "crop production",
+  "farm loan",
+  "farm loans",
+  "agri loan",
+  "agri loans",
+  "farm subsidy",
+  "agricultural subsidy",
+  "horticulture",
+  "agronomy",
+  "planted acreage",
+  "transplanting",
+];
+
+const AGRI_EN_WEAK = [
+  "crop",
+  "rice",
+  "wheat",
+  "jute",
+  "potato",
+  "onion",
+  "garlic",
+  "vegetable",
+  "dairy",
   "soybean",
   "chilli",
   "chili",
+  "edible oil",
+  "plantation",
+  "monsoon",
+];
+
+const AGRI_BN_WEAK = [
+  "বীজ",
+  "আলু",
+  "মরিচ",
+  "রসুন",
+  "হাওর",
+  "সবজি",
+  "পেঁয়াজ",
+  "পেয়াজ",
+  "ধান",
+];
+
+const AGRI_CONTEXT_EN = [
+  "farm",
+  "farmer",
+  "farmers",
+  "farming",
+  "agriculture",
+  "agricultural",
+  "agri",
+  "paddy",
+  "harvest",
+  "cultivat",
+  "irrigation",
+  "fertilis",
+  "fertiliz",
+  "livestock",
+  "poultry",
+  "fisher",
+  "aquaculture",
+  "seedling",
+  "pesticide",
+  "grower",
+  "acreage",
+  "sowing",
+  "sown",
+  "yield",
+  "harvesting",
+];
+
+const AGRI_CONTEXT_BN = [
+  "কৃষি",
+  "কৃষক",
+  "চাষ",
+  "ফসল",
+  "খামার",
+  "সেচ",
+  "সার",
+  "উৎপাদন",
+  "মৎস্য",
+  "পশুপালন",
+  "প্রাণিসম্পদ",
+  "জমি",
+];
+
+const REJECT_EN = [
+  "cricket",
+  "football",
+  "world cup",
+  "premier league",
+  "tennis",
+  "election",
+  "parliament",
+  "political party",
+  "prime minister",
+  "film star",
+  "movie",
+  "celebrity",
+  "stock market",
+  "share price",
+  "dhaka stock",
+  "dse ",
+  "bank interest",
+  "remittance",
+  "rmg ",
+  "garment",
+  "ready-made",
+  "export processing",
+  "epz",
+  "telecom",
+  "mobile operator",
+  "starlink",
+  "banglalink",
+  "grameenphone",
+  "urbanisation",
+  "urbanization",
+  "labour act",
+  "labor act",
+  "kingfisher beer",
+  "beer sales",
+  "borough council",
+  "warm-up match",
+  "tigers win",
+  "university",
+  "vice chancellor",
+  "vice-chancellor",
+  "recruitment",
+  "job vacancy",
+];
+
+const REJECT_BN = [
+  "দুর্গাপূজা",
+  "ক্রিকেট",
+  "ফুটবল",
+  "সংসদ অধিবেশন",
+  "নির্বাচন কমিশন",
+  "রাজনৈতিক দল",
+  "চলচ্চিত্র",
+  "বলিউড",
+  "শেয়ারবাজার",
+  "ডিএসই",
+  "পোশাক শিল্প",
+  "রপ্তানি প্রক্রিয়াকরণ",
+  "মোবাইল অপারেটর",
+  "বিশ্ববিদ্যালয়ের শিক্ষার্থী",
+  "কৃষি ভিসা",
+  "কৃষি পর্যটন",
+  "বিশ্ববিদ্যালয়",
+  "বিশ্ববিদ্যালয়",
+  "উপাচার্য",
+  "নিয়োগ",
+  "নিয়োগ",
 ];
 
 const USER_AGENT =
@@ -280,25 +426,39 @@ export function stripTags(html: string): string {
     .trim();
 }
 
+function wordBoundaryMatch(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`, "i").test(text);
+}
+
+function hasAny(text: string, keywords: string[]): boolean {
+  return keywords.some((k) => text.includes(k));
+}
+
+function hasAnyWord(text: string, keywords: string[]): boolean {
+  return keywords.some((k) => wordBoundaryMatch(text, k));
+}
+
 export function isAgriHeadline(title: string): boolean {
   if (!title) return false;
   const lower = title.toLowerCase();
-  if (
-    AGRI_EN.some((k) => {
-      const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`, "i").test(lower);
-    })
-  ) {
-    return true;
-  }
+  if (hasAnyWord(lower, REJECT_EN) || hasAny(title, REJECT_BN)) return false;
+
   const sanitized = title
     .replace(/প্রধানমন্ত্রী/g, " ")
     .replace(/প্রধান উপদেষ্টা/g, " ")
     .replace(/প্রধান নির্বাচন/g, " ")
     .replace(/প্রধানমন্ত্রীর/g, " ")
+    .replace(/রাজধানী/g, " ")
     .replace(/সংসার/g, " ")
     .replace(/আসবাব/g, " ");
-  return AGRI_BN.some((k) => sanitized.includes(k));
+
+  if (hasAnyWord(lower, AGRI_EN) || hasAny(sanitized, AGRI_BN)) return true;
+
+  const weakEn = hasAnyWord(lower, AGRI_EN_WEAK);
+  const weakBn = hasAny(sanitized, AGRI_BN_WEAK);
+  if (!weakEn && !weakBn) return false;
+  return hasAnyWord(lower, AGRI_CONTEXT_EN) || hasAny(sanitized, AGRI_CONTEXT_BN);
 }
 
 export function parsePublisherDate(value: unknown): string | null {
@@ -348,6 +508,13 @@ export function makeNewsItem(
   const abs = absoluteUrl(link, source.home);
   if (!abs.startsWith("http")) return null;
   if (/\/search|\/login|\/tag\/|\/tags\/|\/author\//i.test(abs)) return null;
+  if (
+    /\/(sports?|cricket|football|entertainment|lifestyle|glitz|politics|election|opinion|movie|cinema|world-cup)\b/i.test(
+      abs
+    )
+  ) {
+    return null;
+  }
   return {
     title: cleanTitle,
     link: abs,

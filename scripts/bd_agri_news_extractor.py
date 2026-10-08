@@ -29,7 +29,10 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name": "প্রথম আলো",
         "name_en": "Prothom Alo",
         "home": "https://www.prothomalo.com/",
-        "pages": ["https://www.prothomalo.com/", "https://www.prothomalo.com/business"],
+        "pages": [
+            "https://www.prothomalo.com/business",
+            "https://www.prothomalo.com/bangladesh",
+        ],
         "feeds": ["https://www.prothomalo.com/feed"],
         "lang": "bn",
         "color": "#1b8a3e",
@@ -41,7 +44,7 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name": "Prothom Alo (EN)",
         "name_en": "Prothom Alo English",
         "home": "https://en.prothomalo.com/",
-        "pages": ["https://en.prothomalo.com/", "https://en.prothomalo.com/business"],
+        "pages": ["https://en.prothomalo.com/business"],
         "feeds": [],
         "lang": "en",
         "color": "#1b8a3e",
@@ -53,10 +56,7 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name": "The Daily Star",
         "name_en": "The Daily Star",
         "home": "https://www.thedailystar.net/",
-        "pages": [
-            "https://www.thedailystar.net/business/agriculture",
-            "https://www.thedailystar.net/business",
-        ],
+        "pages": ["https://www.thedailystar.net/business/agriculture"],
         "feeds": ["https://www.thedailystar.net/business/rss.xml"],
         "lang": "en",
         "color": "#1d4ed8",
@@ -69,7 +69,7 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name_en": "The Business Standard",
         "home": "https://www.tbsnews.net/",
         "pages": ["https://www.tbsnews.net/economy/agriculture"],
-        "feeds": ["https://www.tbsnews.net/rss.xml"],
+        "feeds": [],
         "lang": "en",
         "color": "#1d4ed8",
         "parser": "anchors",
@@ -80,7 +80,10 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name": "Financial Express",
         "name_en": "The Financial Express",
         "home": "https://today.thefinancialexpress.com.bd/",
-        "pages": ["https://today.thefinancialexpress.com.bd/"],
+        "pages": [
+            "https://today.thefinancialexpress.com.bd/trade-commodities",
+            "https://today.thefinancialexpress.com.bd/country",
+        ],
         "feeds": [],
         "lang": "en",
         "color": "#b45309",
@@ -93,7 +96,6 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name_en": "bdnews24 Bangla",
         "home": "https://bangla.bdnews24.com/",
         "pages": [
-            "https://bangla.bdnews24.com/",
             "https://bangla.bdnews24.com/business",
             "https://bangla.bdnews24.com/economy",
         ],
@@ -108,7 +110,7 @@ NEWSPAPERS: List[Dict[str, Any]] = [
         "name": "bdnews24",
         "name_en": "bdnews24 English",
         "home": "https://bdnews24.com/",
-        "pages": ["https://bdnews24.com/", "https://bdnews24.com/economy"],
+        "pages": ["https://bdnews24.com/economy"],
         "feeds": [],
         "lang": "en",
         "color": "#dc2626",
@@ -126,15 +128,10 @@ AGRI_BN = [
     "আউশ",
     "সেচ",
     "বীজতলা",
-    "বীজ",
     "সারের",
     "সার ",
     "পাট",
-    "আলু",
     "গমের",
-    "সবজি",
-    "পেঁয়াজ",
-    "পেয়াজ",
     "মৎস্য",
     "পশুপালন",
     "দুগ্ধ",
@@ -154,17 +151,28 @@ AGRI_BN = [
     "ফসলহানি",
     "কীটনাশক",
     "বালাইনাশক",
-    "মরিচ",
-    "রসুন",
     "সরিষা",
     "আখ",
     "পাটের",
     "প্রাণিসম্পদ",
-    "হাওর",
     "কৃষিপণ্য",
     "কৃষিজ",
     "উৎপাদন খরচ",
     "সার-বীজ",
+    "চাষি",
+    "কৃষিকাজ",
+    "ধান চাষি",
+    "ফসল উৎপাদন",
+    "কৃষি উপকরণ",
+    "কৃষি বাজার",
+    "কৃষিপণ্যের",
+    "খামারি",
+    "পোলট্রি",
+    "মুরগি খামার",
+    "মাছের ঘের",
+    "ইরি ধান",
+    "রোপা আমন",
+    "রোপা আউশ",
 ]
 
 AGRI_EN = [
@@ -173,15 +181,7 @@ AGRI_EN = [
     "farmer",
     "farmers",
     "farming",
-    "crop",
     "paddy",
-    "rice",
-    "wheat",
-    "jute",
-    "potato",
-    "onion",
-    "garlic",
-    "vegetable",
     "fertiliser",
     "fertilizer",
     "irrigation",
@@ -193,7 +193,6 @@ AGRI_EN = [
     "fishery",
     "fishermen",
     "aquaculture",
-    "dairy",
     "poultry",
     "food security",
     "foodgrain",
@@ -202,17 +201,164 @@ AGRI_EN = [
     "boro paddy",
     "aman rice",
     "aman paddy",
-    "monsoon",
-    "subsidy",
     "cultivation",
     "cultivate",
-    "plantation",
     "tea garden",
     "sugarcane",
-    "edible oil",
+    "crop yield",
+    "crop production",
+    "farm loan",
+    "farm loans",
+    "agri loan",
+    "agri loans",
+    "farm subsidy",
+    "agricultural subsidy",
+    "horticulture",
+    "agronomy",
+    "planted acreage",
+    "transplanting",
+]
+
+AGRI_EN_WEAK = [
+    "crop",
+    "rice",
+    "wheat",
+    "jute",
+    "potato",
+    "onion",
+    "garlic",
+    "vegetable",
+    "dairy",
     "soybean",
     "chilli",
     "chili",
+    "edible oil",
+    "plantation",
+    "monsoon",
+]
+
+AGRI_BN_WEAK = [
+    "বীজ",
+    "আলু",
+    "মরিচ",
+    "রসুন",
+    "হাওর",
+    "সবজি",
+    "পেঁয়াজ",
+    "পেয়াজ",
+    "ধান",
+]
+
+AGRI_CONTEXT_EN = [
+    "farm",
+    "farmer",
+    "farmers",
+    "farming",
+    "agriculture",
+    "agricultural",
+    "agri",
+    "paddy",
+    "harvest",
+    "cultivat",
+    "irrigation",
+    "fertilis",
+    "fertiliz",
+    "livestock",
+    "poultry",
+    "fisher",
+    "aquaculture",
+    "seedling",
+    "pesticide",
+    "grower",
+    "acreage",
+    "sowing",
+    "sown",
+    "yield",
+    "harvesting",
+]
+
+AGRI_CONTEXT_BN = [
+    "কৃষি",
+    "কৃষক",
+    "চাষ",
+    "ফসল",
+    "খামার",
+    "সেচ",
+    "সার",
+    "উৎপাদন",
+    "মৎস্য",
+    "পশুপালন",
+    "প্রাণিসম্পদ",
+    "জমি",
+]
+
+REJECT_EN = [
+    "cricket",
+    "football",
+    "world cup",
+    "premier league",
+    "tennis",
+    "election",
+    "parliament",
+    "political party",
+    "prime minister",
+    "film star",
+    "movie",
+    "celebrity",
+    "stock market",
+    "share price",
+    "dhaka stock",
+    "dse ",
+    "bank interest",
+    "remittance",
+    "rmg ",
+    "garment",
+    "ready-made",
+    "export processing",
+    "epz",
+    "telecom",
+    "mobile operator",
+    "starlink",
+    "banglalink",
+    "grameenphone",
+    "urbanisation",
+    "urbanization",
+    "labour act",
+    "labor act",
+    "kingfisher beer",
+    "beer sales",
+    "borough council",
+    "warm-up match",
+    "tigers win",
+    "university",
+    "vice chancellor",
+    "vice-chancellor",
+    "recruitment",
+    "job vacancy",
+]
+
+REJECT_BN = [
+    "দুর্গাপূজা",
+    "ক্রিকেট",
+    "ফুটবল",
+    "সংসদ অধিবেশন",
+    "নির্বাচন কমিশন",
+    "রাজনৈতিক দল",
+    "চলচ্চিত্র",
+    "বলিউড",
+    "শেয়ারবাজার",
+    "ডিএসই",
+    "পোশাক শিল্প",
+    "রপ্তানি প্রক্রিয়াকরণ",
+    "মোবাইল অপারেটর",
+    "বিশ্ববিদ্যালয়ের শিক্ষার্থী",
+    "কৃষি ভিসা",
+    "কৃষি পর্যটন",
+    "বিশ্ববিদ্যালয়",
+    "বিশ্ববিদ্যালয়",
+    "উপাচার্য",
+    "নিয়োগ",
+    "নিয়োগ",
 ]
 
 
@@ -239,21 +385,43 @@ def strip_tags(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _word_boundary_match(text: str, keyword: str) -> bool:
+    return bool(
+        re.search(
+            r"(?:^|[^a-z])" + re.escape(keyword.lower()) + r"(?:$|[^a-z])",
+            text,
+        )
+    )
+
+
 def is_agri(title: str) -> bool:
     if not title:
         return False
     lowered_raw = title.lower()
+    if any(_word_boundary_match(lowered_raw, k) for k in REJECT_EN):
+        return False
+    if any(k in title for k in REJECT_BN):
+        return False
     sanitized = (
         title.replace("প্রধানমন্ত্রী", " ")
         .replace("প্রধান উপদেষ্টা", " ")
         .replace("প্রধান নির্বাচন", " ")
         .replace("প্রধানমন্ত্রীর", " ")
+        .replace("রাজধানী", " ")
         .replace("সংসার", " ")
         .replace("আসবাব", " ")
     )
-    if any(re.search(r"(?:^|[^a-z])" + re.escape(k.lower()) + r"(?:$|[^a-z])", lowered_raw) for k in AGRI_EN):
+    if any(_word_boundary_match(lowered_raw, k) for k in AGRI_EN):
         return True
-    return any(k in sanitized for k in AGRI_BN)
+    if any(k in sanitized for k in AGRI_BN):
+        return True
+    weak_en = any(_word_boundary_match(lowered_raw, k) for k in AGRI_EN_WEAK)
+    weak_bn = any(k in sanitized for k in AGRI_BN_WEAK)
+    if not weak_en and not weak_bn:
+        return False
+    return any(_word_boundary_match(lowered_raw, k) for k in AGRI_CONTEXT_EN) or any(
+        k in sanitized for k in AGRI_CONTEXT_BN
+    )
 
 
 def parse_pub_date(value: Any) -> Optional[str]:
@@ -336,6 +504,12 @@ def make_item(
         return None
     skip_bits = ("/search", "/login", "/tag/", "/tags/", "/author/", "#")
     if any(b in link for b in skip_bits):
+        return None
+    if re.search(
+        r"/(sports?|cricket|football|entertainment|lifestyle|glitz|politics|election|opinion|movie|cinema|world-cup)\b",
+        link,
+        flags=re.I,
+    ):
         return None
     return {
         "title": title,

@@ -14,7 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bd_agri_news_extractor import (  # noqa: E402
     AGRI_BN,
+    AGRI_BN_WEAK,
+    AGRI_CONTEXT_BN,
+    AGRI_CONTEXT_EN,
     AGRI_EN,
+    AGRI_EN_WEAK,
+    REJECT_BN,
+    REJECT_EN,
     collect_newspaper_news,
     extract_anchors,
     extract_quintype_stories,
@@ -71,7 +77,7 @@ DAILY_STAR_RSS = """
 TBS_HTML = """
 <html>
 <body>
-  <h3><a href="/economy/bazaar/vegetable-prices-ease-sugar-flour">Vegetable prices ease, sugar and flour get dearer</a></h3>
+  <h3><a href="/economy/agriculture/vegetable-farmers-get-fair-price">Vegetable farmers get a fair price after harvest</a></h3>
   <h3><a href="/sports/cricket-win">Mithun fifties guide Tigers to win</a></h3>
 </body></html>
 """
@@ -93,6 +99,7 @@ class ExtractorTests(unittest.TestCase):
         self.assertTrue(is_agri("কৃষকদের সার ও বীজ সহায়তা বাড়াল কৃষি মন্ত্রণালয়"))
         self.assertTrue(is_agri("State minister promises easy-term loans for farmers"))
         self.assertTrue(is_agri("New agricultural subsidy for cultivation of paddy"))
+        self.assertTrue(is_agri("Vegetable harvest prices ease for farmers"))
         self.assertFalse(is_agri("দুর্গাপূজায় ছুটি এক দিন বাড়ল"))
         self.assertFalse(is_agri("Tigers win warm-up cricket match"))
         self.assertFalse(is_agri("প্রধানমন্ত্রী তারেক রহমানের সঙ্গে সাক্ষাৎ"))
@@ -100,6 +107,14 @@ class ExtractorTests(unittest.TestCase):
         self.assertFalse(is_agri("Kingfisher beer sales rise in Dhaka"))
         self.assertFalse(is_agri("Aman Rahman meets the borough council"))
         self.assertFalse(is_agri("Commodities continue to be dearer"))
+        self.assertFalse(is_agri("Eggs, vegetables rise as sugar, oil supplies tighten"))
+        self.assertFalse(is_agri("রাজধানীর বাজারে সবজি ও পেঁয়াজের দাম বেড়েছে"))
+        self.assertFalse(is_agri("Banglalink launches satellite-to-mobile service"))
+        self.assertFalse(is_agri("Bring EPZ workers under Labour Act"))
+        self.assertFalse(is_agri("আন্দোলনের মধ্যেই নতুন উপাচার্য পেল সিলেট কৃষি বিশ্ববিদ্যালয়"))
+        self.assertFalse(is_agri("সাবধান! অস্ট্রেলিয়ার কৃষি ভিসা নিয়ে প্রতারণার নতুন ফাঁদ"))
+        self.assertFalse(is_agri("বাংলাদেশ কৃষি গবেষণা ইনস্টিটিউটে বড় নিয়োগ, পদ ৩০১টি"))
+        self.assertFalse(is_agri("Parliament session starts tomorrow"))
 
     def test_parse_pub_date_millis_and_rfc822(self) -> None:
         iso = parse_pub_date(1727610000000)
@@ -219,6 +234,8 @@ class ExtractorTests(unittest.TestCase):
         self.assertGreaterEqual(result["counts"]["total"], 3)
         self.assertGreaterEqual(result["counts"]["bengali"], 1)
         self.assertGreaterEqual(result["counts"]["english"], 2)
+        self.assertTrue(all(is_agri(it["title"]) for it in result["headlines"]))
+        self.assertFalse(any("cricket" in it["title"].lower() for it in result["headlines"]))
         self.assertTrue(all("source" in it and "extractionTime" in it for it in result["headlines"]))
         self.assertTrue(all(it["source"] != "Google News" for it in result["headlines"]))
         payload = json.dumps(result, ensure_ascii=False)
@@ -234,6 +251,12 @@ class ExtractorTests(unittest.TestCase):
 
         self.assertEqual(AGRI_BN, grab("AGRI_BN"))
         self.assertEqual(AGRI_EN, grab("AGRI_EN"))
+        self.assertEqual(AGRI_EN_WEAK, grab("AGRI_EN_WEAK"))
+        self.assertEqual(AGRI_BN_WEAK, grab("AGRI_BN_WEAK"))
+        self.assertEqual(AGRI_CONTEXT_EN, grab("AGRI_CONTEXT_EN"))
+        self.assertEqual(AGRI_CONTEXT_BN, grab("AGRI_CONTEXT_BN"))
+        self.assertEqual(REJECT_EN, grab("REJECT_EN"))
+        self.assertEqual(REJECT_BN, grab("REJECT_BN"))
 
 
 if __name__ == "__main__":
