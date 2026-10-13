@@ -63,7 +63,12 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
   const userMarkerRef = useRef<unknown>(null);
   // Store center as ref to avoid re-initializing map on every parent re-render
   const centerRef = useRef(center);
-  centerRef.current = center;
+  // Sync latest center into the ref outside of render (React Compiler rule:
+  // refs must not be written during render). The map reads centerRef.current
+  // only inside effects/handlers, which run after this effect commits.
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
 
   // Initialize map — only once on mount
   useEffect(() => {

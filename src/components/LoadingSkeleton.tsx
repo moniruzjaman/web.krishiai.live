@@ -44,7 +44,7 @@ export default function LoadingSkeleton({ variant = "default" }: LoadingSkeleton
             <div className="h-3 bg-gray-200 rounded w-32 mb-4" />
             <div className="flex items-end gap-2 h-[160px]">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex-1 bg-gray-200 rounded-t" style={{ height: `${30 + Math.random() * 70}%` }} />
+                <div key={i} className="flex-1 bg-gray-200 rounded-t" style={{ height: `${30 + ((i * 37) % 70)}%` }} />
               ))}
             </div>
           </div>
