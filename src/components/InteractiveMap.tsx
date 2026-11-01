@@ -16,7 +16,6 @@
 "use client";
 
 import type { Map as LeafletMap, Marker, Layer, LayerGroup, TileLayer } from "leaflet";
-import type { Map as LeafletMap, Marker, TileLayer } from "leaflet";
 import { useEffect, useRef } from "react";
 import { escapeHtml } from "@/lib/html-sanitize";
 import {
