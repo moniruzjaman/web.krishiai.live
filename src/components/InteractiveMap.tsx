@@ -214,6 +214,12 @@ export default function InteractiveMap({
   // Assigned inside effects (not during render) to satisfy React Compiler's
   // "no side effects during render" rule while keeping the same behavior.
   const centerRef = useRef(center);
+  // Sync latest center into the ref outside of render (React Compiler rule:
+  // refs must not be written during render). The map reads centerRef.current
+  // only inside effects/handlers, which run after this effect commits.
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
 
   // Initialize map — only once on mount
   useEffect(() => {
