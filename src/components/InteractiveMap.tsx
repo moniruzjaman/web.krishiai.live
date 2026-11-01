@@ -15,7 +15,7 @@
 
 "use client";
 
-import type { Map as LeafletMap, Marker, Polygon as LeafletPolygon, TileLayer } from "leaflet";
+import type { Map as LeafletMap, Marker, Layer, LayerGroup, TileLayer } from "leaflet";
 import { useEffect, useRef } from "react";
 import { escapeHtml } from "@/lib/html-sanitize";
 import {
@@ -73,6 +73,88 @@ const INSTITUTIONS = [
   { pos: [24.7471, 90.4232] as [number, number], name: "BAU — বাংলাদেশ কৃষি বিশ্ববিদ্যালয়", short: "BAU", color: "#16a34a", category: "extension" },
 ];
 
+// ── Geo-fence rendering helpers (module scope: stable across renders) ────────
+
+type LLib = typeof import("leaflet");
+
+/** Draw (or redraw) saved geo-fence polygons into the fence layer group. */
+function renderFences(
+  L: LLib,
+  fenceGroup: LayerGroup,
+  fences: GeoFence[],
+  highlightIds: string[],
+): void {
+  fenceGroup.clearLayers();
+  for (const f of fences) {
+    const meta = GEO_FENCE_TYPE_META[f.type];
+    const highlighted = highlightIds.includes(f.id);
+    const polygon = L.polygon(f.points, {
+      color: meta.color,
+      weight: highlighted ? 4 : 2,
+      fillColor: meta.color,
+      fillOpacity: highlighted ? 0.3 : 0.15,
+      dashArray: highlighted ? undefined : "6 3",
+    });
+    polygon.bindPopup(
+      `<div style="min-width:140px;text-align:center">` +
+        `<b style="color:${escapeHtml(meta.color)}">${escapeHtml(meta.icon)} ${escapeHtml(f.name)}</b><br>` +
+        `<span style="font-size:11px">${escapeHtml(meta.labelBn)}${f.crop ? " · " + escapeHtml(f.crop) : ""}</span><br>` +
+        `<span style="font-size:11px;color:#555">${escapeHtml(formatAreaBn(f.points))}</span>` +
+        `</div>`,
+    );
+    // Vertex dots so boundaries are visible even when zoomed out.
+    const vertices = L.layerGroup(
+      f.points.map((p) =>
+        L.circleMarker(p, {
+          radius: 4,
+          color: "#fff",
+          weight: 1.5,
+          fillColor: meta.color,
+          fillOpacity: 1,
+        }),
+      ),
+    );
+    fenceGroup.addLayer(L.layerGroup([polygon, vertices]));
+  }
+}
+
+/** Draw the in-progress tap-to-draft ring (dashed preview + vertex dots). */
+function renderDraft(L: LLib, map: LeafletMap): void {
+  const pts = draftGlobalRef.current;
+  if (draftPreviewRef.current) {
+    map.removeLayer(draftPreviewRef.current as TileLayer);
+    draftPreviewRef.current = null;
+  }
+  if (pts.length === 0) return;
+  const layers: Layer[] = pts.map((p) =>
+    L.circleMarker(p, {
+      radius: 5,
+      color: "#f59e0b",
+      weight: 2,
+      fillColor: "#fbbf24",
+      fillOpacity: 1,
+    }),
+  );
+  if (pts.length >= 2) {
+    layers.push(
+      L.polygon(pts, {
+        color: "#f59e0b",
+        weight: 2,
+        dashArray: "4 4",
+        fillColor: "#fbbf24",
+        fillOpacity: 0.1,
+      }),
+    );
+  }
+  const group = L.layerGroup(layers).addTo(map);
+  draftPreviewRef.current = group;
+}
+
+// Draft preview is managed imperatively from inside the one-time map init
+// effect, so it lives in module-level state mirrored by component refs.
+const draftGlobalRef: { current: [number, number][] } = { current: [] };
+const draftPreviewRef: { current: unknown } = { current: null };
+
 export default function InteractiveMap({
   center,
   mapStyle = "street",
@@ -89,14 +171,45 @@ export default function InteractiveMap({
   const userMarkerRef = useRef<unknown>(null);
   // Geo-fence polygon layer group + draft vertices (kept as refs so the
   // map is never re-initialized when these change).
-  const fenceLayerRef = useRef<unknown>(null);
+  const fenceLayerRef = useRef<LayerGroup | null>(null);
   const draftPointsRef = useRef<[number, number][]>([]);
-  const draftLayerRef = useRef<unknown>(null);
-  // Latest callbacks via refs so the one-time map init effect stays stable.
+  // Latest props/callbacks via refs so the one-time map init effect stays
+  // stable. Synced inside effects (never during render) to satisfy React
+  // Compiler's "no ref writes during render" rule.
   const onDraftPointRef = useRef(onDraftPoint);
-  onDraftPointRef.current = onDraftPoint;
   const drawModeRef = useRef(drawMode);
-  drawModeRef.current = drawMode;
+  const fencesRef = useRef(fences);
+  const highlightIdsRef = useRef(highlightIds);
+  useEffect(() => {
+    onDraftPointRef.current = onDraftPoint;
+    drawModeRef.current = drawMode;
+    if (!drawMode) draftPointsRef.current = [];
+    fencesRef.current = fences;
+    highlightIdsRef.current = highlightIds;
+  }, [onDraftPoint, drawMode, fences, highlightIds]);
+
+  // Re-render saved fence polygons whenever the list / highlights change
+  // (the map itself is initialized only once).
+  useEffect(() => {
+    if (!fenceLayerRef.current || !mapInstanceRef.current) return;
+    import("leaflet").then((L) => {
+      if (fenceLayerRef.current) {
+        renderFences(L, fenceLayerRef.current, fences, highlightIds);
+      }
+    });
+  }, [fences, highlightIds]);
+
+  // Keep the module-level draft mirror in sync and redraw the dashed preview
+  // ring while the farmer is tapping out a new geo-fence. The vertex count is
+  // mirrored into state by the parent via onDraftPoint, so we key off
+  // drawMode + fences here; per-tap redraws happen imperatively in the click
+  // handler installed during map init.
+  useEffect(() => {
+    draftGlobalRef.current = draftPointsRef.current;
+    const map = mapInstanceRef.current as LeafletMap | null;
+    if (!map) return;
+    import("leaflet").then((L) => renderDraft(L, map));
+  }, [drawMode]);
   // Store center as ref to avoid re-initializing map on every parent re-render.
   // Assigned inside effects (not during render) to satisfy React Compiler's
   // "no side effects during render" rule while keeping the same behavior.
@@ -180,13 +293,21 @@ export default function InteractiveMap({
       const fenceGroup = L.layerGroup().addTo(map);
       fenceLayerRef.current = fenceGroup;
 
-      // Tap-to-draw handler for creating new geo-fences
+      // Tap-to-draw handler for creating new geo-fences (also redraws the
+      // live draft preview: vertex dots + dashed polygon).
       map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
         if (!drawModeRef.current) return;
         const pt: [number, number] = [e.latlng.lat, e.latlng.lng];
         draftPointsRef.current = [...draftPointsRef.current, pt];
+        // Keep the module-level mirror in sync so renderDraft (called from
+        // imperative contexts inside the one-time init effect) sees the ring.
+        draftGlobalRef.current = draftPointsRef.current;
         onDraftPointRef.current?.(pt);
+        renderDraft(L, map);
       });
+
+      renderFences(L, fenceGroup, fencesRef.current, highlightIdsRef.current);
+      renderDraft(L, map);
 
       // Tile layer — will be managed by the mapStyle effect
       const initialTile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -240,6 +361,11 @@ export default function InteractiveMap({
         mapInstanceRef.current = null;
         tileLayerRef.current = null;
         userMarkerRef.current = null;
+        fenceLayerRef.current = null;
+        // Drop any lingering draft preview layer reference.
+        draftPreviewRef.current = null;
+        draftGlobalRef.current = [];
+        draftPointsRef.current = [];
       }
     };
   }, []); // Only initialize once on mount
