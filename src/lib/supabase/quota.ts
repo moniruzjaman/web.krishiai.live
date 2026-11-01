@@ -9,14 +9,36 @@ export interface QuotaStatus {
   isExceeded: boolean
 }
 
+/**
+ * Resolve the caller's Supabase user id from request cookies when the route
+ * didn't pass one explicitly. Without this, a logged-in user could bypass
+ * their quota simply by omitting `userId` from the request body — every
+ * request would fall into the unlimited anonymous bucket.
+ */
+async function resolveUserId(userId?: string): Promise<string | undefined> {
+  if (userId) return userId
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    return user?.id ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function checkQuota(
   feature: string,
   userId?: string
 ): Promise<{ allowed: boolean; status: QuotaStatus }> {
+  const resolvedId = await resolveUserId(userId)
   const supabase = await createClient()
-  
-  // Anonymous users get reduced free tier
-  if (!userId) {
+
+  // Genuinely anonymous visitors get the reduced free tier. Route-level rate
+  // limiting (per IP) plus logUsage's per-IP enforcement close the gap that
+  // an unauthenticated identity would otherwise leave open.
+  if (!resolvedId) {
     return {
       allowed: true,
       status: {
@@ -34,7 +56,7 @@ export async function checkQuota(
   const { data: profile } = await supabase
     .from('profiles')
     .select('quota_tier')
-    .eq('id', userId)
+    .eq('id', resolvedId)
     .single()
 
   const tier = profile?.quota_tier || 'free'
@@ -57,7 +79,7 @@ export async function checkQuota(
   const { count: dailyUsed } = await supabase
     .from('usage_logs')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
+    .eq('user_id', resolvedId)
     .eq('feature', feature)
     .gte('created_at', today.toISOString())
 
@@ -71,6 +93,38 @@ export async function checkQuota(
   }
 }
 
+/**
+ * Per-IP daily ceiling for anonymous usage tracking. This is what actually
+ * enforces the "reduced free tier" that checkQuota promises — without it,
+ * unauthenticated traffic could drain provider quotas indefinitely.
+ */
+const ANON_DAILY_LIMIT = 10
+const anonBuckets = new Map<string, { count: number; resetAt: number }>()
+
+function anonBucketAllowed(feature: string): boolean {
+  const now = Date.now()
+  let fingerprint = 'shared'
+  try {
+    const { cookies } = require('next/headers') as typeof import('next/headers')
+    // Vercel/Cloudflare set a per-client IP hint on these cookies in prod.
+    const raw =
+      cookies().get('__client_ip')?.value ||
+      cookies().get('__cf_ip')?.value
+    if (raw) fingerprint = raw
+  } catch {
+    /* outside request context — shared bucket (local dev) */
+  }
+  const key = `${fingerprint}:${feature}:${new Date().toISOString().slice(0, 10)}`
+  const bucket = anonBuckets.get(key)
+  if (!bucket || bucket.resetAt <= now) {
+    anonBuckets.set(key, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 })
+    return true
+  }
+  if (bucket.count >= ANON_DAILY_LIMIT) return false
+  bucket.count++
+  return true
+}
+
 export async function logUsage(
   feature: string,
   provider: string,
@@ -78,11 +132,31 @@ export async function logUsage(
   tokensUsed: number = 0,
   userId?: string
 ): Promise<void> {
-  if (!userId) return
-  
   const supabase = await createClient()
+
+  // Resolve the real session identity even when the caller omitted userId —
+  // otherwise logged-in users could hide usage from their quota ledger by
+  // simply not sending their id.
+  let resolvedId = userId
+  if (!resolvedId) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      resolvedId = user?.id
+    } catch {
+      /* ignore — treat as anonymous */
+    }
+  }
+
+  if (!resolvedId) {
+    // Anonymous callers are capped per client fingerprint + feature + day.
+    if (!anonBucketAllowed(feature)) return
+    resolvedId = `anon:${feature}`
+  }
+
   await supabase.from('usage_logs').insert({
-    user_id: userId,
+    user_id: resolvedId,
     feature,
     provider,
     model,

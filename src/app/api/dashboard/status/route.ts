@@ -4,16 +4,26 @@
  * Returns provider health, DB connectivity, and orchestration stats.
  */
 
-import { NextRequest } from 'next/server'
-import { handleOptions, corsNextResponse } from '@/lib/cors'
-import { getOrchestrationStats, getTaskRoutingMap } from '@/lib/openrouter'
+import { NextRequest } from "next/server";
+import { handleOptions, corsNextResponse } from "@/lib/cors";
+import { getOrchestrationStats, getTaskRoutingMap } from "@/lib/openrouter";
+import { getAuthedUser } from "@/lib/require-auth";
 
 export async function OPTIONS(request: NextRequest) {
-  return handleOptions(request.headers.get('origin'), ['GET'])
+  return handleOptions(request.headers.get("origin"), ["GET"])
 }
 
 export async function GET(request: NextRequest) {
-  const origin = request.headers.get('origin')
+  const origin = request.headers.get("origin")
+
+  // Auth guard: dashboard telemetry is for signed-in operators only.
+  const user = await getAuthedUser(request);
+  if (!user) {
+    return corsNextResponse(
+      { ok: false, error: "Unauthorized" },
+      { status: 401, origin, methods: ["GET"] }
+    );
+  }
 
   // Check Supabase connectivity
   let dbStatus = 'unknown'
@@ -91,6 +101,6 @@ export async function GET(request: NextRequest) {
         runtime: 'bun',
       },
     },
-    { origin, methods: ['GET'], headers: { 'Cache-Control': 'no-store' } }
+    { origin, methods: ['GET'], headers: { 'Cache-Control': 'private, no-store' } }
   )
 }

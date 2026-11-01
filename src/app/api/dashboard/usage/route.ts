@@ -9,6 +9,7 @@
 import { NextRequest } from 'next/server'
 import { handleOptions, corsNextResponse } from '@/lib/cors'
 import { getOrchestrationStats } from '@/lib/openrouter'
+import { getAuthedUser } from '@/lib/require-auth'
 
 export async function OPTIONS(request: NextRequest) {
   return handleOptions(request.headers.get('origin'), ['GET'])
@@ -16,6 +17,16 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const origin = request.headers.get('origin')
+
+  // Auth guard: usage telemetry is operator-only information.
+  const user = await getAuthedUser(request);
+  if (!user) {
+    return corsNextResponse(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401, origin, methods: ['GET'] }
+    );
+  }
+
   const { searchParams } = new URL(request.url)
   const period = searchParams.get('period') || 'today' // today | week | month
 
@@ -63,6 +74,6 @@ export async function GET(request: NextRequest) {
         taskRoutingMap: orchestration.taskRoutingMap,
       },
     },
-    { origin, methods: ['GET'], headers: { 'Cache-Control': 'no-store' } }
+    { origin, methods: ['GET'], headers: { 'Cache-Control': 'private, no-store' } }
   )
 }

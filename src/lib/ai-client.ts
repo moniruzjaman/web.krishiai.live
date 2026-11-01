@@ -73,11 +73,13 @@ async function callGemini(messages: AIMessage[], options: AICallOptions): Promis
       parts: [{ text: m.content }]
     }))
 
+    // Key goes in the x-goog-api-key header — URL query strings leak into
+    // access logs, proxies and error messages.
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents,
           systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
