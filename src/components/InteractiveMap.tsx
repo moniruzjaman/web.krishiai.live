@@ -9,18 +9,34 @@
  * - User location marker with pulse animation
  * - Locate-me control button
  * - Auto-center on user location
+ * - Geo-fence polygons for plot / plantation / orchard / pond (localStorage)
+ * - Optional tap-to-draw mode for creating new geo-fences
  */
 
 "use client";
 
-import type { Map as LeafletMap, Marker, TileLayer } from "leaflet";
+import type { Map as LeafletMap, Marker, Polygon as LeafletPolygon, TileLayer } from "leaflet";
 import { useEffect, useRef } from "react";
+import { escapeHtml } from "@/lib/html-sanitize";
+import {
+  formatAreaBn,
+  GEO_FENCE_TYPE_META,
+  type GeoFence,
+  type GeoFenceType,
+} from "@/lib/geofence";
 
 interface MapProps {
   center: [number, number];
   mapStyle?: "street" | "satellite";
   accuracy?: number;
   onLocateMe?: () => void;
+  /** Saved farmer geo-fences to render as labelled polygons */
+  fences?: GeoFence[];
+  /** When set, taps on the map add vertices and call back with the draft ring */
+  drawMode?: boolean;
+  onDraftPoint?: (latlng: [number, number]) => void;
+  /** Highlight fences that contain the current user position */
+  highlightIds?: string[];
 }
 
 // ── BD Agricultural Institutions (across all divisions) ──────────────────────
@@ -57,11 +73,30 @@ const INSTITUTIONS = [
   { pos: [24.7471, 90.4232] as [number, number], name: "BAU — বাংলাদেশ কৃষি বিশ্ববিদ্যালয়", short: "BAU", color: "#16a34a", category: "extension" },
 ];
 
-export default function InteractiveMap({ center, mapStyle = "street", accuracy = 500, onLocateMe }: MapProps) {
+export default function InteractiveMap({
+  center,
+  mapStyle = "street",
+  accuracy = 500,
+  onLocateMe,
+  fences = [],
+  drawMode = false,
+  onDraftPoint,
+  highlightIds = [],
+}: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
   const userMarkerRef = useRef<unknown>(null);
+  // Geo-fence polygon layer group + draft vertices (kept as refs so the
+  // map is never re-initialized when these change).
+  const fenceLayerRef = useRef<unknown>(null);
+  const draftPointsRef = useRef<[number, number][]>([]);
+  const draftLayerRef = useRef<unknown>(null);
+  // Latest callbacks via refs so the one-time map init effect stays stable.
+  const onDraftPointRef = useRef(onDraftPoint);
+  onDraftPointRef.current = onDraftPoint;
+  const drawModeRef = useRef(drawMode);
+  drawModeRef.current = drawMode;
   // Store center as ref to avoid re-initializing map on every parent re-render.
   // Assigned inside effects (not during render) to satisfy React Compiler's
   // "no side effects during render" rule while keeping the same behavior.
@@ -131,14 +166,26 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
       INSTITUTIONS.forEach((inst) => {
         const icon = L.divIcon({
           className: "",
-          html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${inst.short}"></div>`,
+          html: `<div style="width:14px;height:14px;background:${inst.color};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer" title="${escapeHtml(inst.short)}"></div>`,
           iconSize: [14, 14],
           iconAnchor: [7, 7],
         });
 
         L.marker(inst.pos, { icon })
           .addTo(map)
-          .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${inst.color}">${inst.short}</b><br><span style="font-size:11px">${inst.name}</span></div>`);
+          .bindPopup(`<div style="text-align:center;min-width:120px"><b style="color:${escapeHtml(inst.color)}">${escapeHtml(inst.short)}</b><br><span style="font-size:11px">${escapeHtml(inst.name)}</span></div>`);
+      });
+
+      // Geo-fence layer group (plot / plantation / orchard polygons)
+      const fenceGroup = L.layerGroup().addTo(map);
+      fenceLayerRef.current = fenceGroup;
+
+      // Tap-to-draw handler for creating new geo-fences
+      map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
+        if (!drawModeRef.current) return;
+        const pt: [number, number] = [e.latlng.lat, e.latlng.lng];
+        draftPointsRef.current = [...draftPointsRef.current, pt];
+        onDraftPointRef.current?.(pt);
       });
 
       // Tile layer — will be managed by the mapStyle effect
