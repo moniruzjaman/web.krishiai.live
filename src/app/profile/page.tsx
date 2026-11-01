@@ -13,6 +13,10 @@
 
 "use client";
 
+// Local mirror of the DOM lib's `NotificationPermission` union so the type
+// annotation below resolves for the no-undef lint rule.
+type NotificationPermission = "default" | "denied" | "granted";
+
 import {
   useState,
   useCallback,

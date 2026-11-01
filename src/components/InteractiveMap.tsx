@@ -13,6 +13,7 @@
 
 "use client";
 
+import type { Map as LeafletMap, Marker, TileLayer } from "leaflet";
 import { useEffect, useRef } from "react";
 
 interface MapProps {
@@ -61,13 +62,15 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
   const mapInstanceRef = useRef<unknown>(null);
   const tileLayerRef = useRef<unknown>(null);
   const userMarkerRef = useRef<unknown>(null);
-  // Store center as ref to avoid re-initializing map on every parent re-render
+  // Store center as ref to avoid re-initializing map on every parent re-render.
+  // Assigned inside effects (not during render) to satisfy React Compiler's
+  // "no side effects during render" rule while keeping the same behavior.
   const centerRef = useRef(center);
-  centerRef.current = center;
 
   // Initialize map — only once on mount
   useEffect(() => {
     if (!mapRef.current) return;
+    centerRef.current = center;
 
     let cancelled = false;
 
@@ -165,7 +168,7 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
                 (pos) => {
                   const { latitude, longitude } = pos.coords;
                   map.setView([latitude, longitude], 13, { animate: true });
-                  (userMarker as L.Marker).setLatLng([latitude, longitude]);
+                  (userMarker as Marker).setLatLng([latitude, longitude]);
                 },
                 () => {
                   map.setView(centerRef.current, 13, { animate: true });
@@ -196,14 +199,15 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
 
   // Update center when location changes (pan the map instead of reinitializing)
   useEffect(() => {
+    centerRef.current = center;
     if (!mapInstanceRef.current) return;
     import("leaflet").then((L) => {
-      const map = mapInstanceRef.current as L.Map | null;
+      const map = mapInstanceRef.current as LeafletMap | null;
       if (!map) return;
       map.setView(center, map.getZoom(), { animate: true });
       // Update user marker position
       if (userMarkerRef.current) {
-        (userMarkerRef.current as L.Marker).setLatLng(center);
+        (userMarkerRef.current as Marker).setLatLng(center);
       }
     });
   }, [center]);
@@ -213,12 +217,12 @@ export default function InteractiveMap({ center, mapStyle = "street", accuracy =
     if (!mapInstanceRef.current) return;
 
     import("leaflet").then((L) => {
-      const map = mapInstanceRef.current as L.Map | null;
+      const map = mapInstanceRef.current as LeafletMap | null;
       if (!map) return;
 
       // Remove old tile layer
       if (tileLayerRef.current) {
-        map.removeLayer(tileLayerRef.current as L.TileLayer);
+        map.removeLayer(tileLayerRef.current as TileLayer);
       }
 
       const tileLayer = mapStyle === "satellite"

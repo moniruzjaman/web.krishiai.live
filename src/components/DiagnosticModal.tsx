@@ -1,5 +1,8 @@
 "use client";
 
+// Type-only import of React namespace: erased at compile time, so it adds no
+// runtime dependency but keeps `React.*` type annotations valid for no-undef.
+import type * as React from "react";
 import { useState, useEffect, useCallback } from "react";
 import { BANGLADESH_DISTRICTS, findNearestDistrict } from "@/data/bangladeshDistricts";
 import { CROP_DISEASES } from "@/data/cropDiseases";

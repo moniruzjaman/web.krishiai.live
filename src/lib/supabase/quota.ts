@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { createClient } from './server'
 
 export interface QuotaStatus {
@@ -101,15 +102,13 @@ export async function checkQuota(
 const ANON_DAILY_LIMIT = 10
 const anonBuckets = new Map<string, { count: number; resetAt: number }>()
 
-function anonBucketAllowed(feature: string): boolean {
+async function anonBucketAllowed(feature: string): Promise<boolean> {
   const now = Date.now()
   let fingerprint = 'shared'
   try {
-    const { cookies } = require('next/headers') as typeof import('next/headers')
     // Vercel/Cloudflare set a per-client IP hint on these cookies in prod.
-    const raw =
-      cookies().get('__client_ip')?.value ||
-      cookies().get('__cf_ip')?.value
+    const jar = await cookies()
+    const raw = jar.get('__client_ip')?.value || jar.get('__cf_ip')?.value
     if (raw) fingerprint = raw
   } catch {
     /* outside request context — shared bucket (local dev) */
@@ -151,7 +150,7 @@ export async function logUsage(
 
   if (!resolvedId) {
     // Anonymous callers are capped per client fingerprint + feature + day.
-    if (!anonBucketAllowed(feature)) return
+    if (!(await anonBucketAllowed(feature))) return
     resolvedId = `anon:${feature}`
   }
 
