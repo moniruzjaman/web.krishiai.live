@@ -24,12 +24,45 @@ export const ALLOWED_ORIGINS = [
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
 
+// Deployment preview origins (Vercel) — exact host match only, never a suffix.
+const EXTRA_ALLOWED_ORIGINS = new Set<string>(
+  (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+
+function isLocalhostOrigin(origin: string): boolean {
+  // Only http(s)://localhost|127.0.0.1|0.0.0.0[:port] — substring matching on
+  // the whole origin string allowed bypasses like "https://evil.com/?x=localhost".
+  try {
+    const { protocol, hostname } = new URL(origin);
+    const isLocalHost =
+      hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
+    const okProtocol = protocol === "http:" || protocol === "https:";
+    return isLocalHost && okProtocol;
+  } catch {
+    return false;
+  }
+}
+
 function isAllowedOrigin(origin: string): boolean {
-  if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
+  if (isLocalhostOrigin(origin)) return true;
+  if (EXTRA_ALLOWED_ORIGINS.has(origin)) return true;
   if ((ALLOWED_ORIGINS as readonly string[]).includes(origin)) return true;
   try {
     const { protocol, hostname } = new URL(origin);
-    return protocol === "https:" && hostname.endsWith(ALLOWED_ORIGIN_SUFFIX);
+    // Require https + the apex domain or a true subdomain of krishiai.live.
+    // EndsWith alone is unsafe: "krishiai.live.evil.com" passes endsWith but
+    // is attacker-owned. The label preceding ".krishiai.live" must not contain
+    // further dots (no nested suffix tricks like ".evil.krishiai.live.attacker").
+    return (
+      protocol === "https:" &&
+      (hostname === "krishiai.live" ||
+        (hostname.endsWith(ALLOWED_ORIGIN_SUFFIX) &&
+          hostname.length > ALLOWED_ORIGIN_SUFFIX.length + 1 &&
+          !hostname.slice(0, -ALLOWED_ORIGIN_SUFFIX.length).includes(".")))
+    );
   } catch {
     return false;
   }

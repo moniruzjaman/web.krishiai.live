@@ -100,12 +100,14 @@ async function callGeminiMultimodal(
       generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
     };
 
+    // Key in header, not URL query string (log/leak hygiene).
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000),
       }
     );
 
@@ -158,6 +160,21 @@ export async function POST(request: NextRequest) {
           { status: 400, origin }
         );
       }
+    }
+
+    // ── Rate limit: 20 chat requests / 10 min per user (or IP) — blunts
+    // automated quota drain on the AI providers while leaving normal use free.
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const limit = await checkRateLimit(request, "chat", 20, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return corsNextResponse(
+        {
+          ok: false,
+          error: "অনুরোধের সীমা অতিক্রম করেছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।",
+          retry_after: limit.retryAfterSec,
+        },
+        { status: 429, origin, methods: ["POST"] }
+      );
     }
 
     const seasonContext = getSeasonContext();

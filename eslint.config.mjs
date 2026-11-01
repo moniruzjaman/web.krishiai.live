@@ -88,6 +88,10 @@ const eslintConfig = [
       "skills",
       // Internal agent orchestration scripts (CommonJS tooling, not app code)
       ".agent/**",
+      // Tooling scripts — not part of the Next.js app; they use CommonJS
+      // require() and are linted by their own conventions, not this config.
+      ".agent/**",
+      "worker.js",
     ],
   },
 ];

@@ -2,80 +2,71 @@
  * /api/dashboard/deployments — Deployment History for OpenProvider Dashboard
  *
  * Returns recent deployment info, CI status, and build metadata.
- * Since we don't have direct Vercel API access, we return
- * git-based deployment information from the codebase.
+ * Vercel serverless runtimes don't ship a git binary or repository, so we
+ * expose safe, non-sensitive build metadata from environment variables
+ * instead of shelling out to `git` (execSync in an unauthenticated route is
+ * both an information leak and an injection/RCE risk).
  */
 
-import { NextRequest } from 'next/server'
-import { handleOptions, corsNextResponse } from '@/lib/cors'
-import { execSync } from 'child_process'
+import { NextRequest } from "next/server";
+import { handleOptions, corsNextResponse } from "@/lib/cors";
+import { getAuthedUser } from "@/lib/require-auth";
 
 export async function OPTIONS(request: NextRequest) {
-  return handleOptions(request.headers.get('origin'), ['GET'])
+  return handleOptions(request.headers.get("origin"), ["GET"]);
 }
 
 interface DeploymentInfo {
-  version: string
-  branch: string
-  commit: string
-  commitMessage: string
-  commitDate: string
-  author: string
-  buildStatus: string
+  version: string;
+  branch: string;
+  commit: string;
+  commitMessage: string;
+  commitDate: string;
+  author: string;
+  buildStatus: string;
+}
+
+// Only allow simple alphanumeric/slash/dash/hyphen values from env vars
+// before echoing them anywhere (defense-in-depth against header/log poison).
+function safeEnv(value: string | undefined, fallback: string): string {
+  if (!value || !/^[A-Za-z0-9 ._:/@+-]{1,120}$/.test(value)) return fallback;
+  return value;
 }
 
 export async function GET(request: NextRequest) {
-  const origin = request.headers.get('origin')
+  const origin = request.headers.get("origin");
 
-  let deployments: DeploymentInfo[] = []
-
-  try {
-    // Get recent commits as "deployments"
-    const logOutput = execSync(
-      'git log --oneline --format="%H|%s|%ai|%an" -10',
-      { encoding: 'utf-8', timeout: 5000 }
-    ).trim()
-
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-      encoding: 'utf-8',
-    }).trim()
-
-    const lines = logOutput.split('\n').filter(Boolean)
-
-    deployments = lines.map((line, i) => {
-      const [hash, message, date, author] = line.split('|')
-      return {
-        version: `v4.0.${10 - i}`, // Approximate version from commit position
-        branch,
-        commit: hash?.substring(0, 7) || 'unknown',
-        commitMessage: message || 'unknown',
-        commitDate: date || new Date().toISOString(),
-        author: author || 'unknown',
-        buildStatus: i === 0 ? 'current' : 'deployed',
-      }
-    })
-  } catch {
-    deployments = [{
-      version: 'v4.0.2',
-      branch: 'main',
-      commit: 'unknown',
-      commitMessage: 'Git info unavailable in this environment',
-      commitDate: new Date().toISOString(),
-      author: 'unknown',
-      buildStatus: 'current',
-    }]
+  // Auth guard: deployment history is operator-only information.
+  const user = await getAuthedUser(request);
+  if (!user) {
+    return corsNextResponse(
+      { ok: false, error: "Unauthorized" },
+      { status: 401, origin, methods: ["GET"] }
+    );
   }
+
+  const deployments: DeploymentInfo[] = [
+    {
+      version: safeEnv(process.env.NEXT_PUBLIC_APP_VERSION, "v4.0.2"),
+      branch: safeEnv(process.env.VERCEL_GIT_COMMIT_REF, "main"),
+      commit: safeEnv(process.env.VERCEL_GIT_COMMIT_SHA, "unknown").substring(0, 7),
+      commitMessage: "Build metadata provided by the deployment platform",
+      commitDate: safeEnv(process.env.NEXT_PUBLIC_DEPLOY_TIMESTAMP, new Date().toISOString()),
+      author: "unknown",
+      buildStatus: "current",
+    },
+  ];
 
   return corsNextResponse(
     {
       ok: true,
       timestamp: new Date().toISOString(),
-      platform: 'vercel',
-      region: 'hkg1',
-      framework: 'nextjs-16',
-      runtime: 'bun',
+      platform: "vercel",
+      region: safeEnv(process.env.VERCEL_REGION, "hkg1"),
+      framework: "nextjs-16",
+      runtime: "bun",
       deployments,
     },
-    { origin, methods: ['GET'], headers: { 'Cache-Control': 'public, s-maxage=60' } }
-  )
+    { origin, methods: ["GET"], headers: { "Cache-Control": "private, no-store" } }
+  );
 }
