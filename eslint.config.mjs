@@ -77,6 +77,10 @@ const eslintConfig = [
       "next-env.d.ts",
       "examples/**",
       "skills",
+      // Tooling scripts — not part of the Next.js app; they use CommonJS
+      // require() and are linted by their own conventions, not this config.
+      ".agent/**",
+      "worker.js",
     ],
   },
 ];

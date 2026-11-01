@@ -386,6 +386,22 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
 
   try {
+    // ── Rate limit: 10 diagnosis requests / 10 min per user (or IP).
+    // Vision calls are the most expensive AI operation on this platform;
+    // this stops scripted quota drain while leaving normal farm use untouched.
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const limit = await checkRateLimit(req, "diagnose", 10, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "অনুরোধের সীমা অতিক্রম করেছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।",
+          retry_after: limit.retryAfterSec,
+        },
+        { status: 429 }
+      );
+    }
+
     const rawBody = await req.json();
     const { messages, crop, district, infectedPart, eliminationAnswers, triangleAnswers } = normalizeToMessages(rawBody);
 
@@ -573,13 +589,15 @@ export async function POST(req: NextRequest) {
       elapsed_ms: elapsed,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Even on unexpected errors, return a structured response so the
-    // frontend never shows a generic "network error" message.
+    // frontend never shows a generic "network error" message. Provider/stack
+    // details stay server-side — error strings from Gemini/OpenRouter/Turso
+    // can contain key fragments or internal infra info.
+    console.error("[diagnose] Error:", error instanceof Error ? error.message : error);
     return NextResponse.json({
       ok: false,
-      error: error.message || "Diagnosis failed",
-      hint: "Check that GEMINI_API_KEY or OPENROUTER_API_KEY is set in Vercel environment variables.",
+      error: "রোগ নির্ণয়ে সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।",
     }, { status: 500 });
   }
 }
