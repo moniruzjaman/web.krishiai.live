@@ -69,6 +69,15 @@ const eslintConfig = [
     },
   },
   {
+    // no-undef is redundant in TS files (the compiler already catches
+    // undefined identifiers) and produces false positives for ambient
+    // globals used only as types (React, NotificationPermission).
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "no-undef": "off",
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",
@@ -77,6 +86,8 @@ const eslintConfig = [
       "next-env.d.ts",
       "examples/**",
       "skills",
+      // Internal agent orchestration scripts (CommonJS tooling, not app code)
+      ".agent/**",
       // Tooling scripts — not part of the Next.js app; they use CommonJS
       // require() and are linted by their own conventions, not this config.
       ".agent/**",
