@@ -122,6 +122,24 @@ export async function ensureSchema(): Promise<void> {
 
     await db.execute(`INSERT OR IGNORE INTO analytics_state (id) VALUES ('main')`);
 
+    // Durable text-only chat history. Attachments are intentionally not stored.
+    await db.execute(`CREATE TABLE IF NOT EXISTS chat_sessions (
+      id TEXT PRIMARY KEY,
+      last_message_at TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+    await db.execute(`CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+      content TEXT NOT NULL,
+      provider TEXT,
+      model TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+    )`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, created_at)`);
+
     _schemaInitialized = true;
   } catch (err: any) {
     console.error('Turso schema init error:', err?.message || err);
@@ -223,6 +241,29 @@ export async function saveDiagnosisFeedback(entry: {
   } catch (err: any) {
     console.error('Turso saveDiagnosisFeedback error:', err?.message || err);
     return null;
+  }
+}
+
+// ─── Save chat transcript ──────────────────────────────────────
+export async function saveChatExchange(entry: {
+  session_id: string;
+  user_message: string;
+  assistant_message: string;
+  provider?: string;
+  model?: string;
+}): Promise<void> {
+  const db = getTursoClient();
+  if (!db || !entry.session_id || !entry.user_message || !entry.assistant_message) return;
+  try {
+    await ensureSchema();
+    await db.batch([
+      { sql: `INSERT OR IGNORE INTO chat_sessions (id) VALUES (?)`, args: [entry.session_id] },
+      { sql: `INSERT INTO chat_messages (session_id, role, content) VALUES (?, 'user', ?)`, args: [entry.session_id, entry.user_message.slice(0, 5000)] },
+      { sql: `INSERT INTO chat_messages (session_id, role, content, provider, model) VALUES (?, 'assistant', ?, ?, ?)`, args: [entry.session_id, entry.assistant_message.slice(0, 10000), entry.provider || null, entry.model || null] },
+      { sql: `UPDATE chat_sessions SET last_message_at = datetime('now') WHERE id = ?`, args: [entry.session_id] },
+    ], "write");
+  } catch (err: any) {
+    console.error('Turso saveChatExchange error:', err?.message || err);
   }
 }
 

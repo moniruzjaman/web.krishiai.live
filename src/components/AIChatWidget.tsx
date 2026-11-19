@@ -48,6 +48,7 @@ const QUICK_CATEGORIES = [
 ];
 
 const STORAGE_KEY = "krishi_home_chat";
+const CONVERSATION_KEY = "krishi_home_conversation_id";
 
 // ── Storage helpers ──────────────────────────────────────────────────────────
 function loadMessages(): Message[] {
@@ -71,6 +72,7 @@ function saveMessages(msgs: Message[]) {
 // ── Component ────────────────────────────────────────────────────────────────
 export default function AIChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationId, setConversationId] = useState("");
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -85,6 +87,14 @@ export default function AIChatWidget() {
   useEffect(() => {
     const stored = loadMessages();
     setMessages(stored.length > 0 ? stored : []);
+    try {
+      const storedConversation = localStorage.getItem(CONVERSATION_KEY);
+      const id = storedConversation || `home-${crypto.randomUUID()}`;
+      localStorage.setItem(CONVERSATION_KEY, id);
+      setConversationId(id);
+    } catch {
+      setConversationId(`home-${Date.now()}`);
+    }
     setLoaded(true);
   }, []);
 
@@ -121,10 +131,11 @@ export default function AIChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: chatHistory }),
+        body: JSON.stringify({ messages: chatHistory, conversationId }),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "উত্তর পাওয়া যায়নি");
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -133,17 +144,17 @@ export default function AIChatWidget() {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
+    } catch (error) {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        content: error instanceof Error ? error.message : "নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।",
       };
       setMessages((prev) => [...prev, errMsg]);
     }
 
     setIsTyping(false);
-  }, [messages, isTyping]);
+  }, [conversationId, messages, isTyping]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -155,6 +166,11 @@ export default function AIChatWidget() {
     if (!isExpanded) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
+  };
+
+  const clearConversation = () => {
+    setMessages([]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
   };
 
   // Get the last assistant message for collapsed view
@@ -222,6 +238,11 @@ export default function AIChatWidget() {
             className="px-3 py-3 space-y-2.5 overflow-y-auto scrollbar-none"
             style={{ maxHeight: "280px", minHeight: "160px" }}
           >
+            {messages.length > 0 && (
+              <div className="flex justify-end">
+                <button type="button" onClick={clearConversation} className="text-[10px] font-semibold text-gray-400 hover:text-red-500">চ্যাট মুছুন</button>
+              </div>
+            )}
             {messages.length === 0 && (
               <div className="text-center py-4">
                 <div className="text-3xl mb-2">🌾</div>

@@ -8,6 +8,7 @@
 
 import { NextRequest } from "next/server";
 import { corsHeaders, corsNextResponse } from "@/lib/cors";
+import { saveChatExchange } from "@/lib/turso";
 
 export async function OPTIONS(request: NextRequest) {
   return new Response(null, {
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { messages } = body;
+    const { messages, conversationId } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return corsNextResponse(
@@ -250,6 +251,20 @@ ${seasonContext}`;
       const seasonName = m >= 11 || m <= 2 ? "রবি" : m <= 5 ? "বোরো/প্রাক-খরিফ" : m <= 8 ? "খরিফ/আমন" : "আমন/রবি প্রস্তুতি";
       reply = `দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। বর্তমানে ${seasonName} মৌসুম চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন অথবা নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।`;
       provider = "fallback";
+    }
+
+    const latestUserMessage = [...messages].reverse().find((message: { role?: string }) => message.role === "user");
+    const persistedUserText = typeof latestUserMessage?.content === "string"
+      ? latestUserMessage.content
+      : latestUserMessage?.content?.find?.((part: { type?: string; text?: string }) => part.type === "text")?.text || "";
+    if (typeof conversationId === "string" && conversationId.length >= 8 && persistedUserText) {
+      void saveChatExchange({
+        session_id: conversationId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80),
+        user_message: persistedUserText,
+        assistant_message: reply,
+        provider,
+        model: model || "fallback",
+      });
     }
 
     return corsNextResponse(
